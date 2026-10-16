@@ -38,6 +38,7 @@ class _TechnicianHubScreenState extends State<TechnicianHubScreen> {
   Future<void> _updateStatus(TaskModel task, String newStatus) async {
     final ok = await ApiService.instance.updateTaskStatus(task.id, newStatus);
     if (ok) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Status tugas #${task.id} diubah menjadi $newStatus!'),
@@ -61,7 +62,23 @@ class _TechnicianHubScreenState extends State<TechnicianHubScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tugas Lapangan Teknisi'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 24,
+                height: 24,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(Icons.engineering, color: AppTheme.primary, size: 22),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('Tugas Lapangan Teknisi'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.map, color: AppTheme.primary),
@@ -93,24 +110,31 @@ class _TechnicianHubScreenState extends State<TechnicianHubScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Pusat Operasional Lapangan',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimary,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Pusat Operasional Lapangan',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.textPrimary,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Total: ${_tasks.length} penugasan ISP Sima.net',
-                              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+                              Text(
+                                'Total: ${_tasks.length} penugasan ISP Sima.net',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         ElevatedButton.icon(
                           onPressed: () {
                             Navigator.push(
@@ -119,10 +143,10 @@ class _TechnicianHubScreenState extends State<TechnicianHubScreen> {
                             );
                           },
                           icon: const Icon(Icons.explore, size: 16),
-                          label: const Text('Buka Peta GPS'),
+                          label: const Text('Peta GPS'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),

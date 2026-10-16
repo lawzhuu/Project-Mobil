@@ -138,6 +138,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ],
         ),
         child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: AppTheme.surface,
+          selectedItemColor: AppTheme.primary,
+          unselectedItemColor: AppTheme.textMuted,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
           currentIndex: _currentIndex,
           onTap: (index) {
             setState(() {

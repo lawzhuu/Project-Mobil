@@ -87,12 +87,16 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                     children: const [
                       Icon(Icons.currency_exchange, color: AppTheme.primary),
                       SizedBox(width: 8),
-                      Text(
-                        'Konversi Mata Uang (IDR, USD, EUR)',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
+                      Expanded(
+                        child: Text(
+                          'Konversi Mata Uang (IDR, USD, EUR)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
                         ),
                       ),
                     ],
@@ -232,7 +236,7 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 1.35,
+              childAspectRatio: 1.2,
               children: [
                 _buildClockCard(
                   flag: '🇮🇩',
@@ -292,22 +296,27 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '$flag $zoneName',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: AppTheme.textPrimary,
+              Expanded(
+                child: Text(
+                  '$flag $zoneName',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
               ),
+              const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  utcOffset,
+                  utcOffset.split(' ').first,
                   style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -316,15 +325,16 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
           Text(
             time,
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
               color: color,
-              letterSpacing: 1.2,
+              letterSpacing: 1.0,
             ),
           ),
           Text(
             date,
             style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ],

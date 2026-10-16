@@ -208,7 +208,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               end: Alignment.bottomRight,
                             ),
                           ),
-                          child: const Icon(Icons.wifi_tethering, color: Colors.white, size: 36),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.wifi_tethering, color: Colors.white, size: 36),
+                            ),
+                          ),
                         ),
                       ],
                     ),

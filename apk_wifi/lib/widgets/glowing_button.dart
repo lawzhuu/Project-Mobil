@@ -47,7 +47,7 @@ class GlowingButton extends StatelessWidget {
           foregroundColor: textColor ?? const Color(0xFF04121F),
           disabledBackgroundColor: baseColor.withOpacity(0.4),
           disabledForegroundColor: Colors.white54,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: isLoading
@@ -67,12 +67,17 @@ class GlowingButton extends StatelessWidget {
                     Icon(icon, size: 18),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: textColor ?? const Color(0xFF04121F),
+                  Flexible(
+                    child: Text(
+                      text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: textColor ?? const Color(0xFF04121F),
+                      ),
                     ),
                   ),
                 ],
