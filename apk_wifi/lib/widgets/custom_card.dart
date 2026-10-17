@@ -22,7 +22,7 @@ class CustomCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final border = Border.all(
-      color: borderColor ?? AppTheme.border.withOpacity(0.6),
+      color: borderColor ?? AppTheme.border,
       width: 1,
     );
 
@@ -35,8 +35,9 @@ class CustomCard extends StatelessWidget {
         border: border,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 10,
+            color: const Color(0x0C0F172A),
+            blurRadius: 16,
+            spreadRadius: 0,
             offset: const Offset(0, 4),
           ),
         ],

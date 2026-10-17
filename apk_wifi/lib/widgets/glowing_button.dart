@@ -44,10 +44,10 @@ class GlowingButton extends StatelessWidget {
         onPressed: isEnabled ? onPressed : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: baseColor,
-          foregroundColor: textColor ?? const Color(0xFF04121F),
+          foregroundColor: textColor ?? Colors.white,
           disabledBackgroundColor: baseColor.withOpacity(0.4),
-          disabledForegroundColor: Colors.white54,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          disabledForegroundColor: Colors.white70,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: isLoading

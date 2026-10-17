@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../services/auth_service.dart';
 import '../admin/admin_hub_screen.dart';
+import '../customer/customer_chatbot_screen.dart';
 import '../customer/customer_home_screen.dart';
 import '../customer/customer_invoices_screen.dart';
 import '../technician/technician_hub_screen.dart';
@@ -87,12 +88,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
       ];
     } else {
-      // Pelanggan
+      // Pelanggan: 5 Nav items matching modern ISP/Telkomsel design
       pages = [
-        const CustomerHomeScreen(),   // Beranda (Paket Aktif & Katalog)
-        const CustomerInvoicesScreen(), // Menu Utama (Tagihan & Upload Bukti)
-        const FeedbackScreen(),        // Saran & Kesan
-        const ProfileScreen(),         // Profil
+        const CustomerHomeScreen(),     // Beranda
+        const CustomerInvoicesScreen(), // Tagihan & Belanja
+        const CustomerChatbotScreen(),  // Center Chatbot AI CS
+        const FeedbackScreen(),         // Saran & Kesan
+        const ProfileScreen(),          // Akun Profil
       ];
       navItems = const [
         BottomNavigationBarItem(
@@ -106,9 +108,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
           label: 'Tagihan',
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.smart_toy_outlined),
+          activeIcon: Icon(Icons.smart_toy),
+          label: 'AI CS',
+        ),
+        BottomNavigationBarItem(
           icon: Icon(Icons.rate_review_outlined),
           activeIcon: Icon(Icons.rate_review),
-          label: 'Saran & Kesan',
+          label: 'Saran',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
@@ -124,26 +131,27 @@ class _MainShellScreenState extends State<MainShellScreen> {
         children: pages,
       ),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
+        decoration: const BoxDecoration(
+          color: Colors.white,
           border: Border(
-            top: BorderSide(color: AppTheme.border.withOpacity(0.6), width: 1),
+            top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: Color(0x0C0F172A),
+              blurRadius: 16,
+              offset: Offset(0, -4),
             ),
           ],
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
-          backgroundColor: AppTheme.surface,
+          backgroundColor: Colors.white,
           selectedItemColor: AppTheme.primary,
-          unselectedItemColor: AppTheme.textMuted,
+          unselectedItemColor: const Color(0xFF94A3B8),
           selectedFontSize: 11,
           unselectedFontSize: 11,
+          elevation: 0,
           currentIndex: _currentIndex,
           onTap: (index) {
             setState(() {

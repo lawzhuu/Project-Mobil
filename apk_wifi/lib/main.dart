@@ -31,7 +31,7 @@ class SimaNetApp extends StatelessWidget {
     return MaterialApp(
       title: 'Sima.net - ISP Reseller Operations',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       home: hasSession ? const MainShellScreen() : const LoginScreen(),
     );
   }

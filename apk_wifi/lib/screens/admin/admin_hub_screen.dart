@@ -42,7 +42,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadAllAdminData();
   }
 
@@ -443,10 +443,6 @@ class _AdminHubScreenState extends State<AdminHubScreen>
               text: 'Blockchain Ledger (A7)',
             ),
             Tab(
-              icon: Icon(Icons.account_balance, size: 18),
-              text: 'Tagihan Indibizz (A4)',
-            ),
-            Tab(
               icon: Icon(Icons.assignment, size: 18),
               text: 'Tugas Teknisi (A5)',
             ),
@@ -462,7 +458,6 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                 _buildCustomerActivationTab(),
                 _buildPaymentVerificationTab(),
                 _buildBlockchainLedgerTab(),
-                _buildUpstreamBillsTab(),
                 _buildTaskDispatchTab(),
               ],
             ),
@@ -498,12 +493,12 @@ class _AdminHubScreenState extends State<AdminHubScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: StatMetricCard(
-                  title: 'Beban Indibizz',
+                  title: 'Beban Operasional',
                   value: 'Rp ${(cost / 1000).toStringAsFixed(0)}K',
-                  icon: Icons.cloud_download,
+                  icon: Icons.account_balance_wallet,
                   iconColor: AppTheme.warning,
-                  trend: 'Flat',
-                  subtitle: '500M Dedicated',
+                  trend: 'Terkontrol',
+                  subtitle: 'Pengeluaran ISP',
                 ),
               ),
             ],
