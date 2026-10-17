@@ -88,11 +88,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
       ];
     } else {
-      // Pelanggan: 5 Nav items matching modern ISP/Telkomsel design
+      // Pelanggan: 4 Nav items
       pages = [
         const CustomerHomeScreen(),     // Beranda
         const CustomerInvoicesScreen(), // Tagihan & Belanja
-        const CustomerChatbotScreen(),  // Center Chatbot AI CS
         const FeedbackScreen(),         // Saran & Kesan
         const ProfileScreen(),          // Akun Profil
       ];
@@ -106,11 +105,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
           icon: Icon(Icons.receipt_long_outlined),
           activeIcon: Icon(Icons.receipt_long),
           label: 'Tagihan',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.smart_toy_outlined),
-          activeIcon: Icon(Icons.smart_toy),
-          label: 'AI CS',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.rate_review_outlined),

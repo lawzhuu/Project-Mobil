@@ -10,6 +10,7 @@ import '../common/currency_time_screen.dart';
 import 'customer_chatbot_screen.dart';
 import 'customer_game_screen.dart';
 import 'customer_invoices_screen.dart';
+import 'customer_packages_screen.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -103,6 +104,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
+      floatingActionButton: _buildGameCtaFloatingButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: RefreshIndicator(
         onRefresh: _loadData,
         color: AppTheme.primary,
@@ -120,32 +123,22 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
-                    // 2. DAILY CHECK-IN / FIBER HEALTH BANNER
-                    _buildDailyCheckInBanner(),
-
-                    const SizedBox(height: 20),
-
-                    // 3. CATEGORY PILL TABS (Horizontal Scroll)
+                    // 2. CATEGORY PILL TABS (Horizontal Scroll & Filter)
                     _buildCategoryPills(),
 
                     const SizedBox(height: 20),
 
-                    // 4. "PAKET KHUSUS UNTUKMU" SECTION (Cards with Promo Badge)
+                    // 3. "PAKET KHUSUS UNTUKMU" SECTION (With 'Lihat Semua' CTA to full catalog)
                     _buildSpecialPackagesSection(activePackage),
 
                     const SizedBox(height: 24),
 
-                    // 5. MENU LAYANAN PELANGGAN (Interactive Quick Grid)
+                    // 4. MENU LAYANAN SIMA.NET (Minimalist, Clean, High UX)
                     _buildServiceGrid(),
 
-                    const SizedBox(height: 24),
-
-                    // 6. PILIHAN PAKET LAINNYA
-                    _buildOtherPackagesList(activePackage),
-
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 90), // Spacing for floating game CTA
                   ],
                 ),
               ),
@@ -249,7 +242,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   IconButton(
                     icon: const Icon(Icons.search, color: Colors.white, size: 22),
                     tooltip: 'Cari Paket',
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CustomerPackagesScreen(autoFocusSearch: true),
+                        ),
+                      );
+                    },
                   ),
                   IconButton(
                     icon: const Icon(Icons.headset_mic_outlined, color: Colors.white, size: 22),
@@ -561,55 +561,80 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  // --- DAILY CHECK-IN / HEALTH BANNER ---
-  Widget _buildDailyCheckInBanner() {
+  // --- FLOATING CTA: MINI GAME TILT FIBER (PROMO DISKON) ---
+  Widget _buildGameCtaFloatingButton() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x080F172A),
-            blurRadius: 10,
-            offset: Offset(0, 2),
+            color: const Color(0xFFEA580C).withOpacity(0.38),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEBF2FD),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.verified_outlined, color: AppTheme.primary, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Koneksi Fiber Optic Terverifikasi',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CustomerGameScreen()),
+            );
+          },
+          borderRadius: BorderRadius.circular(30),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.sports_esports_rounded,
+                    color: Color(0xFFEA580C),
+                    size: 20,
                   ),
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Status jaringan prima • Latensi stabil 3ms',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                const SizedBox(width: 10),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Ayo Main Game!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    Text(
+                      'Raih Diskon Tagihan 🎁',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(width: 4),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Color(0xFF94A3B8), size: 20),
-        ],
+        ),
       ),
     );
   }
@@ -672,9 +697,22 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   // --- PAKET KHUSUS UNTUKMU (Cards with Badges) ---
   Widget _buildSpecialPackagesSection(PackageModel activePackage) {
-    final promoPackages = _packages.isNotEmpty
-        ? _packages.take(3).toList()
-        : [activePackage];
+    List<PackageModel> filtered = _packages;
+    if (_selectedCategory != 'Semua') {
+      final sel = _selectedCategory.toLowerCase();
+      filtered = _packages.where((p) {
+        final cat = p.kategori.toLowerCase();
+        final name = p.nama.toLowerCase();
+        if (sel == 'internet fiber') return cat.contains('fiber') || name.contains('fiber');
+        if (sel == 'turbo home') return cat.contains('turbo') || name.contains('turbo');
+        if (sel == 'gamer sakti') return cat.contains('gamer') || name.contains('gamer');
+        if (sel == 'promo hemat') return cat.contains('promo') || cat.contains('hemat') || name.contains('promo') || name.contains('hemat') || name.contains('pelajar');
+        return cat == sel;
+      }).toList();
+    }
+    final promoPackages = filtered.isNotEmpty
+        ? filtered
+        : (_packages.isNotEmpty ? _packages.take(3).toList() : [activePackage]);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -691,14 +729,29 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               ),
             ),
             InkWell(
-              onTap: () {},
-              child: const Text(
-                'Lihat Semua',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primary,
-                ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CustomerPackagesScreen(
+                      initialCategory: _selectedCategory,
+                    ),
+                  ),
+                );
+              },
+              child: const Row(
+                children: [
+                  Text(
+                    'Lihat Semua',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                  SizedBox(width: 2),
+                  Icon(Icons.chevron_right, size: 16, color: AppTheme.primary),
+                ],
               ),
             ),
           ],
@@ -844,7 +897,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  // --- SERVICE QUICK ACTION GRID ---
+  // --- MENU LAYANAN SIMA.NET (MINIMALIS & COMPACT HIGH UX) ---
   Widget _buildServiceGrid() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -858,65 +911,54 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.15,
+        Row(
           children: [
-            _buildActionCard(
-              title: 'Tagihan & Bayar',
-              subtitle: 'Upload struk bukti transfer',
-              icon: Icons.receipt_long,
-              iconColor: AppTheme.primary,
-              badgeText: 'Penting',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
-                );
-              },
+            Expanded(
+              child: _buildMinimalServiceItem(
+                title: 'Tagihan & Bayar',
+                subtitle: 'Upload Bukti',
+                icon: Icons.receipt_long_rounded,
+                iconColor: AppTheme.primary,
+                bgColor: const Color(0xFFEFF6FF),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
+                  );
+                },
+              ),
             ),
-            _buildActionCard(
-              title: 'Chatbot AI CS',
-              subtitle: 'Bantuan 24/7 router & ODP',
-              icon: Icons.smart_toy_outlined,
-              iconColor: const Color(0xFF6366F1),
-              badgeText: '24/7',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CustomerChatbotScreen()),
-                );
-              },
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildMinimalServiceItem(
+                title: 'Tilt Fiber Game',
+                subtitle: 'Raih Diskon 🎁',
+                icon: Icons.sports_esports_rounded,
+                iconColor: const Color(0xFFEA580C),
+                bgColor: const Color(0xFFFFF7ED),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CustomerGameScreen()),
+                  );
+                },
+              ),
             ),
-            _buildActionCard(
-              title: 'Game Tilt Fiber',
-              subtitle: 'Sambungkan kabel ODP',
-              icon: Icons.sports_esports_outlined,
-              iconColor: const Color(0xFFD97706),
-              badgeText: 'Mini Game',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CustomerGameScreen()),
-                );
-              },
-            ),
-            _buildActionCard(
-              title: 'Kurs & Waktu',
-              subtitle: 'Konversi mata uang dunia',
-              icon: Icons.public,
-              iconColor: const Color(0xFF0284C7),
-              badgeText: 'Global',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CurrencyTimeScreen()),
-                );
-              },
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildMinimalServiceItem(
+                title: 'Kurs & Waktu',
+                subtitle: 'Valuta Global',
+                icon: Icons.public_rounded,
+                iconColor: const Color(0xFF0284C7),
+                bgColor: const Color(0xFFF0F9FF),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CurrencyTimeScreen()),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -924,210 +966,70 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  Widget _buildActionCard({
+  Widget _buildMinimalServiceItem({
     required String title,
     required String subtitle,
     required IconData icon,
     required Color iconColor,
-    required String badgeText,
+    required Color bgColor,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0A0F172A),
-              blurRadius: 12,
+              color: Color(0x080F172A),
+              blurRadius: 10,
               offset: Offset(0, 3),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: iconColor, size: 22),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: const TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-              ],
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: bgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- PILIHAN PAKET INTERNET LAINNYA ---
-  Widget _buildOtherPackagesList(PackageModel activePackage) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
+            const SizedBox(height: 8),
             Text(
-              'Pilihan Paket Internet Lainnya',
-              style: TextStyle(
-                fontSize: 16,
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F172A),
               ),
             ),
+            const SizedBox(height: 2),
             Text(
-              'Fiber Optic',
-              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              subtitle,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-
-        if (_isLoading)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else
-          ..._packages.where((p) => p.id != activePackage.id).map((pkg) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x080F172A),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEBF2FD),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.wifi, color: AppTheme.primary, size: 24),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          pkg.nama,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${pkg.kecepatanMbps} Mbps Unlimited • ${pkg.deskripsi}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Rp ${pkg.hargaIdr} / bln',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () => _showPackageDetailModal(pkg),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEBF2FD),
-                      foregroundColor: AppTheme.primary,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Text(
-                      'Pilih',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-      ],
+      ),
     );
   }
 

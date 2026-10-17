@@ -378,6 +378,34 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                                       ),
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF59E0B).withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: const Color(0xFFF59E0B)),
+                                        ),
+                                        child: Column(
+                                          children: const [
+                                            Text(
+                                              '🎁 SELAMAT! DAPAT DISKON 10%',
+                                              style: TextStyle(
+                                                color: Color(0xFFF59E0B),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            SizedBox(height: 4),
+                                            Text(
+                                              'Gunakan Kode: FIBERHEMAT10 saat bayar tagihan',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(color: Colors.white, fontSize: 11),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                       const SizedBox(height: 18),
                                       GlowingButton(
                                         text: 'MAIN LAGI',

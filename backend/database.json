@@ -107,6 +107,48 @@
       "kecepatan_mbps": 100,
       "harga_idr": 450000,
       "deskripsi": "Koneksi ultra-cepat fiber optic simetris untuk profesional, content creator, dan smart home."
+    },
+    {
+      "id": 4,
+      "nama": "Paket Fast Fiber 30",
+      "kecepatan_mbps": 30,
+      "harga_idr": 215000,
+      "deskripsi": "Internet fiber optic handal untuk WFH, download cepat, dan streaming HD bebas lag."
+    },
+    {
+      "id": 5,
+      "nama": "Paket Turbo Home 75",
+      "kecepatan_mbps": 75,
+      "harga_idr": 340000,
+      "deskripsi": "Keluarga besar aktif & smart TV multi-room, download file besar dalam hitungan detik."
+    },
+    {
+      "id": 6,
+      "nama": "Paket Gamer Sakti 100",
+      "kecepatan_mbps": 100,
+      "harga_idr": 399000,
+      "deskripsi": "Jalur khusus gaming prioritas rendah latensi (<5ms), anti spike & zero packet loss."
+    },
+    {
+      "id": 7,
+      "nama": "Paket Gamer Pro 150",
+      "kecepatan_mbps": 150,
+      "harga_idr": 520000,
+      "deskripsi": "Bandwidth simetris 1:1, live streaming YouTube/Twitch kualitas 1080p 60fps tanpa jeda."
+    },
+    {
+      "id": 8,
+      "nama": "Paket Promo Flash 60",
+      "kecepatan_mbps": 60,
+      "harga_idr": 239000,
+      "deskripsi": "Promo spesial kuota unlimited kecepatan ekstra fiber optic hemat bulanan."
+    },
+    {
+      "id": 9,
+      "nama": "Paket Promo Pelajar Hemat",
+      "kecepatan_mbps": 25,
+      "harga_idr": 150000,
+      "deskripsi": "Paket ramah kantong untuk pelajar & mahasiswa, riset kuliah & Google Classroom."
     }
   ],
   "invoices": [

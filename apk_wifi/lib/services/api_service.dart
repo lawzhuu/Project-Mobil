@@ -149,6 +149,48 @@ class ApiService {
         hargaIdr: 450000,
         deskripsi: 'Koneksi ultra-cepat simetris untuk profesional dan content creator.',
       ),
+      PackageModel(
+        id: 4,
+        nama: 'Paket Fast Fiber 30',
+        kecepatanMbps: 30,
+        hargaIdr: 215000,
+        deskripsi: 'Internet fiber optic handal untuk WFH, download cepat, dan streaming HD bebas lag.',
+      ),
+      PackageModel(
+        id: 5,
+        nama: 'Paket Turbo Home 75',
+        kecepatanMbps: 75,
+        hargaIdr: 340000,
+        deskripsi: 'Keluarga besar aktif & smart TV multi-room, download file besar dalam hitungan detik.',
+      ),
+      PackageModel(
+        id: 6,
+        nama: 'Paket Gamer Sakti 100',
+        kecepatanMbps: 100,
+        hargaIdr: 399000,
+        deskripsi: 'Jalur khusus gaming prioritas rendah latensi (<5ms), anti spike & zero packet loss.',
+      ),
+      PackageModel(
+        id: 7,
+        nama: 'Paket Gamer Pro 150',
+        kecepatanMbps: 150,
+        hargaIdr: 520000,
+        deskripsi: 'Bandwidth simetris 1:1, live streaming YouTube/Twitch kualitas 1080p 60fps tanpa jeda.',
+      ),
+      PackageModel(
+        id: 8,
+        nama: 'Paket Promo Flash 60',
+        kecepatanMbps: 60,
+        hargaIdr: 239000,
+        deskripsi: 'Promo spesial kuota unlimited kecepatan ekstra fiber optic hemat bulanan.',
+      ),
+      PackageModel(
+        id: 9,
+        nama: 'Paket Promo Pelajar Hemat',
+        kecepatanMbps: 25,
+        hargaIdr: 150000,
+        deskripsi: 'Paket ramah kantong untuk pelajar & mahasiswa, riset kuliah & Google Classroom.',
+      ),
     ];
   }
 
