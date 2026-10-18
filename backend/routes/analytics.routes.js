@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { SimpleLinearRegression } = require('ml-regression');
-const { GoogleGenAI } = require('@google/genai');
+const Groq = require('groq-sdk');
 const { loadDB } = require('../db');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
 
@@ -99,21 +99,22 @@ function computeRevenueForecastModel() {
   };
 }
 
-// Helper: Panggilan ke Google Gen AI (Gemini) untuk Translasi Insight Keuangan
-async function generateGeminiFinancialInsight({ monthlyData, forecast, growthRate, score, regressionModel }) {
-  const apiKey = process.env.GEMINI_API_KEY;
+// Helper: Panggilan ke Groq AI untuk Translasi Insight Keuangan
+async function generateGroqFinancialInsight({ monthlyData, forecast, growthRate, score, regressionModel }) {
+  const rawKey = process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || '';
+  const apiKey = rawKey.trim();
   const nextMonth = forecast[0] || {};
   const nextMonthRevJt = (nextMonth.pemasukan / 1000000).toFixed(1);
 
-  if (!apiKey || apiKey.trim() === '' || apiKey.includes('YOUR_GEMINI_API_KEY')) {
+  if (!apiKey || apiKey.includes('YOUR_GROQ_API_KEY') || apiKey.includes('YOUR_GEMINI_API_KEY')) {
     return {
-      insight_text: `Berdasarkan model regresi linier tren pemasukan (R² Score: ${(score.r2 * 100).toFixed(1)}%), omset bulan ${nextMonth.bulan} diproyeksikan mencapai Rp ${nextMonthRevJt} Juta dengan laju pertumbuhan bulanan +${growthRate}% MoM.\n\nRekomendasi Strategis:\n1. Prioritaskan alokasi bandwidth upstream Indibizz untuk mengantisipasi kenaikan trafik sejalan lonjakan omset.\n2. Lakukan retensi pelanggan aktif dengan penawaran upgrade paket fiber.\n\n(Catatan: Masukkan GEMINI_API_KEY Anda di file .env backend untuk mengaktifkan narasi live interaktif dari Google Gemini).`,
+      insight_text: `Berdasarkan model regresi linier tren pemasukan (R² Score: ${(score.r2 * 100).toFixed(1)}%), omset bulan ${nextMonth.bulan} diproyeksikan mencapai Rp ${nextMonthRevJt} Juta dengan laju pertumbuhan bulanan +${growthRate}% MoM.\n\nRekomendasi Strategis:\n1. Prioritaskan alokasi bandwidth upstream Indibizz untuk mengantisipasi kenaikan trafik sejalan lonjakan omset.\n2. Lakukan retensi pelanggan aktif dengan penawaran upgrade paket fiber.\n\n(Catatan: Masukkan GROQ_API_KEY Anda di file .env backend untuk mengaktifkan narasi live interaktif dari Groq AI).`,
       source: 'Local ML Engine (Offline / Template Fallback)',
       model_used: 'ml-regression + fallback template'
     };
   }
 
-  const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const modelName = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
   const prompt = `Anda adalah seorang Senior Financial AI Analyst untuk bisnis penyedia internet reseller (Sima.net).
 Berikut adalah data numerik hasil kalkulasi model Machine Learning (Linear Regression Least-Squares):
 - Data historis pemasukan 6 bulan: ${monthlyData.map(d => `${d.bulan}: Rp ${(d.pemasukan/1000000).toFixed(1)}Jt`).join(', ')}.
@@ -128,40 +129,37 @@ Instruksi Tugas:
 3. Tulis dalam Bahasa Indonesia yang formal dan profesional. Maksimal 120 kata.`;
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    let textResult = '';
+    const client = new Groq({ apiKey });
+    const completion = await client.chat.completions.create({
+      model: modelName,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 1,
+      max_completion_tokens: 2048,
+      top_p: 1,
+      reasoning_effort: 'medium',
+      stream: true,
+      stop: null
+    });
 
-    if (ai.interactions && typeof ai.interactions.create === 'function') {
-      try {
-        const interaction = await ai.interactions.create({
-          model: modelName,
-          input: prompt
-        });
-        textResult = interaction.output_text || (interaction.outputs && interaction.outputs[0]?.text);
-      } catch (err1) {
-        const genResult = await ai.models.generateContent({
-          model: modelName,
-          contents: prompt
-        });
-        textResult = genResult.text || (genResult.candidates && genResult.candidates[0]?.content?.parts?.[0]?.text);
-      }
-    } else {
-      const genResult = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt
-      });
-      textResult = genResult.text || (genResult.candidates && genResult.candidates[0]?.content?.parts?.[0]?.text);
+    let textResult = '';
+    for await (const chunk of completion) {
+      textResult += chunk.choices[0]?.delta?.content || '';
     }
 
     return {
       insight_text: textResult ? textResult.trim() : 'Analisis insight berhasil di-generate.',
-      source: `Google Gemini (${modelName})`,
+      source: `Groq (${modelName})`,
       model_used: modelName
     };
   } catch (err) {
-    console.error('[Gemini GenAI Error]:', err.message);
+    console.error('[Groq GenAI Error]:', err.message);
     return {
-      insight_text: `Proyeksi omset bulan ${nextMonth.bulan} terhitung mencapai Rp ${nextMonthRevJt} Juta (+${growthRate}% MoM) dengan keyakinan model ${(score.r2 * 100).toFixed(1)}%.\n\nCatatan LLM: Permintaan ke Gemini API mengalami kendala (${err.message}). Periksa kuota atau kunci GEMINI_API_KEY di file .env backend.`,
+      insight_text: `Proyeksi omset bulan ${nextMonth.bulan} terhitung mencapai Rp ${nextMonthRevJt} Juta (+${growthRate}% MoM) dengan keyakinan model ${(score.r2 * 100).toFixed(1)}%.\n\nCatatan LLM: Permintaan ke Groq API mengalami kendala (${err.message}). Periksa kuota atau kunci GROQ_API_KEY di file .env backend.`,
       source: 'Local ML Engine (API Error Fallback)',
       model_used: 'fallback'
     };
@@ -184,13 +182,13 @@ router.get('/analytics/forecast', authMiddleware, roleMiddleware(['admin']), (re
   });
 });
 
-// 2. POST /analytics/analyze-insight: Tombol "Mulai Analisis AI" (ML Hitung Angka -> Gemini Terjemahkan Insight)
+// 2. POST /analytics/analyze-insight: Tombol "Mulai Analisis AI" (ML Hitung Angka -> Groq Terjemahkan Insight)
 router.post('/analytics/analyze-insight', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   try {
     const { monthlyData, forecast, growthRate, score, regressionModel } = computeRevenueForecastModel();
 
-    // Jalankan LLM Gemini untuk mentranslasikan kalkulasi kuantitatif ke dalam narasi insight bisnis
-    const geminiResult = await generateGeminiFinancialInsight({
+    // Jalankan LLM Groq untuk mentranslasikan kalkulasi kuantitatif ke dalam narasi insight bisnis
+    const aiResult = await generateGroqFinancialInsight({
       monthlyData,
       forecast,
       growthRate,
@@ -201,14 +199,14 @@ router.post('/analytics/analyze-insight', authMiddleware, roleMiddleware(['admin
     return res.json({
       success: true,
       timestamp: new Date().toISOString(),
-      model_type: 'Composite AI: SimpleLinearRegression + Google Gemini LLM',
+      model_type: 'Composite AI: SimpleLinearRegression + Groq LLM',
       model_r2: parseFloat(score.r2.toFixed(4)),
       growth_rate_pct: growthRate,
       historical: monthlyData,
       forecast,
-      insight_text: geminiResult.insight_text,
-      source: geminiResult.source,
-      model_used: geminiResult.model_used
+      insight_text: aiResult.insight_text,
+      source: aiResult.source,
+      model_used: aiResult.model_used
     });
   } catch (error) {
     console.error('Error during AI insight analysis:', error);

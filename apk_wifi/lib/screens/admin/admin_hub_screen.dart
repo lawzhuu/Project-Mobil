@@ -90,7 +90,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     }
   }
 
-  // --- TRIGGER COMPOSITE AI: ML REGRESSION + GEMINI LLM INSIGHT ---
+  // --- TRIGGER COMPOSITE AI: ML REGRESSION + GROQ LLM INSIGHT ---
   Future<void> _triggerAiInsightAnalysis() async {
     setState(() => _isAnalyzingAi = true);
     try {
@@ -103,7 +103,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✨ Analisis AI & Gemini LLM Insight berhasil digenerate!'),
+              content: Text('✨ Analisis AI & Groq LLM Insight berhasil digenerate!'),
               backgroundColor: AppTheme.success,
             ),
           );
@@ -802,7 +802,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Jalankan model Machine Learning untuk menganalisis keuangan dan biarkan Google Gemini LLM mentranslasikan angka menjadi narasi rekomendasi strategi bisnis.',
+                  'Jalankan model Machine Learning untuk menganalisis keuangan dan biarkan Groq LLM mentranslasikan angka menjadi narasi rekomendasi strategi bisnis.',
                   style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                 ),
                 const SizedBox(height: 16),
@@ -831,7 +831,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                       : const Icon(Icons.auto_awesome, size: 20),
                   label: Text(
                     _isAnalyzingAi
-                        ? 'Sedang Menganalisis dengan AI & Gemini...'
+                        ? 'Sedang Menganalisis dengan AI & Groq...'
                         : 'Mulai Analisis AI & Generate Insight',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
@@ -895,9 +895,11 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                _aiInsightResult?['source']?.toString().contains('Gemini') == true
-                                    ? 'Google Gemini Live'
-                                    : 'ML Engine',
+                                _aiInsightResult?['source']?.toString().contains('Groq') == true
+                                    ? 'Groq AI Live'
+                                    : (_aiInsightResult?['source']?.toString().contains('Gemini') == true
+                                        ? 'Google Gemini Live'
+                                        : 'ML Engine'),
                                 style: const TextStyle(
                                   fontSize: 9,
                                   color: AppTheme.accent,
@@ -910,7 +912,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                       const SizedBox(height: 10),
                       Text(
                         _aiInsightResult?['insight_text'] ??
-                            'Tekan tombol "Mulai Analisis AI & Generate Insight" di atas. Sistem akan menghitung model regresi linier pemasukan dan meminta Google Gemini LLM merangkum narasi proyeksi serta rekomendasi bisnis untuk Anda.',
+                            'Tekan tombol "Mulai Analisis AI & Generate Insight" di atas. Sistem akan menghitung model regresi linier pemasukan dan meminta Groq LLM merangkum narasi proyeksi serta rekomendasi bisnis untuk Anda.',
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.5,

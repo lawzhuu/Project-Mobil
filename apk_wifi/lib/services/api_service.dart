@@ -638,7 +638,7 @@ class ApiService {
     return null;
   }
 
-  // --- COMPOSITE AI: ML REGRESSION + GEMINI LLM INSIGHT ---
+  // --- COMPOSITE AI: ML REGRESSION + GROQ LLM INSIGHT ---
   Future<Map<String, dynamic>?> runAiInsightAnalysis() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/analytics/analyze-insight');

@@ -1,5 +1,5 @@
 const express = require('express');
-const { GoogleGenAI } = require('@google/genai');
+const Groq = require('groq-sdk');
 const { loadDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth.middleware');
 
@@ -12,13 +12,14 @@ router.post('/chat', authMiddleware, async (req, res) => {
   const user = db.users.find(u => u.id === req.user.id) || {};
   const pkg = db.packages.find(p => p.id === user.paket_id);
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const rawKey = process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || '';
+  const apiKey = rawKey.trim();
 
-  // Jika GEMINI_API_KEY tersedia, panggil Google Gemini Gen AI
-  if (apiKey && apiKey.trim() !== '' && !apiKey.includes('YOUR_GEMINI_API_KEY')) {
+  // Jika API key tersedia, panggil Groq AI
+  if (apiKey && !apiKey.includes('YOUR_GROQ_API_KEY') && !apiKey.includes('YOUR_GEMINI_API_KEY')) {
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const client = new Groq({ apiKey });
+      const modelName = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
       const prompt = `Anda adalah Customer Support AI profesional untuk Sima.net (Penyedia Internet Reseller & Smart Billing).
 Informasi Pelanggan:
 - Nama: ${user.nama || 'Pelanggan'}
@@ -30,39 +31,37 @@ Pesan Pelanggan: "${message}"
 
 Berikan respon bantuan yang ramah, solutif, ringkas, dan jelas dalam Bahasa Indonesia.`;
 
+      const completion = await client.chat.completions.create({
+        model: modelName,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 1,
+        max_completion_tokens: 2048,
+        top_p: 1,
+        reasoning_effort: 'medium',
+        stream: true,
+        stop: null
+      });
+
       let reply = '';
-      if (ai.interactions && typeof ai.interactions.create === 'function') {
-        try {
-          const interaction = await ai.interactions.create({
-            model: modelName,
-            input: prompt
-          });
-          reply = interaction.output_text || (interaction.outputs && interaction.outputs[0]?.text);
-        } catch (err1) {
-          const genResult = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt
-          });
-          reply = genResult.text || (genResult.candidates && genResult.candidates[0]?.content?.parts?.[0]?.text);
-        }
-      } else {
-        const genResult = await ai.models.generateContent({
-          model: modelName,
-          contents: prompt
-        });
-        reply = genResult.text || (genResult.candidates && genResult.candidates[0]?.content?.parts?.[0]?.text);
+      for await (const chunk of completion) {
+        reply += chunk.choices[0]?.delta?.content || '';
       }
 
       if (reply && reply.trim() !== '') {
         return res.json({
           success: true,
           reply: reply.trim(),
-          source: `Gemini (${modelName})`,
+          source: `Groq (${modelName})`,
           timestamp: new Date().toISOString()
         });
       }
     } catch (err) {
-      console.warn('[Gemini Chatbot Fallback Triggered]:', err.message);
+      console.warn('[Groq Chatbot Fallback Triggered]:', err.message);
     }
   }
 
@@ -83,7 +82,7 @@ Berikan respon bantuan yang ramah, solutif, ringkas, dan jelas dalam Bahasa Indo
   return res.json({
     success: true,
     reply: botReply,
-    source: 'Context Engine (Set GEMINI_API_KEY in .env for Live Gemini)',
+    source: 'Context Engine (Set GROQ_API_KEY in .env for Live Groq)',
     timestamp: new Date().toISOString()
   });
 });
