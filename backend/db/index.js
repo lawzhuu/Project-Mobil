@@ -268,32 +268,99 @@ function getInitialData() {
         created_at: '2026-10-12T11:00:00.000Z'
       }
     ],
-    devices: []
+    devices: [],
+    package_requests: []
   };
 }
 
+let inMemoryData = null;
+
+async function initDB() {
+  const supabaseDb = require('../services/supabase_db.service');
+  const { isSupabaseConfigured } = require('../config/supabase');
+
+  if (isSupabaseConfigured()) {
+    console.log('[Database] Supabase is configured. Initializing sync from Supabase...');
+    const remoteData = await supabaseDb.pullAll();
+    if (remoteData && remoteData.users && remoteData.users.length > 0) {
+      // Pertahankan package_requests lokal jika di Supabase belum ada tabelnya
+      let currentLocal = {};
+      try {
+        if (fs.existsSync(DB_FILE)) {
+          currentLocal = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+        }
+      } catch (_) {}
+
+      if ((!remoteData.package_requests || remoteData.package_requests.length === 0) && currentLocal.package_requests) {
+        remoteData.package_requests = currentLocal.package_requests;
+      }
+
+      inMemoryData = remoteData;
+      fs.writeFileSync(DB_FILE, JSON.stringify(remoteData, null, 2), 'utf8');
+      console.log('[Database] Local cache successfully synced with Supabase PostgreSQL.');
+      return inMemoryData;
+    } else {
+      console.log('[Database] Remote tables empty or initial startup. Keeping current data.');
+    }
+  } else {
+    console.log('[Database] Running in local mode (SUPABASE_URL / SUPABASE_KEY not yet set).');
+  }
+
+  return loadDB();
+}
+
 function loadDB() {
+  if (inMemoryData) {
+    if (!inMemoryData.package_requests) inMemoryData.package_requests = [];
+    return inMemoryData;
+  }
+
   if (!fs.existsSync(DB_FILE)) {
     const data = getInitialData();
     saveDB(data);
+    inMemoryData = data;
     return data;
   }
   try {
     const raw = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(raw);
+    inMemoryData = JSON.parse(raw);
+    if (!inMemoryData.package_requests) inMemoryData.package_requests = [];
+    return inMemoryData;
   } catch (err) {
     const data = getInitialData();
     saveDB(data);
+    inMemoryData = data;
     return data;
   }
 }
 
 function saveDB(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+  inMemoryData = data;
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('[Database] Failed to write local DB_FILE:', err.message);
+  }
+
+  // If Supabase is configured, trigger asynchronous background sync
+  const { isSupabaseConfigured } = require('../config/supabase');
+  if (isSupabaseConfigured()) {
+    const supabaseDb = require('../services/supabase_db.service');
+    // Non-blocking sync to keep responses fast
+    setImmediate(async () => {
+      try {
+        await supabaseDb.pushAll(data);
+      } catch (err) {
+        console.warn('[Database] Supabase background sync note:', err.message);
+      }
+    });
+  }
 }
 
 module.exports = {
   loadDB,
   saveDB,
+  initDB,
   getInitialData
 };
+

@@ -21,10 +21,17 @@ const STATIC_RATES = {
   }
 };
 
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+const SUPABASE_STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'profile-photos';
+
 module.exports = {
   PORT,
   JWT_SECRET,
   DB_FILE,
   UPLOAD_DIR,
-  STATIC_RATES
+  STATIC_RATES,
+  SUPABASE_URL,
+  SUPABASE_KEY,
+  SUPABASE_STORAGE_BUCKET
 };

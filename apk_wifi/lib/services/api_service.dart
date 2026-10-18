@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ import '../models/feedback_model.dart';
 import '../models/invoice_model.dart';
 import '../models/ledger_model.dart';
 import '../models/package_model.dart';
+import '../models/package_request_model.dart';
 import '../models/task_model.dart';
 import '../models/upstream_bill_model.dart';
 import '../models/user_model.dart';
@@ -116,6 +118,8 @@ class ApiService {
     return null;
   }
 
+  Future<UserModel?> getProfile() => getMe();
+
   Future<Map<String, dynamic>> updateProfile({
     required String nama,
     required String noHp,
@@ -128,25 +132,44 @@ class ApiService {
   }) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/me');
-      final res = await http.put(
-        url,
-        headers: _headers,
-        body: jsonEncode({
-          'nama': nama,
-          'no_hp': noHp,
-          'negara': negara,
-          'mata_uang': mataUang,
-          'zona_waktu': zonaWaktu,
-          'alamat': alamat,
-          'lat': lat,
-          'lng': lng,
-        }),
-      ).timeout(const Duration(seconds: 8));
+      final res = await http
+          .put(
+            url,
+            headers: _headers,
+            body: jsonEncode({
+              'nama': nama,
+              'no_hp': noHp,
+              'negara': negara,
+              'mata_uang': mataUang,
+              'zona_waktu': zonaWaktu,
+              'alamat': alamat,
+              'lat': lat,
+              'lng': lng,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
 
       return jsonDecode(res.body);
     } catch (e) {
       debugPrint('[ApiService] updateProfile error: $e');
       return {'success': false, 'message': 'Gagal memperbarui profil: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> uploadProfilePhoto(File file) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/me/photo');
+      final req = http.MultipartRequest('POST', url);
+      if (_authToken != null) {
+        req.headers['Authorization'] = 'Bearer $_authToken';
+      }
+      req.files.add(await http.MultipartFile.fromPath('foto', file.path));
+      final streamed = await req.send().timeout(const Duration(seconds: 20));
+      final res = await http.Response.fromStream(streamed);
+      return jsonDecode(res.body);
+    } catch (e) {
+      debugPrint('[ApiService] uploadProfilePhoto error: $e');
+      return {'success': false, 'message': 'Gagal mengunggah foto profil: $e'};
     }
   }
 
@@ -319,6 +342,102 @@ class ApiService {
     } catch (e) {
       debugPrint('[ApiService] activateCustomer error: $e');
       return false;
+    }
+  }
+
+  // --- PACKAGE CHANGE REQUEST WORKFLOW (OPTION A) ---
+  Future<Map<String, dynamic>> submitPackageChangeRequest({
+    required int packageId,
+    required String tipe,
+    required String alasan,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/packages/change-request');
+      final res = await http
+          .post(
+            url,
+            headers: _headers,
+            body: jsonEncode({
+              'paket_id': packageId,
+              'tipe': tipe,
+              'alasan': alasan,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(res.body);
+      return data is Map<String, dynamic> ? data : {'success': false, 'message': 'Format respons tidak valid'};
+    } catch (e) {
+      debugPrint('[ApiService] submitPackageChangeRequest error: $e');
+      return {'success': false, 'message': 'Gagal mengajukan perubahan paket: $e'};
+    }
+  }
+
+  Future<PackageRequestModel?> getCustomerPendingPackageRequest() async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/customer/change-request');
+      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true && data['pending'] != null) {
+          return PackageRequestModel.fromJson(data['pending']);
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getCustomerPendingPackageRequest error: $e');
+    }
+    return null;
+  }
+
+  Future<List<PackageRequestModel>> getAdminPackageRequests() async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/admin/package-requests');
+      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true && data['requests'] is List) {
+          return (data['requests'] as List)
+              .map((r) => PackageRequestModel.fromJson(r))
+              .toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getAdminPackageRequests error: $e');
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> approvePackageRequest(int requestId, {String? adminCatatan}) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/admin/package-requests/$requestId/approve');
+      final res = await http
+          .post(
+            url,
+            headers: _headers,
+            body: jsonEncode({'admin_catatan': adminCatatan ?? 'Disetujui oleh admin'}),
+          )
+          .timeout(const Duration(seconds: 10));
+      return jsonDecode(res.body);
+    } catch (e) {
+      debugPrint('[ApiService] approvePackageRequest error: $e');
+      return {'success': false, 'message': 'Gagal menyetujui pengajuan: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> rejectPackageRequest(int requestId, {String? adminCatatan}) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/admin/package-requests/$requestId/reject');
+      final res = await http
+          .post(
+            url,
+            headers: _headers,
+            body: jsonEncode({'admin_catatan': adminCatatan ?? 'Ditolak oleh admin'}),
+          )
+          .timeout(const Duration(seconds: 10));
+      return jsonDecode(res.body);
+    } catch (e) {
+      debugPrint('[ApiService] rejectPackageRequest error: $e');
+      return {'success': false, 'message': 'Gagal menolak pengajuan: $e'};
     }
   }
 

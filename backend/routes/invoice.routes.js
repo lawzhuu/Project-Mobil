@@ -5,6 +5,8 @@ const { calculateBlockHash } = require('../utils/hash');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
 const upload = require('../middleware/upload.middleware');
 
+const { uploadFile } = require('../services/storage.service');
+
 const router = express.Router();
 
 // Get invoices (Customer views own; Admin views all)
@@ -62,7 +64,7 @@ router.post('/invoices', authMiddleware, roleMiddleware(['admin']), (req, res) =
 });
 
 // Customer upload payment receipt
-router.post('/payments', authMiddleware, upload.single('bukti'), (req, res) => {
+router.post('/payments', authMiddleware, upload.single('bukti'), async (req, res) => {
   const db = loadDB();
   const invoice_id = parseInt(req.body.invoice_id);
   const invoice = db.invoices.find(i => i.id === invoice_id);
@@ -71,7 +73,10 @@ router.post('/payments', authMiddleware, upload.single('bukti'), (req, res) => {
     return res.status(404).json({ success: false, message: 'Tagihan tidak ditemukan' });
   }
 
-  const bukti_path = req.file ? `/uploads/${req.file.filename}` : (req.body.bukti_path || '/uploads/sample_receipt.png');
+  let bukti_path = req.body.bukti_path || '/uploads/sample_receipt.png';
+  if (req.file) {
+    bukti_path = await uploadFile(req.file, 'receipts');
+  }
 
   // Check if a payment record already exists
   let payment = db.payments.find(p => p.invoice_id === invoice_id);

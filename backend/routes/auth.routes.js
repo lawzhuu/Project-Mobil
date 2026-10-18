@@ -125,8 +125,10 @@ router.get('/me', authMiddleware, (req, res) => {
   return res.json({ success: true, user: safeUser });
 });
 
+const { uploadFile } = require('../services/storage.service');
+
 // Update current user profile & avatar photo
-router.put('/me', authMiddleware, upload.single('foto'), (req, res) => {
+router.put('/me', authMiddleware, upload.single('foto'), async (req, res) => {
   const db = loadDB();
   const idx = db.users.findIndex(u => u.id === req.user.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
@@ -140,8 +142,12 @@ router.put('/me', authMiddleware, upload.single('foto'), (req, res) => {
   if (mata_uang) db.users[idx].mata_uang = mata_uang;
   if (lat !== undefined && lat !== null) db.users[idx].lat = parseFloat(lat);
   if (lng !== undefined && lng !== null) db.users[idx].lng = parseFloat(lng);
+  
   if (req.file) {
-    db.users[idx].foto = `/uploads/${req.file.filename}`;
+    const uploadedUrl = await uploadFile(req.file, 'avatars');
+    if (uploadedUrl) {
+      db.users[idx].foto = uploadedUrl;
+    }
   }
 
   saveDB(db);
@@ -149,4 +155,31 @@ router.put('/me', authMiddleware, upload.single('foto'), (req, res) => {
   return res.json({ success: true, message: 'Profil berhasil diperbarui', user: safeUser });
 });
 
+// Dedicated photo avatar upload endpoint
+router.post('/me/photo', authMiddleware, upload.single('foto'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'File foto wajib diunggah' });
+  }
+
+  const db = loadDB();
+  const idx = db.users.findIndex(u => u.id === req.user.id);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
+
+  const uploadedUrl = await uploadFile(req.file, 'avatars');
+  if (uploadedUrl) {
+    db.users[idx].foto = uploadedUrl;
+    saveDB(db);
+    const { password_hash: _, ...safeUser } = db.users[idx];
+    return res.json({
+      success: true,
+      message: 'Foto profil berhasil diunggah ke storage!',
+      foto: uploadedUrl,
+      user: safeUser
+    });
+  } else {
+    return res.status(500).json({ success: false, message: 'Gagal mengunggah foto profil' });
+  }
+});
+
 module.exports = router;
+

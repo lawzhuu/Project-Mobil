@@ -35,23 +35,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
         imageQuality: 85,
       );
       if (picked != null) {
+        final imageFile = File(picked.path);
         setState(() {
-          _localImageFile = File(picked.path);
+          _localImageFile = imageFile;
         });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  ),
+                  SizedBox(width: 12),
+                  Text('Mengunggah foto profil ke Storage...'),
+                ],
+              ),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
+        final res = await ApiService.instance.uploadProfilePhoto(imageFile);
+        if (res['success'] == true) {
+          final currentUser = AuthService.instance.currentUser;
+          if (currentUser != null && res['foto'] != null) {
+            final updated = currentUser.copyWith(foto: res['foto']);
+            AuthService.instance.updateUserProfile(updated);
+          }
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Foto profil berhasil diunggah dan disimpan ke Storage!'),
+                backgroundColor: AppTheme.success,
+              ),
+            );
+            setState(() {});
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(res['message'] ?? 'Gagal mengunggah foto profil'),
+                backgroundColor: AppTheme.warning,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Foto profil berhasil diperbarui!'),
-            backgroundColor: AppTheme.success,
+          SnackBar(
+            content: Text('Gagal memilih gambar: $e'),
+            backgroundColor: AppTheme.error,
           ),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal memilih gambar: $e'),
-          backgroundColor: AppTheme.error,
-        ),
-      );
     }
   }
 
@@ -776,12 +819,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         child: CircleAvatar(
                           radius: 46,
-                          backgroundColor: AppTheme.surfaceElevated,
                           backgroundImage: _localImageFile != null
                               ? FileImage(_localImageFile!) as ImageProvider
                               : (user.foto.isNotEmpty
-                                  ? NetworkImage('${AppConfig.baseUrl}${user.foto}') as ImageProvider
+                                  ? NetworkImage(AppConfig.resolveImageUrl(user.foto)) as ImageProvider
                                   : null),
+                          onBackgroundImageError: (exception, stackTrace) {
+                            debugPrint('[ProfileScreen] Failed loading avatar: $exception');
+                          },
                           child: (_localImageFile == null && user.foto.isEmpty)
                               ? const Icon(Icons.person, size: 54, color: AppTheme.primary)
                               : null,

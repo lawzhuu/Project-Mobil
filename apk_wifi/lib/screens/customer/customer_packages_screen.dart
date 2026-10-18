@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../../config/app_theme.dart';
 import '../../models/package_model.dart';
+import '../../models/package_request_model.dart';
 import '../../models/user_model.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -21,6 +23,7 @@ class CustomerPackagesScreen extends StatefulWidget {
 
 class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
   List<PackageModel> _packages = [];
+  PackageRequestModel? _pendingRequest;
   bool _isLoading = true;
   String _selectedCategory = 'Semua';
   final TextEditingController _searchController = TextEditingController();
@@ -37,7 +40,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialCategory != null && _categories.contains(widget.initialCategory)) {
+    if (widget.initialCategory != null &&
+        _categories.contains(widget.initialCategory)) {
       _selectedCategory = widget.initialCategory!;
     }
     _loadPackages();
@@ -58,10 +62,13 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
 
   Future<void> _loadPackages() async {
     try {
-      final list = await ApiService.instance.getPackages();
+      final pkgsFuture = ApiService.instance.getPackages();
+      final pendingFuture = ApiService.instance.getCustomerPendingPackageRequest();
+      final res = await Future.wait([pkgsFuture, pendingFuture]);
       if (mounted) {
         setState(() {
-          _packages = list;
+          _packages = res[0] as List<PackageModel>;
+          _pendingRequest = res[1] as PackageRequestModel?;
           _isLoading = false;
         });
       }
@@ -81,15 +88,18 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
         final cat = pkg.kategori.toLowerCase();
         final sel = _selectedCategory.toLowerCase();
         if (sel == 'internet fiber') {
-          if (!cat.contains('fiber') && !pkg.nama.toLowerCase().contains('fiber')) {
+          if (!cat.contains('fiber') &&
+              !pkg.nama.toLowerCase().contains('fiber')) {
             return false;
           }
         } else if (sel == 'turbo home') {
-          if (!cat.contains('turbo') && !pkg.nama.toLowerCase().contains('turbo')) {
+          if (!cat.contains('turbo') &&
+              !pkg.nama.toLowerCase().contains('turbo')) {
             return false;
           }
         } else if (sel == 'gamer sakti') {
-          if (!cat.contains('gamer') && !pkg.nama.toLowerCase().contains('gamer')) {
+          if (!cat.contains('gamer') &&
+              !pkg.nama.toLowerCase().contains('gamer')) {
             return false;
           }
         } else if (sel == 'promo hemat') {
@@ -109,7 +119,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
       if (query.isNotEmpty) {
         final matchName = pkg.nama.toLowerCase().contains(query);
         final matchDesc = pkg.deskripsi.toLowerCase().contains(query);
-        final matchSpeed = '${pkg.kecepatanMbps} mbps'.contains(query) ||
+        final matchSpeed =
+            '${pkg.kecepatanMbps} mbps'.contains(query) ||
             pkg.kecepatanMbps.toString().contains(query);
         final matchCategory = pkg.kategori.toLowerCase().contains(query);
 
@@ -146,6 +157,7 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
       ),
       body: Column(
         children: [
+          _buildPendingRequestBanner(),
           // 1. TOP SEARCH & FILTER BAR
           Container(
             color: Colors.white,
@@ -163,14 +175,28 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     onChanged: (_) => setState(() {}),
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF0F172A),
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Cari paket, kecepatan Mbps, atau kebutuhan...',
-                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 20),
+                      hintStyle: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Color(0xFF64748B),
+                        size: 20,
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 18),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Color(0xFF64748B),
+                                size: 18,
+                              ),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() {});
@@ -178,7 +204,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                             )
                           : null,
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -205,12 +234,19 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                         borderRadius: BorderRadius.circular(20),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.primary : const Color(0xFFF1F5F9),
+                            color: isSelected
+                                ? AppTheme.primary
+                                : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isSelected ? AppTheme.primary : const Color(0xFFE2E8F0),
+                              color: isSelected
+                                  ? AppTheme.primary
+                                  : const Color(0xFFE2E8F0),
                             ),
                           ),
                           child: Center(
@@ -218,8 +254,12 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                               cat,
                               style: TextStyle(
                                 fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                color: isSelected ? Colors.white : const Color(0xFF475569),
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF475569),
                               ),
                             ),
                           ),
@@ -237,20 +277,20 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : filtered.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                        onRefresh: _loadPackages,
-                        color: AppTheme.primary,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) {
-                            final pkg = filtered[index];
-                            final isCurrent = pkg.id == activePackageId;
-                            return _buildPackageCard(pkg, isCurrent);
-                          },
-                        ),
-                      ),
+                ? _buildEmptyState()
+                : RefreshIndicator(
+                    onRefresh: _loadPackages,
+                    color: AppTheme.primary,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final pkg = filtered[index];
+                        final isCurrent = pkg.id == activePackageId;
+                        return _buildPackageCard(pkg, isCurrent);
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -341,7 +381,9 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: isCurrent ? AppTheme.primary.withOpacity(0.08) : const Color(0x0A0F172A),
+            color: isCurrent
+                ? AppTheme.primary.withOpacity(0.08)
+                : const Color(0x0A0F172A),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -359,7 +401,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: badgeColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(8),
@@ -383,7 +428,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                     if (isCurrent) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFDCFCE7),
                           borderRadius: BorderRadius.circular(8),
@@ -391,7 +439,11 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.check_circle, size: 12, color: Color(0xFF16A34A)),
+                            Icon(
+                              Icons.check_circle,
+                              size: 12,
+                              color: Color(0xFF16A34A),
+                            ),
                             SizedBox(width: 4),
                             Text(
                               'Paket Aktif',
@@ -410,7 +462,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
 
                 // Speed Pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(12),
@@ -499,17 +554,27 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                 ElevatedButton(
                   onPressed: () => _showPackageDetailModal(pkg, isCurrent),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isCurrent ? const Color(0xFFF1F5F9) : AppTheme.primary,
-                    foregroundColor: isCurrent ? const Color(0xFF64748B) : Colors.white,
+                    backgroundColor: isCurrent
+                        ? const Color(0xFFF1F5F9)
+                        : AppTheme.primary,
+                    foregroundColor: isCurrent
+                        ? const Color(0xFF64748B)
+                        : Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: Text(
                     isCurrent ? 'Detail Paket' : 'Pilih Paket',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -586,7 +651,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(10),
@@ -606,7 +674,11 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
 
               Text(
                 pkg.deskripsi,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -621,11 +693,17 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   children: [
                     _buildModalSpecRow('Kategori', pkg.kategori),
                     const Divider(color: Color(0xFFE2E8F0), height: 16),
-                    _buildModalSpecRow('Bandwidth', '${pkg.kecepatanMbps} Mbps Simetris (1:1)'),
+                    _buildModalSpecRow(
+                      'Bandwidth',
+                      '${pkg.kecepatanMbps} Mbps Simetris (1:1)',
+                    ),
                     const Divider(color: Color(0xFFE2E8F0), height: 16),
                     _buildModalSpecRow('Kuota / FUP', 'Unlimited Tanpa FUP'),
                     const Divider(color: Color(0xFFE2E8F0), height: 16),
-                    _buildModalSpecRow('Harga', 'Rp ${_formatRupiah(pkg.hargaIdr)} / bulan'),
+                    _buildModalSpecRow(
+                      'Harga',
+                      'Rp ${_formatRupiah(pkg.hargaIdr)} / bulan',
+                    ),
                   ],
                 ),
               ),
@@ -635,19 +713,34 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isCurrent
-                            ? 'Ini adalah paket aktif Anda saat ini.'
-                            : 'Permintaan berlangganan paket "${pkg.nama}" berhasil diajukan!',
+                  if (isCurrent) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Ini adalah paket aktif Anda saat ini.'),
+                        backgroundColor: Color(0xFF475569),
                       ),
-                      backgroundColor: isCurrent ? const Color(0xFF475569) : AppTheme.primary,
-                    ),
-                  );
+                    );
+                    return;
+                  }
+
+                  if (_pendingRequest != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Anda masih memiliki pengajuan ke "${_pendingRequest!.paketBaruNama}" yang sedang ditinjau admin.',
+                        ),
+                        backgroundColor: const Color(0xFFD97706),
+                      ),
+                    );
+                    return;
+                  }
+
+                  _showChangeRequestSheet(pkg);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isCurrent ? const Color(0xFF64748B) : AppTheme.primary,
+                  backgroundColor: isCurrent
+                      ? const Color(0xFF64748B)
+                      : (_pendingRequest != null ? const Color(0xFFF59E0B) : AppTheme.primary),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -655,12 +748,294 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   ),
                 ),
                 child: Text(
-                  isCurrent ? 'Tutup' : 'Konfirmasi Pilih Paket',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  isCurrent
+                      ? 'Tutup'
+                      : (_pendingRequest != null
+                          ? 'Pengajuan Sedang Ditinjau Admin'
+                          : 'Ajukan Perubahan Paket'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPendingRequestBanner() {
+    if (_pendingRequest == null) return const SizedBox.shrink();
+    final req = _pendingRequest!;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3C7),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.hourglass_top, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pengajuan Paket Sedang Ditinjau Admin',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${req.tipe}: ${req.paketLamaNama} ➔ ${req.paketBaruNama} (${req.paketBaruKecepatan} Mbps)',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFB45309),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFF59E0B)),
+            ),
+            child: const Text(
+              'Pending',
+              style: TextStyle(
+                color: Color(0xFFB45309),
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangeRequestSheet(PackageModel targetPkg) {
+    final user = AuthService.instance.currentUser;
+    final currentPkgId = user?.paketId ?? 2;
+    final currentPkg = _packages.firstWhere(
+      (p) => p.id == currentPkgId,
+      orElse: () => _packages.isNotEmpty ? _packages.first : targetPkg,
+    );
+
+    final isUpgrade = targetPkg.kecepatanMbps > currentPkg.kecepatanMbps;
+    String selectedTipe = isUpgrade ? 'Upgrade Kecepatan' : 'Hemat Biaya (Downgrade)';
+    final reasonController = TextEditingController(
+      text: isUpgrade
+          ? 'Membutuhkan bandwidth lebih tinggi untuk streaming 4K dan gaming stabil.'
+          : 'Penyesuaian kebutuhan penggunaan internet keluarga.',
+    );
+    final diffPrice = targetPkg.hargaIdr - currentPkg.hargaIdr;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 22,
+                right: 22,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Pengajuan Perubahan Paket (Approval Admin)',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Permintaan akan dikirimkan ke Admin Hub untuk ditinjau dan disetujui.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Perbandingan Paket
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Paket Saat Ini:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                            Text('${currentPkg.nama} (${currentPkg.kecepatanMbps}M)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                        const Divider(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Paket Tujuan:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                            Text('${targetPkg.nama} (${targetPkg.kecepatanMbps}M)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                          ],
+                        ),
+                        const Divider(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Selisih Harga:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                            Text(
+                              diffPrice >= 0 ? '+Rp ${_formatRupiah(diffPrice)} / bln' : '-Rp ${_formatRupiah(-diffPrice)} / bln',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: diffPrice >= 0 ? const Color(0xFF059669) : const Color(0xFF2563EB),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Tipe Pengajuan
+                  const Text('Tipe Pengajuan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    value: selectedTipe,
+                    dropdownColor: Colors.white,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Upgrade Kecepatan', child: Text('🚀 Upgrade Kecepatan (Koneksi Lebih Cepat)')),
+                      DropdownMenuItem(value: 'Hemat Biaya (Downgrade)', child: Text('💰 Hemat Biaya (Penyesuaian Budget)')),
+                      DropdownMenuItem(value: 'Ganti Paket Khusus', child: Text('✨ Ganti Paket Khusus (Promo / Gamer)')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) setModalState(() => selectedTipe = v);
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Alasan
+                  const Text('Alasan / Kebutuhan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reasonController,
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                    decoration: InputDecoration(
+                      hintText: 'Tuliskan alasan pengajuan perubahan paket...',
+                      hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.all(12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  ElevatedButton(
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      Navigator.pop(ctx);
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Mengirimkan pengajuan ke admin...'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+
+                      final res = await ApiService.instance.submitPackageChangeRequest(
+                        packageId: targetPkg.id,
+                        tipe: selectedTipe,
+                        alasan: reasonController.text.trim(),
+                      );
+
+                      if (!mounted) return;
+
+                      if (res['success'] == true) {
+                        await _loadPackages();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(res['message'] ?? 'Pengajuan berhasil dikirim!'),
+                            backgroundColor: AppTheme.success,
+                          ),
+                        );
+                      } else {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(res['message'] ?? 'Gagal mengajukan perubahan paket'),
+                            backgroundColor: AppTheme.error,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'Kirim Pengajuan ke Admin',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

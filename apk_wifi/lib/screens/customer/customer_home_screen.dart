@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+
+import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
 import '../../models/invoice_model.dart';
 import '../../models/package_model.dart';
+import '../../models/package_request_model.dart';
 import '../../models/user_model.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
-import '../../widgets/custom_card.dart';
 import '../common/currency_time_screen.dart';
 import '../common/feedback_screen.dart';
 import 'customer_chatbot_screen.dart';
@@ -23,16 +25,33 @@ class CustomerHomeScreen extends StatefulWidget {
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   List<PackageModel> _packages = [];
   List<InvoiceModel> _invoices = [];
+  PackageRequestModel? _pendingRequest;
+  UserModel? _currentUser;
   bool _isLoading = true;
   String _selectedCategory = 'Semua';
 
-  final List<String> _categories = [
-    'Semua',
-    'Internet Fiber',
-    'Turbo Home',
-    'Gamer Sakti',
-    'Promo Hemat',
-  ];
+  List<String> get _categories {
+    final set = <String>{'Semua'};
+    for (final p in _packages) {
+      if (p.kategori.trim().isNotEmpty) {
+        set.add(p.kategori.trim());
+      }
+    }
+    return set.toList();
+  }
+
+  String _formatRupiah(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+  }
+
+  String _formatZeroBalance(String mataUang) {
+    if (mataUang == 'USD') return '\$0.00';
+    if (mataUang == 'EUR') return '€0.00';
+    return 'Rp 0';
+  }
 
   @override
   void initState() {
@@ -42,14 +61,23 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   Future<void> _loadData() async {
     try {
+      final profileFuture = ApiService.instance.getMe();
       final pkgsFuture = ApiService.instance.getPackages();
       final invsFuture = ApiService.instance.getInvoices();
-      final results = await Future.wait([pkgsFuture, invsFuture]);
+      final pendingFuture = ApiService.instance.getCustomerPendingPackageRequest();
+      final results = await Future.wait([pkgsFuture, invsFuture, pendingFuture, profileFuture]);
 
       if (mounted) {
+        final profile = results[3] as UserModel?;
+        if (profile != null) {
+          AuthService.instance.updateUserProfile(profile);
+        }
+
         setState(() {
           _packages = results[0] as List<PackageModel>;
           _invoices = results[1] as List<InvoiceModel>;
+          _pendingRequest = results[2] as PackageRequestModel?;
+          _currentUser = profile ?? AuthService.instance.currentUser;
           _isLoading = false;
         });
       }
@@ -64,40 +92,49 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     try {
       return _invoices.firstWhere((i) => i.status == 'belum');
     } catch (_) {
-      return _invoices.isNotEmpty ? _invoices.first : null;
+      return null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = AuthService.instance.currentUser ??
+    final user = _currentUser ?? AuthService.instance.currentUser;
+
+    if (user == null && _isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final safeUser = user ??
         UserModel(
-          id: 2,
-          nama: 'Budi Santoso',
-          email: 'budi@sima.net',
-          noHp: '0812-3456-7890',
+          id: 0,
+          nama: 'Pelanggan Sima.net',
+          email: '',
+          noHp: '',
           role: 'pelanggan',
           negara: 'Indonesia',
           mataUang: 'IDR',
           zonaWaktu: 'WIB',
-          alamat: 'Jl. Malioboro No. 45, Yogyakarta',
+          alamat: '',
           lat: -7.7956,
           lng: 110.3695,
           foto: '',
           status: 'active',
-          paketId: 2,
+          paketId: null,
         );
 
     final activePackage = _packages.firstWhere(
-      (p) => p.id == user.paketId,
+      (p) => p.id == safeUser.paketId,
       orElse: () => _packages.isNotEmpty
           ? _packages.first
           : PackageModel(
-              id: 2,
-              nama: 'Paket Turbo Home 50',
-              kecepatanMbps: 50,
-              hargaIdr: 275000,
-              deskripsi: 'Streaming 4K lancar & gaming stabil 24/7',
+              id: 0,
+              nama: 'Belum Ada Paket Aktif',
+              kecepatanMbps: 0,
+              hargaIdr: 0,
+              deskripsi: 'Pilih paket internet terbaik untuk mulai berlangganan.',
             ),
     );
 
@@ -116,7 +153,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. TOP CURVED BLUE HEADER + OVERLAY HERO CARD
-              _buildCurvedHeader(user, activePackage, unpaid),
+              _buildCurvedHeader(safeUser, activePackage, unpaid),
 
               // PADDING FOR CONTENT
               Padding(
@@ -124,6 +161,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (_pendingRequest != null) ...[
+                      const SizedBox(height: 14),
+                      _buildPendingRequestCard(),
+                    ],
                     const SizedBox(height: 18),
 
                     // 2. CATEGORY PILL TABS (Horizontal Scroll & Filter)
@@ -171,9 +212,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.vertical(
-              bottom: Radius.circular(32),
-            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
             boxShadow: [
               BoxShadow(
                 color: Color(0x260940AA),
@@ -188,24 +227,49 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               // Top Bar: User Profile + Action Icons
               Row(
                 children: [
-                  // Profile Avatar with Ring
+                  // Profile Avatar with Ring (displays real user photo or initials fallback)
                   Container(
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                     ),
-                    child: Center(
-                      child: Text(
-                        firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                    child: ClipOval(
+                      child: user.foto.isNotEmpty
+                          ? Image.network(
+                              AppConfig.resolveImageUrl(user.foto),
+                              width: 46,
+                              height: 46,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Text(
+                                    firstName.isNotEmpty
+                                        ? firstName[0].toUpperCase()
+                                        : 'U',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          : Center(
+                              child: Text(
+                                firstName.isNotEmpty
+                                    ? firstName[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -228,7 +292,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          user.noHp.isNotEmpty ? user.noHp : 'Pelanggan Fiber Sima.net',
+                          user.noHp.isNotEmpty
+                              ? user.noHp
+                              : 'Pelanggan Fiber Sima.net',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.85),
                             fontSize: 12,
@@ -241,61 +307,86 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
                   // Action Icons (Saran SIMA.NET, Search, Chatbot Headset, Notification Bell)
                   IconButton(
-                    icon: const Icon(Icons.rate_review_outlined, color: Colors.white, size: 22),
+                    icon: const Icon(
+                      Icons.rate_review_outlined,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     tooltip: 'Saran & Masukan Sima.net',
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const FeedbackScreen()),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.search, color: Colors.white, size: 22),
-                    tooltip: 'Cari Paket',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
                         MaterialPageRoute(
-                          builder: (_) => const CustomerPackagesScreen(autoFocusSearch: true),
+                          builder: (_) => const FeedbackScreen(),
                         ),
                       );
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.headset_mic_outlined, color: Colors.white, size: 22),
+                    icon: const Icon(
+                      Icons.search,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    tooltip: 'Cari Paket',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CustomerPackagesScreen(
+                            autoFocusSearch: true,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.headset_mic_outlined,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     tooltip: 'Chatbot AI CS',
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const CustomerChatbotScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const CustomerChatbotScreen(),
+                        ),
                       );
                     },
                   ),
                   Stack(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
+                        icon: const Icon(
+                          Icons.notifications_none,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                         tooltip: 'Notifikasi',
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const CustomerInvoicesScreen(),
+                            ),
                           );
                         },
                       ),
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
-                            shape: BoxShape.circle,
+                      if (unpaidInvoice != null)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEF4444),
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ],
@@ -334,7 +425,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const CustomerInvoicesScreen(),
+                            ),
                           );
                         },
                         child: Column(
@@ -352,7 +445,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                             Text(
                               unpaidInvoice != null
                                   ? unpaidInvoice.formattedAmount
-                                  : 'Rp 0',
+                                  : _formatZeroBalance(user.mataUang),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -363,7 +456,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                             Row(
                               children: [
                                 Text(
-                                  unpaidInvoice != null ? 'Bayar Tagihan' : 'Semua Lunas',
+                                  unpaidInvoice != null
+                                      ? 'Bayar Tagihan'
+                                      : 'Semua Lunas',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: AppTheme.primary,
@@ -371,7 +466,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 2),
-                                const Icon(Icons.chevron_right, size: 14, color: AppTheme.primary),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  size: 14,
+                                  color: AppTheme.primary,
+                                ),
                               ],
                             ),
                           ],
@@ -413,12 +512,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                           ),
                           const SizedBox(height: 2),
                           Row(
-                            children: const [
+                            children: [
                               Text(
-                                'Unlimited 24 Jam',
+                                activePackage.id > 0
+                                    ? '${activePackage.kecepatanMbps} Mbps Simetris (1:1)'
+                                    : 'Belum Berlangganan',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF059669),
+                                  color: activePackage.id > 0
+                                      ? const Color(0xFF059669)
+                                      : const Color(0xFFD97706),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -434,7 +537,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 const SizedBox(height: 14),
 
-                // 4 Circle Metrics (Internet, Fiber, Valuta, Zona)
+                // 4 Circle Metrics (Internet, Status Akun, Valuta, Zona)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -446,11 +549,13 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       iconColor: AppTheme.primary,
                     ),
                     _buildCircularMetric(
-                      title: 'Koneksi',
-                      value: 'Fiber',
-                      unit: 'Optic',
-                      icon: Icons.wifi,
-                      iconColor: const Color(0xFF059669),
+                      title: 'Status Akun',
+                      value: user.status == 'active' ? 'Aktif' : 'Pending',
+                      unit: 'Akun',
+                      icon: Icons.verified_user_outlined,
+                      iconColor: user.status == 'active'
+                          ? const Color(0xFF059669)
+                          : const Color(0xFFD97706),
                     ),
                     _buildCircularMetric(
                       title: 'Mata Uang',
@@ -479,12 +584,17 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const CustomerInvoicesScreen(),
+                            ),
                           );
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.primary,
-                          side: const BorderSide(color: AppTheme.primary, width: 1.2),
+                          side: const BorderSide(
+                            color: AppTheme.primary,
+                            width: 1.2,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
@@ -492,7 +602,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         ),
                         child: const Text(
                           'Riwayat Transaksi',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -502,7 +615,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const CustomerInvoicesScreen(),
+                            ),
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -516,7 +631,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         ),
                         child: const Text(
                           'Bayar Tagihan',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -548,9 +666,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             color: iconColor.withOpacity(0.08),
             border: Border.all(color: iconColor.withOpacity(0.2), width: 1.5),
           ),
-          child: Center(
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
+          child: Center(child: Icon(icon, color: iconColor, size: 22)),
         ),
         const SizedBox(height: 6),
         Text(
@@ -563,10 +679,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         ),
         Text(
           unit,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Color(0xFF64748B),
-          ),
+          style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
         ),
       ],
     );
@@ -676,7 +789,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 color: isSelected ? AppTheme.primary : Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isSelected ? AppTheme.primary : const Color(0xFFE2E8F0),
+                  color: isSelected
+                      ? AppTheme.primary
+                      : const Color(0xFFE2E8F0),
                   width: 1,
                 ),
                 boxShadow: isSelected
@@ -714,10 +829,18 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       filtered = _packages.where((p) {
         final cat = p.kategori.toLowerCase();
         final name = p.nama.toLowerCase();
-        if (sel == 'internet fiber') return cat.contains('fiber') || name.contains('fiber');
-        if (sel == 'turbo home') return cat.contains('turbo') || name.contains('turbo');
-        if (sel == 'gamer sakti') return cat.contains('gamer') || name.contains('gamer');
-        if (sel == 'promo hemat') return cat.contains('promo') || cat.contains('hemat') || name.contains('promo') || name.contains('hemat') || name.contains('pelajar');
+        if (sel == 'internet fiber')
+          return cat.contains('fiber') || name.contains('fiber');
+        if (sel == 'turbo home')
+          return cat.contains('turbo') || name.contains('turbo');
+        if (sel == 'gamer sakti')
+          return cat.contains('gamer') || name.contains('gamer');
+        if (sel == 'promo hemat')
+          return cat.contains('promo') ||
+              cat.contains('hemat') ||
+              name.contains('promo') ||
+              name.contains('hemat') ||
+              name.contains('pelajar');
         return cat == sel;
       }).toList();
     }
@@ -787,7 +910,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: isCurrent ? AppTheme.primary : const Color(0xFFE2E8F0),
+                    color: isCurrent
+                        ? AppTheme.primary
+                        : const Color(0xFFE2E8F0),
                     width: isCurrent ? 1.5 : 1,
                   ),
                   boxShadow: const [
@@ -802,20 +927,27 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Badge: Promo / Best Seller
+                    // Badge: Real Category from Backend
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: index == 0
-                                ? const Color(0xFFEF4444)
-                                : (index == 1 ? AppTheme.primary : const Color(0xFFD97706)),
+                            color: isCurrent
+                                ? AppTheme.primary
+                                : (pkg.kategori == 'Gamer Sakti'
+                                    ? const Color(0xFF7C3AED)
+                                    : (pkg.kategori == 'Promo Hemat'
+                                        ? const Color(0xFFEA580C)
+                                        : const Color(0xFF0284C7))),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            index == 0 ? 'Promo' : (index == 1 ? 'Best Seller' : 'Super Cepat'),
+                            pkg.kategori,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,
@@ -824,7 +956,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                           ),
                         ),
                         if (isCurrent)
-                          const Icon(Icons.check_circle, color: AppTheme.primary, size: 16),
+                          const Icon(
+                            Icons.check_circle,
+                            color: AppTheme.primary,
+                            size: 16,
+                          ),
                       ],
                     ),
 
@@ -844,7 +980,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${pkg.kecepatanMbps} Mbps | 30 Hari',
+                          '${pkg.kecepatanMbps} Mbps Simetris',
                           style: const TextStyle(
                             fontSize: 11,
                             color: Color(0xFF64748B),
@@ -859,7 +995,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Rp ${pkg.hargaIdr}',
+                          'Rp ${_formatRupiah(pkg.hargaIdr)}',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
@@ -934,7 +1070,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const CustomerInvoicesScreen(),
+                    ),
                   );
                 },
               ),
@@ -950,7 +1088,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CustomerGameScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const CustomerGameScreen(),
+                    ),
                   );
                 },
               ),
@@ -966,7 +1106,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CurrencyTimeScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const CurrencyTimeScreen(),
+                    ),
                   );
                 },
               ),
@@ -1008,10 +1150,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             Container(
               width: 44,
               height: 44,
-              decoration: BoxDecoration(
-                color: bgColor,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
               child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(height: 8),
@@ -1083,7 +1222,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEBF2FD),
                       borderRadius: BorderRadius.circular(8),
@@ -1115,7 +1257,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                   ),
                   Text(
-                    'Rp ${pkg.hargaIdr} / bulan',
+                    'Rp ${_formatRupiah(pkg.hargaIdr)} / bulan',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
@@ -1128,12 +1270,38 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Permintaan upgrade ke ${pkg.nama} dicatat!'),
-                      backgroundColor: AppTheme.primary,
+                  final user = AuthService.instance.currentUser;
+                  final isCurrent = user?.paketId == pkg.id;
+
+                  if (isCurrent) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Ini adalah paket aktif Anda saat ini.'),
+                        backgroundColor: Color(0xFF475569),
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (_pendingRequest != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Anda masih memiliki pengajuan ke "${_pendingRequest!.paketBaruNama}" yang sedang ditinjau admin.',
+                        ),
+                        backgroundColor: const Color(0xFFD97706),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // Arahkan ke daftar paket untuk mengajukan perubahan
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CustomerPackagesScreen(),
                     ),
-                  );
+                  ).then((_) => _loadData());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
@@ -1144,7 +1312,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   ),
                 ),
                 child: const Text(
-                  'Konfirmasi Berlangganan',
+                  'Ajukan Perubahan Paket',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1152,6 +1320,94 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPendingRequestCard() {
+    final req = _pendingRequest!;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08F59E0B),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.pending_actions, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Pengajuan Sedang Ditinjau Admin',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFF59E0B)),
+                      ),
+                      child: const Text(
+                        'Menunggu Persetujuan',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFB45309),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${req.tipe}: Beralih ke "${req.paketBaruNama}" (${req.paketBaruKecepatan} Mbps)',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF78350F),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Alasan: "${req.alasan}"',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFB45309),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

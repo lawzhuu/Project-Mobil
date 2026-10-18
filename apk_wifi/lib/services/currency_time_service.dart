@@ -1,15 +1,12 @@
 import 'package:intl/intl.dart';
+
 import 'api_service.dart';
 
 class CurrencyTimeService {
   static final CurrencyTimeService instance = CurrencyTimeService._internal();
   CurrencyTimeService._internal();
 
-  Map<String, double> _idrRates = {
-    'IDR': 1.0,
-    'USD': 15500.0,
-    'EUR': 16800.0,
-  };
+  Map<String, double> _idrRates = {'IDR': 1.0, 'USD': 15500.0, 'EUR': 16800.0};
 
   Map<String, double> get rates => _idrRates;
 
@@ -41,11 +38,23 @@ class CurrencyTimeService {
 
   String formatCurrency(double amount, String currency) {
     if (currency == 'USD') {
-      return NumberFormat.currency(locale: 'en_US', symbol: '\$', decimalDigits: 2).format(amount);
+      return NumberFormat.currency(
+        locale: 'en_US',
+        symbol: '\$',
+        decimalDigits: 2,
+      ).format(amount);
     } else if (currency == 'EUR') {
-      return NumberFormat.currency(locale: 'de_DE', symbol: '€', decimalDigits: 2).format(amount);
+      return NumberFormat.currency(
+        locale: 'de_DE',
+        symbol: '€',
+        decimalDigits: 2,
+      ).format(amount);
     } else {
-      return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
+      return NumberFormat.currency(
+        locale: 'id_ID',
+        symbol: 'Rp ',
+        decimalDigits: 0,
+      ).format(amount);
     }
   }
 

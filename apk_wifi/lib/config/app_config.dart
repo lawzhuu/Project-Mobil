@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
@@ -24,6 +25,19 @@ class AppConfig {
     }
   }
 
+  // Resolve image URL (routes external Supabase images through backend proxy to prevent Android emulator DNS errors)
+  static String resolveImageUrl(String pathOrUrl) {
+    if (pathOrUrl.trim().isEmpty) return '';
+    final cleaned = pathOrUrl.trim();
+    if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+      return '$baseUrl/storage/proxy?url=${Uri.encodeComponent(cleaned)}';
+    }
+    if (cleaned.startsWith('/')) {
+      return '$baseUrl$cleaned';
+    }
+    return '$baseUrl/$cleaned';
+  }
+
   // Fallback exchange rates
   static const Map<String, double> idrPerCurrency = {
     'IDR': 1.0,
@@ -34,10 +48,35 @@ class AppConfig {
   // Supported countries and their mappings
   static const List<Map<String, String>> supportedCountries = [
     {'name': 'Indonesia', 'currency': 'IDR', 'timezone': 'WIB', 'flag': '🇮🇩'},
-    {'name': 'United States', 'currency': 'USD', 'timezone': 'London', 'flag': '🇺🇸'},
-    {'name': 'United Kingdom', 'currency': 'EUR', 'timezone': 'London', 'flag': '🇬🇧'},
-    {'name': 'Germany', 'currency': 'EUR', 'timezone': 'London', 'flag': '🇩🇪'},
-    {'name': 'Netherlands', 'currency': 'EUR', 'timezone': 'London', 'flag': '🇳🇱'},
-    {'name': 'Australia', 'currency': 'USD', 'timezone': 'WITA', 'flag': '🇦🇺'},
+    {
+      'name': 'United States',
+      'currency': 'USD',
+      'timezone': 'London',
+      'flag': '🇺🇸',
+    },
+    {
+      'name': 'United Kingdom',
+      'currency': 'EUR',
+      'timezone': 'London',
+      'flag': '🇬🇧',
+    },
+    {
+      'name': 'Germany',
+      'currency': 'EUR',
+      'timezone': 'London',
+      'flag': '🇩🇪',
+    },
+    {
+      'name': 'Netherlands',
+      'currency': 'EUR',
+      'timezone': 'London',
+      'flag': '🇳🇱',
+    },
+    {
+      'name': 'Australia',
+      'currency': 'USD',
+      'timezone': 'WITA',
+      'flag': '🇦🇺',
+    },
   ];
 }

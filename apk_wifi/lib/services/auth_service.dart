@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+
 import '../models/user_model.dart';
 import 'api_service.dart';
 
@@ -36,15 +38,24 @@ class AuthService {
     }
   }
 
-  Future<bool> login({required String username, required String password}) async {
-    final result = await ApiService.instance.login(username: username, password: password);
+  Future<bool> login({
+    required String username,
+    required String password,
+  }) async {
+    final result = await ApiService.instance.login(
+      username: username,
+      password: password,
+    );
     if (result['success'] == true && result['token'] != null) {
       _token = result['token'];
       _currentUser = UserModel.fromJson(result['user']);
       ApiService.instance.setAuthToken(_token);
 
       await _storage.write(key: _keyToken, value: _token);
-      await _storage.write(key: _keyUser, value: jsonEncode(_currentUser!.toJson()));
+      await _storage.write(
+        key: _keyUser,
+        value: jsonEncode(_currentUser!.toJson()),
+      );
       await _storage.write(key: _keyBiometricEnabled, value: 'true');
       return true;
     }
@@ -79,7 +90,10 @@ class AuthService {
       ApiService.instance.setAuthToken(_token);
 
       await _storage.write(key: _keyToken, value: _token);
-      await _storage.write(key: _keyUser, value: jsonEncode(_currentUser!.toJson()));
+      await _storage.write(
+        key: _keyUser,
+        value: jsonEncode(_currentUser!.toJson()),
+      );
       return true;
     }
     return false;
@@ -96,7 +110,8 @@ class AuthService {
       }
 
       final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Gunakan sidik jari atau biometrik untuk membuka Sima.net',
+        localizedReason:
+            'Gunakan sidik jari atau biometrik untuk membuka Sima.net',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: true,

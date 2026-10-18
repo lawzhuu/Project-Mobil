@@ -5,7 +5,7 @@
       "nama": "Administrator Sima.net",
       "email": "admin@sima.net",
       "no_hp": "081234567890",
-      "password_hash": "$2a$10$Xwwc7zDWDEqkhVZDqHMi0OSwy8bFmG6KFtFRhwRqjG6.BU58in1Wi",
+      "password_hash": "$2a$10$2MLFYkhOqROlSjVEDUZnZOw7S9QrZasCdSI0RtU.gvBmYLvRWR5WG",
       "role": "admin",
       "negara": "Indonesia",
       "mata_uang": "IDR",
@@ -15,31 +15,35 @@
       "lng": 110.3695,
       "foto": "",
       "status": "active",
-      "paket_id": null
+      "paket_id": null,
+      "created_at": "2026-10-18T12:34:55.343691+00:00",
+      "updated_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 2,
-      "nama": "Andhika Rhito Z",
+      "nama": "Budi Santoso",
       "email": "budi@gmail.com",
-      "no_hp": "089988776654",
-      "password_hash": "$2a$10$Xwwc7zDWDEqkhVZDqHMi0OSwy8bFmG6KFtFRhwRqjG6.BU58in1Wi",
+      "no_hp": "085678912345",
+      "password_hash": "$2a$10$2MLFYkhOqROlSjVEDUZnZOw7S9QrZasCdSI0RtU.gvBmYLvRWR5WG",
       "role": "pelanggan",
-      "negara": "United States",
-      "mata_uang": "USD",
-      "zona_waktu": "London",
-      "alamat": "Jl. Tambakbayan, Kec. Depok, Kab. Sleman",
-      "lat": 37.4219983,
-      "lng": -122.084,
-      "foto": "",
+      "negara": "Indonesia",
+      "mata_uang": "IDR",
+      "zona_waktu": "WIB",
+      "alamat": "Jl. Kaliurang KM 5 No. 12, Sleman",
+      "lat": -7.7612,
+      "lng": 110.3802,
+      "foto": "https://ysokrzhqtlpdwypauvjk.supabase.co/storage/v1/object/public/profile-photos/avatars/1792337447873-998618276.jpg",
       "status": "active",
-      "paket_id": 2
+      "paket_id": 2,
+      "created_at": "2026-10-18T12:34:55.343691+00:00",
+      "updated_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 3,
       "nama": "Sarah Jenkins (Diaspora)",
       "email": "sarah@gmail.com",
       "no_hp": "+14155552671",
-      "password_hash": "$2a$10$Xwwc7zDWDEqkhVZDqHMi0OSwy8bFmG6KFtFRhwRqjG6.BU58in1Wi",
+      "password_hash": "$2a$10$2MLFYkhOqROlSjVEDUZnZOw7S9QrZasCdSI0RtU.gvBmYLvRWR5WG",
       "role": "pelanggan",
       "negara": "United States",
       "mata_uang": "USD",
@@ -49,14 +53,16 @@
       "lng": 110.3921,
       "foto": "",
       "status": "active",
-      "paket_id": 3
+      "paket_id": 3,
+      "created_at": "2026-10-18T12:34:55.343691+00:00",
+      "updated_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 4,
       "nama": "Rahmat Hidayat (Teknisi)",
       "email": "teknisi@sima.net",
       "no_hp": "081987654321",
-      "password_hash": "$2a$10$Xwwc7zDWDEqkhVZDqHMi0OSwy8bFmG6KFtFRhwRqjG6.BU58in1Wi",
+      "password_hash": "$2a$10$2MLFYkhOqROlSjVEDUZnZOw7S9QrZasCdSI0RtU.gvBmYLvRWR5WG",
       "role": "teknisi",
       "negara": "Indonesia",
       "mata_uang": "IDR",
@@ -66,24 +72,47 @@
       "lng": 110.375,
       "foto": "",
       "status": "active",
-      "paket_id": null
+      "paket_id": null,
+      "created_at": "2026-10-18T12:34:55.343691+00:00",
+      "updated_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 5,
       "nama": "Ahmad Faisal (Pending)",
       "email": "ahmad@gmail.com",
       "no_hp": "082233445566",
-      "password_hash": "$2a$10$Xwwc7zDWDEqkhVZDqHMi0OSwy8bFmG6KFtFRhwRqjG6.BU58in1Wi",
+      "password_hash": "$2a$10$2MLFYkhOqROlSjVEDUZnZOw7S9QrZasCdSI0RtU.gvBmYLvRWR5WG",
       "role": "pelanggan",
       "negara": "Indonesia",
       "mata_uang": "IDR",
       "zona_waktu": "WITA",
       "alamat": "Perumahan Graha Asri Blok C-3, Sleman",
-      "lat": -7.7801,
-      "lng": 110.405,
+      "lat": -7.742,
+      "lng": 110.368,
       "foto": "",
-      "status": "pending",
-      "paket_id": 1
+      "status": "active",
+      "paket_id": 1,
+      "created_at": "2026-10-18T12:34:55.343691+00:00",
+      "updated_at": "2026-10-18T12:34:55.343691+00:00"
+    },
+    {
+      "id": 6,
+      "nama": "Miyako Kipas",
+      "email": "miyakokipas@gmail.com",
+      "no_hp": "084233556971",
+      "password_hash": "$2a$10$X8NRU2PykWOkNtexsfuh4OPiM28NgGFBntENASRXnkk4MxXHEH5Ym",
+      "role": "pelanggan",
+      "negara": "Indonesia",
+      "mata_uang": "IDR",
+      "zona_waktu": "WIB",
+      "alamat": "Jl. Dirgantara No. 91, Kec. Depok, Kab. Sleman, Prov. DIY",
+      "lat": -7.7734857,
+      "lng": 110.4250115,
+      "foto": "",
+      "status": "active",
+      "paket_id": 3,
+      "created_at": "2026-10-18T15:45:55.107433+00:00",
+      "updated_at": "2026-10-18T15:45:55.107433+00:00"
     }
   ],
   "packages": [
@@ -92,63 +121,72 @@
       "nama": "Paket Hemat Fiber 20",
       "kecepatan_mbps": 20,
       "harga_idr": 175000,
-      "deskripsi": "Akses internet stabil unlimited untuk kebutuhan browsing dan media sosial keluarga kecil."
+      "deskripsi": "Akses internet stabil unlimited untuk kebutuhan browsing dan media sosial keluarga kecil.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 2,
       "nama": "Paket Turbo Home 50",
       "kecepatan_mbps": 50,
       "harga_idr": 275000,
-      "deskripsi": "Kecepatan tinggi untuk streaming 4K tanpa buffering, Zoom meeting, dan online gaming."
+      "deskripsi": "Kecepatan tinggi untuk streaming 4K tanpa buffering, Zoom meeting, dan online gaming.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 3,
       "nama": "Paket Ultimate Pro 100",
       "kecepatan_mbps": 100,
       "harga_idr": 450000,
-      "deskripsi": "Koneksi ultra-cepat fiber optic simetris untuk profesional, content creator, dan smart home."
+      "deskripsi": "Koneksi ultra-cepat fiber optic simetris untuk profesional, content creator, dan smart home.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 4,
       "nama": "Paket Fast Fiber 30",
       "kecepatan_mbps": 30,
       "harga_idr": 215000,
-      "deskripsi": "Internet fiber optic handal untuk WFH, download cepat, dan streaming HD bebas lag."
+      "deskripsi": "Internet fiber optic handal untuk WFH, download cepat, dan streaming HD bebas lag.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 5,
       "nama": "Paket Turbo Home 75",
       "kecepatan_mbps": 75,
       "harga_idr": 340000,
-      "deskripsi": "Keluarga besar aktif & smart TV multi-room, download file besar dalam hitungan detik."
+      "deskripsi": "Keluarga besar aktif & smart TV multi-room, download file besar dalam hitungan detik.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 6,
       "nama": "Paket Gamer Sakti 100",
       "kecepatan_mbps": 100,
       "harga_idr": 399000,
-      "deskripsi": "Jalur khusus gaming prioritas rendah latensi (<5ms), anti spike & zero packet loss."
+      "deskripsi": "Jalur khusus gaming prioritas rendah latensi (<5ms), anti spike & zero packet loss.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 7,
       "nama": "Paket Gamer Pro 150",
       "kecepatan_mbps": 150,
       "harga_idr": 520000,
-      "deskripsi": "Bandwidth simetris 1:1, live streaming YouTube/Twitch kualitas 1080p 60fps tanpa jeda."
+      "deskripsi": "Bandwidth simetris 1:1, live streaming YouTube/Twitch kualitas 1080p 60fps tanpa jeda.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 8,
       "nama": "Paket Promo Flash 60",
       "kecepatan_mbps": 60,
       "harga_idr": 239000,
-      "deskripsi": "Promo spesial kuota unlimited kecepatan ekstra fiber optic hemat bulanan."
+      "deskripsi": "Promo spesial kuota unlimited kecepatan ekstra fiber optic hemat bulanan.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 9,
       "nama": "Paket Promo Pelajar Hemat",
       "kecepatan_mbps": 25,
       "harga_idr": 150000,
-      "deskripsi": "Paket ramah kantong untuk pelajar & mahasiswa, riset kuliah & Google Classroom."
+      "deskripsi": "Paket ramah kantong untuk pelajar & mahasiswa, riset kuliah & Google Classroom.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     }
   ],
   "invoices": [
@@ -159,8 +197,9 @@
       "nominal_idr": 275000,
       "mata_uang": "IDR",
       "kurs_terkunci": 1,
-      "jatuh_tempo": "2026-10-25T23:59:59.000Z",
-      "status": "belum"
+      "jatuh_tempo": "2026-10-25T23:59:59+00:00",
+      "status": "lunas",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 2,
@@ -169,8 +208,9 @@
       "nominal_idr": 450000,
       "mata_uang": "USD",
       "kurs_terkunci": 15500,
-      "jatuh_tempo": "2026-10-25T23:59:59.000Z",
-      "status": "lunas"
+      "jatuh_tempo": "2026-10-25T23:59:59+00:00",
+      "status": "lunas",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 3,
@@ -179,8 +219,42 @@
       "nominal_idr": 275000,
       "mata_uang": "IDR",
       "kurs_terkunci": 1,
-      "jatuh_tempo": "2026-09-25T23:59:59.000Z",
-      "status": "lunas"
+      "jatuh_tempo": "2026-09-25T23:59:59+00:00",
+      "status": "lunas",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
+    },
+    {
+      "id": 4,
+      "user_id": 6,
+      "periode": "Oktober 2026",
+      "nominal_idr": 450000,
+      "mata_uang": "IDR",
+      "kurs_terkunci": 1,
+      "jatuh_tempo": "2026-10-25T23:59:59+00:00",
+      "status": "belum",
+      "created_at": null
+    },
+    {
+      "id": 5,
+      "user_id": 5,
+      "periode": "Oktober 2026",
+      "nominal_idr": 175000,
+      "mata_uang": "IDR",
+      "kurs_terkunci": 1,
+      "jatuh_tempo": "2026-10-25T23:59:59+00:00",
+      "status": "belum",
+      "created_at": null
+    },
+    {
+      "id": 6,
+      "user_id": 2,
+      "periode": "November 2026",
+      "nominal_idr": 275000,
+      "mata_uang": "IDR",
+      "kurs_terkunci": 1,
+      "jatuh_tempo": "2026-11-25T23:59:59+00:00",
+      "status": "belum",
+      "created_at": "2026-10-18T17:24:15.408+00:00"
     }
   ],
   "payments": [
@@ -191,7 +265,8 @@
       "bukti_path": "",
       "nominal_idr": 450000,
       "status": "diverifikasi",
-      "verified_at": "2026-10-10T14:20:00.000Z"
+      "verified_at": "2026-10-10T14:20:00+00:00",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 2,
@@ -200,17 +275,38 @@
       "bukti_path": "",
       "nominal_idr": 275000,
       "status": "diverifikasi",
-      "verified_at": "2026-09-20T10:15:00.000Z"
+      "verified_at": "2026-09-20T10:15:00+00:00",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
+    },
+    {
+      "id": 3,
+      "invoice_id": 1,
+      "user_id": 2,
+      "bukti_path": "https://ysokrzhqtlpdwypauvjk.supabase.co/storage/v1/object/public/profile-photos/receipts/1792336927782-139710735.jpg",
+      "nominal_idr": 275000,
+      "status": "diverifikasi",
+      "verified_at": "2026-10-18T15:22:26.537+00:00",
+      "created_at": null
     }
   ],
   "ledger_blocks": [
     {
       "idx": 0,
-      "waktu": "2026-10-01T08:00:00.000Z",
+      "waktu": "2026-10-01T08:00:00+00:00",
       "payment_id": 0,
       "nominal_idr": 0,
       "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "hash": "ff68a7e573324c986fae3a609f65624da33aecfcad6ac95b2abe762d8e334a89"
+      "hash": "c6374a3f4e3c4aa485df6496e7195bb263fa7907f185ef03bf7d101dcf2a6948",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
+    },
+    {
+      "idx": 1,
+      "waktu": "2026-10-18T15:22:26.537+00:00",
+      "payment_id": 3,
+      "nominal_idr": 275000,
+      "prev_hash": "c6374a3f4e3c4aa485df6496e7195bb263fa7907f185ef03bf7d101dcf2a6948",
+      "hash": "dd88e2b376951e67e79fae63de09014675d571f1995fa6755e678459bf9e5da3",
+      "created_at": null
     }
   ],
   "tasks": [
@@ -220,7 +316,8 @@
       "pelanggan_id": 2,
       "jenis": "perbaikan",
       "status": "baru",
-      "catatan": "Pengecekan redaman kabel optik dan ganti drop core port 2."
+      "catatan": "Pengecekan redaman kabel optik dan ganti drop core port 2.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 2,
@@ -228,7 +325,17 @@
       "pelanggan_id": 5,
       "jenis": "instalasi",
       "status": "dikerjakan",
-      "catatan": "Tarik kabel FO dari ODP-SLM-08 ke rumah pelanggan baru."
+      "catatan": "Tarik kabel FO dari ODP-SLM-08 ke rumah pelanggan baru.",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
+    },
+    {
+      "id": 3,
+      "teknisi_id": 4,
+      "pelanggan_id": 2,
+      "jenis": "instalasi",
+      "status": "baru",
+      "catatan": "Pergantian/konfigurasi perangkat ONT untuk upgrade paket \"Paket Turbo Home 50\" (50 Mbps). Pelanggan: Budi Santoso (085678912345).",
+      "created_at": null
     }
   ],
   "upstream_bills": [
@@ -237,14 +344,16 @@
       "periode": "September 2026",
       "nominal_idr": 4500000,
       "provider_name": "Indibizz Dedicated 500M",
-      "status": "lunas"
+      "status": "lunas",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
     {
       "id": 2,
       "periode": "Oktober 2026",
       "nominal_idr": 4500000,
       "provider_name": "Indibizz Dedicated 500M",
-      "status": "belum"
+      "status": "belum",
+      "created_at": "2026-10-18T12:34:55.343691+00:00"
     }
   ],
   "feedback": [
@@ -254,8 +363,41 @@
       "user_nama": "Budi Santoso",
       "saran": "Mohon tambahkan opsi pembayaran otomatis via QRIS di rilis berikutnya.",
       "kesan": "Pelayanan Sima.net luar biasa cepat, teknisi ramah dan internet sangat stabil!",
-      "created_at": "2026-10-12T11:00:00.000Z"
+      "created_at": "2026-10-12T11:00:00+00:00"
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "user_nama": "Budi Santoso",
+      "saran": "woii",
+      "kesan": "zzz",
+      "created_at": "2026-10-18T17:26:37.295+00:00"
     }
   ],
-  "devices": []
+  "devices": [],
+  "package_requests": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "user_nama": "Budi Santoso",
+      "user_email": "budi@gmail.com",
+      "user_alamat": "Jl. Kaliurang KM 5 No. 12, Sleman",
+      "user_no_hp": "085678912345",
+      "paket_lama_id": 1,
+      "paket_lama_nama": "Paket Hemat Fiber 20",
+      "paket_lama_kecepatan": 20,
+      "paket_lama_harga": 175000,
+      "paket_baru_id": 2,
+      "paket_baru_nama": "Paket Turbo Home 50",
+      "paket_baru_kecepatan": 50,
+      "paket_baru_harga": 275000,
+      "selisih_harga": 100000,
+      "tipe": "Upgrade Kecepatan",
+      "alasan": "Membutuhkan bandwidth lebih tinggi untuk streaming 4K dan gaming stabil.",
+      "status": "approved",
+      "admin_catatan": "Disetujui. Perangkat & konfigurasi siap disesuaikan.",
+      "created_at": "2026-10-18T17:23:23.273Z",
+      "updated_at": "2026-10-18T17:24:15.408Z"
+    }
+  ]
 }

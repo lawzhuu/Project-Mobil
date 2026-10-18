@@ -18,7 +18,6 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
   double _convertedResult = 0.0;
 
   Timer? _clockTimer;
-  Map<String, DateTime> _worldTimes = CurrencyTimeService.getWorldTimes();
 
   @override
   void initState() {
@@ -26,9 +25,7 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
     _recalculate();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
-        setState(() {
-          _worldTimes = CurrencyTimeService.getWorldTimes();
-        });
+        setState(() {});
       }
     });
   }
@@ -76,8 +73,8 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
             CustomCard(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.primary.withOpacity(0.12),
-                  AppTheme.secondary.withOpacity(0.12),
+                  AppTheme.primary.withValues(alpha: 0.12),
+                  AppTheme.secondary.withValues(alpha: 0.12),
                 ],
               ),
               child: Column(
@@ -89,7 +86,7 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Konversi Mata Uang (IDR, USD, EUR)',
+                          'Konversi Mata Uang',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -123,12 +120,16 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           value: _fromCurrency,
+                          isExpanded: true,
                           dropdownColor: AppTheme.surfaceCard,
-                          decoration: const InputDecoration(labelText: 'Dari'),
+                          decoration: const InputDecoration(
+                            labelText: 'Dari',
+                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                          ),
                           items: const [
-                            DropdownMenuItem(value: 'IDR', child: Text('🇮🇩 IDR (Rupiah)')),
-                            DropdownMenuItem(value: 'USD', child: Text('🇺🇸 USD (Dollar)')),
-                            DropdownMenuItem(value: 'EUR', child: Text('🇪🇺 EUR (Euro)')),
+                            DropdownMenuItem(value: 'IDR', child: Text('🇮🇩 IDR', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'USD', child: Text('🇺🇸 USD', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'EUR', child: Text('🇪🇺 EUR', overflow: TextOverflow.ellipsis)),
                           ],
                           onChanged: (v) {
                             if (v != null) {
@@ -138,19 +139,29 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                           },
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.swap_horiz, color: AppTheme.accent),
-                        onPressed: _swapCurrencies,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: IconButton(
+                          icon: const Icon(Icons.swap_horiz, color: AppTheme.accent),
+                          onPressed: _swapCurrencies,
+                          tooltip: 'Tukar Mata Uang',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        ),
                       ),
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           value: _toCurrency,
+                          isExpanded: true,
                           dropdownColor: AppTheme.surfaceCard,
-                          decoration: const InputDecoration(labelText: 'Ke'),
+                          decoration: const InputDecoration(
+                            labelText: 'Ke',
+                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                          ),
                           items: const [
-                            DropdownMenuItem(value: 'IDR', child: Text('🇮🇩 IDR (Rupiah)')),
-                            DropdownMenuItem(value: 'USD', child: Text('🇺🇸 USD (Dollar)')),
-                            DropdownMenuItem(value: 'EUR', child: Text('🇪🇺 EUR (Euro)')),
+                            DropdownMenuItem(value: 'IDR', child: Text('🇮🇩 IDR', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'USD', child: Text('🇺🇸 USD', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'EUR', child: Text('🇪🇺 EUR', overflow: TextOverflow.ellipsis)),
                           ],
                           onChanged: (v) {
                             if (v != null) {
@@ -172,7 +183,7 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceCard,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppTheme.primary.withOpacity(0.4)),
+                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
                     ),
                     child: Column(
                       children: [
@@ -181,19 +192,23 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                           style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          CurrencyTimeService.instance.formatCurrency(_convertedResult, _toCurrency),
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.primary,
-                            letterSpacing: -0.5,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            CurrencyTimeService.instance.formatCurrency(_convertedResult, _toCurrency),
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.primary,
+                              letterSpacing: -0.5,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        const Text(
                           'Kurs Referensi: 1 USD ≈ Rp 15.500 | 1 EUR ≈ Rp 16.800',
-                          style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
                         ),
                       ],
                     ),
@@ -208,14 +223,19 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [
-                Text(
-                  'Zona Waktu Operasional Sima.net',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                Expanded(
+                  child: Text(
+                    'Zona Waktu Operasional',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
                 ),
+                SizedBox(width: 8),
                 Text(
                   'Live UTC Sync',
                   style: TextStyle(fontSize: 12, color: AppTheme.success, fontWeight: FontWeight.bold),
@@ -234,9 +254,9 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
               crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.15,
               children: [
                 _buildClockCard(
                   flag: '🇮🇩',
@@ -249,7 +269,7 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                 _buildClockCard(
                   flag: '🇮🇩',
                   zoneName: 'WITA (Tengah)',
-                  utcOffset: 'UTC+8 (Bali / Mks)',
+                  utcOffset: 'UTC+8 (Bali)',
                   time: CurrencyTimeService.formatTimeForZone('WITA'),
                   date: CurrencyTimeService.formatDateForZone('WITA'),
                   color: AppTheme.accent,
@@ -287,14 +307,13 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
     required Color color,
   }) {
     return CustomCard(
-      padding: const EdgeInsets.all(12),
-      borderColor: color.withOpacity(0.3),
+      padding: const EdgeInsets.all(10),
+      borderColor: color.withValues(alpha: 0.3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
@@ -303,37 +322,41 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: 11,
                     color: AppTheme.textPrimary,
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 2),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(6),
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   utcOffset.split(' ').first,
-                  style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: color, fontSize: 8.5, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
-          Text(
-            time,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: color,
-              letterSpacing: 1.0,
+          FittedBox(
+            alignment: Alignment.centerLeft,
+            fit: BoxFit.scaleDown,
+            child: Text(
+              time,
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+                color: color,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
           Text(
             date,
-            style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+            style: const TextStyle(fontSize: 9.5, color: AppTheme.textMuted),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

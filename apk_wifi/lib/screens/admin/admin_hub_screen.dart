@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../models/invoice_model.dart';
 import '../../models/ledger_model.dart';
+import '../../models/package_request_model.dart';
 import '../../models/payment_model.dart';
 import '../../models/upstream_bill_model.dart';
 import '../../models/user_model.dart';
@@ -33,6 +34,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   List<InvoiceModel> _invoices = [];
   List<LedgerBlockModel> _ledgerBlocks = [];
   List<UpstreamBillModel> _upstreamBills = [];
+  List<PackageRequestModel> _packageRequests = [];
 
   bool _isLoading = true;
   VerificationResult? _blockchainVerification;
@@ -43,7 +45,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     _loadAllAdminData();
   }
 
@@ -63,6 +65,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
       final invoicesFuture = ApiService.instance.getInvoices();
       final ledgerFuture = ApiService.instance.getLedger();
       final upstreamFuture = ApiService.instance.getUpstreamBills();
+      final pkgReqsFuture = ApiService.instance.getAdminPackageRequests();
 
       final results = await Future.wait([
         summaryFuture,
@@ -71,6 +74,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         invoicesFuture,
         ledgerFuture,
         upstreamFuture,
+        pkgReqsFuture,
       ]);
 
       if (mounted) {
@@ -81,6 +85,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           _invoices = results[3] as List<InvoiceModel>;
           _ledgerBlocks = results[4] as List<LedgerBlockModel>;
           _upstreamBills = results[5] as List<UpstreamBillModel>;
+          _packageRequests = results[6] as List<PackageRequestModel>;
           _isLoading = false;
         });
       }
@@ -467,6 +472,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           tabs: const [
             Tab(icon: Icon(Icons.analytics, size: 18), text: 'AI & Keuangan'),
             Tab(icon: Icon(Icons.how_to_reg, size: 18), text: 'Aktivasi (A1)'),
+            Tab(icon: Icon(Icons.swap_horiz, size: 18), text: 'Ubah Paket'),
             Tab(
               icon: Icon(Icons.verified_user, size: 18),
               text: 'Verifikasi Bayar (A3)',
@@ -489,6 +495,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
               children: [
                 _buildAiAnalyticsTab(),
                 _buildCustomerActivationTab(),
+                _buildPackageRequestsTab(),
                 _buildPaymentVerificationTab(),
                 _buildBlockchainLedgerTab(),
                 _buildTaskDispatchTab(),
@@ -1090,7 +1097,429 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     );
   }
 
-  // --- TAB 3: VERIFIKASI PEMBAYARAN (A3) ---
+  String _formatRupiah(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+  }
+
+  // --- TAB 3: PACKAGE CHANGE REQUESTS (APPROVAL WORKFLOW - OPTION A) ---
+  Widget _buildPackageRequestsTab() {
+    final pending = _packageRequests.where((r) => r.status == 'pending').toList();
+    final processed = _packageRequests.where((r) => r.status != 'pending').toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Permintaan Ubah Paket (Pending Requests)',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppTheme.warning.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${pending.length} pending',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.warning,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          if (pending.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: const Center(
+                child: Text(
+                  'Tidak ada permintaan ubah paket yang pending. Semua request telah diproses! 👍',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          else
+            ...pending.map((req) {
+              final isUpgrade = req.paketBaruKecepatan > req.paketLamaKecepatan;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: CustomCard(
+                  borderColor: AppTheme.warning.withOpacity(0.6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              req.userNama,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isUpgrade ? const Color(0xFF059669).withOpacity(0.2) : const Color(0xFF2563EB).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              req.tipe,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isUpgrade ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${req.userEmail} • ${req.userNoHp}',
+                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      ),
+                      if (req.userAlamat.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Alamat: ${req.userAlamat}',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+
+                      // Box Detail Perubahan Paket
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.background,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.border),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Paket Lama:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                      Text(
+                                        '${req.paketLamaNama} (${req.paketLamaKecepatan}M)',
+                                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward, size: 16, color: AppTheme.accent),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Paket Baru:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                      Text(
+                                        '${req.paketBaruNama} (${req.paketBaruKecepatan}M)',
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(color: AppTheme.border, height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Selisih Harga:', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                Text(
+                                  req.selisihHarga >= 0
+                                      ? '+Rp ${_formatRupiah(req.selisihHarga)} / bln'
+                                      : '-Rp ${_formatRupiah(-req.selisihHarga)} / bln',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: req.selisihHarga >= 0 ? AppTheme.success : AppTheme.accent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (req.alasan.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Alasan: "${req.alasan}"',
+                                style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppTheme.textMuted),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Tombol Approval & Reject
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.error,
+                                side: const BorderSide(color: AppTheme.error),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              onPressed: () => _rejectPackageRequestDialog(req),
+                              child: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.success,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              icon: const Icon(Icons.check, size: 16),
+                              label: const Text('Setujui (Approve)', style: TextStyle(fontWeight: FontWeight.bold)),
+                              onPressed: () => _approvePackageRequestDialog(req),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+
+          if (processed.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Text(
+              'Riwayat Pengajuan yang Sudah Diproses',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            ...processed.map((req) {
+              final isApproved = req.status == 'approved';
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: CustomCard(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              req.userNama,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            Text(
+                              '${req.paketLamaNama} ➔ ${req.paketBaruNama}',
+                              style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                            ),
+                            if (req.adminCatatan.isNotEmpty)
+                              Text(
+                                'Catatan: ${req.adminCatatan}',
+                                style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isApproved ? AppTheme.success.withOpacity(0.2) : AppTheme.error.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          isApproved ? 'Disetujui' : 'Ditolak',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isApproved ? AppTheme.success : AppTheme.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _approvePackageRequestDialog(PackageRequestModel req) async {
+    final noteController = TextEditingController(text: 'Disetujui. Perangkat & konfigurasi siap disesuaikan.');
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: AppTheme.success),
+            const SizedBox(width: 8),
+            Text(
+              'Setujui Pengajuan #${req.id}',
+              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pelanggan: ${req.userNama}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+            const SizedBox(height: 4),
+            Text(
+              '${req.paketLamaNama} (${req.paketLamaKecepatan}M) ➔ ${req.paketBaruNama} (${req.paketBaruKecepatan}M)',
+              style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            const SizedBox(height: 6),
+            Text('Selisih Harga: Rp ${_formatRupiah(req.selisihHarga)} / bulan', style: const TextStyle(color: AppTheme.accent, fontSize: 12)),
+            const SizedBox(height: 12),
+            const Text('Catatan Persetujuan Admin:', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: noteController,
+              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+              decoration: const InputDecoration(
+                hintText: 'Tulis catatan persetujuan...',
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ya, Setujui', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final res = await ApiService.instance.approvePackageRequest(req.id, adminCatatan: noteController.text.trim());
+      if (res['success'] == true) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res['message'] ?? 'Pengajuan disetujui!'), backgroundColor: AppTheme.success),
+        );
+        _loadAllAdminData();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res['message'] ?? 'Gagal menyetujui pengajuan'), backgroundColor: AppTheme.error),
+        );
+      }
+    }
+  }
+
+  Future<void> _rejectPackageRequestDialog(PackageRequestModel req) async {
+    final noteController = TextEditingController(text: 'Kapasitas ODP wilayah saat ini belum memadai untuk paket ini.');
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.cancel, color: AppTheme.error),
+            const SizedBox(width: 8),
+            Text(
+              'Tolak Pengajuan #${req.id}',
+              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pelanggan: ${req.userNama}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+            const SizedBox(height: 6),
+            const Text('Alasan Penolakan:', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: noteController,
+              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+              decoration: const InputDecoration(
+                hintText: 'Tulis alasan penolakan...',
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Tolak Pengajuan', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final res = await ApiService.instance.rejectPackageRequest(req.id, adminCatatan: noteController.text.trim());
+      if (res['success'] == true) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res['message'] ?? 'Pengajuan ditolak.'), backgroundColor: AppTheme.warning),
+        );
+        _loadAllAdminData();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res['message'] ?? 'Gagal menolak pengajuan'), backgroundColor: AppTheme.error),
+        );
+      }
+    }
+  }
+
+  // --- TAB 4: VERIFIKASI PEMBAYARAN (A3) ---
   Widget _buildPaymentVerificationTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

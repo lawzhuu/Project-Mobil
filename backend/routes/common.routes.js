@@ -60,6 +60,31 @@ router.post('/devices', authMiddleware, (req, res) => {
   return res.json({ success: true, message: 'Device FCM token berhasil didaftarkan' });
 });
 
+// Proxy for external Supabase storage objects (solves Android emulator DNS lookup failures)
+router.get('/storage/proxy', async (req, res) => {
+  const fileUrl = req.query.url;
+  if (!fileUrl) return res.status(400).send('Missing url parameter');
+
+  if (fileUrl.startsWith('/uploads')) {
+    return res.redirect(fileUrl);
+  }
+
+  try {
+    const fetchRes = await fetch(fileUrl);
+    if (!fetchRes.ok) {
+      return res.status(fetchRes.status).send('Failed to fetch image');
+    }
+    const contentType = fetchRes.headers.get('content-type') || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=604800');
+    const arrayBuffer = await fetchRes.arrayBuffer();
+    return res.send(Buffer.from(arrayBuffer));
+  } catch (err) {
+    console.warn('[Storage Proxy Error]:', err.message);
+    return res.status(500).send('Proxy error: ' + err.message);
+  }
+});
+
 // Health check endpoint
 router.get('/', (req, res) => {
   res.json({
