@@ -37,7 +37,7 @@ GROQ_MODEL=openai/gpt-oss-120b
 # Dapatkan dari: Supabase Dashboard -> Project Settings -> API
 # ==============================================================================
 SUPABASE_URL=https://xxxxxxxxxxxxxxxxxxxx.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_KEY=...
 
 # Nama Storage Bucket untuk foto profil & bukti pembayaran
 # (Default: profile-photos, otomatis dibuat dan diset Public)
