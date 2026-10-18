@@ -1,0 +1,16 @@
+{
+  "model_name": "CustomerLateRiskScorer",
+  "type": "Heuristic Multi-Factor Risk Classifier",
+  "weights": {
+    "baseline": 15,
+    "has_unpaid_penalty": 45,
+    "multiple_unpaid_penalty": 25,
+    "currency_volatility_factor": 10
+  },
+  "thresholds": {
+    "high_risk": 70,
+    "medium_risk": 40,
+    "low_risk": 0
+  },
+  "updated_at": "2026-10-18T09:08:03.333Z"
+}
