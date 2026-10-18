@@ -29,6 +29,11 @@ class NotificationService {
           debugPrint('[Notification] User tapped: ${details.payload}');
         },
       );
+
+      final androidPlugin = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.requestNotificationsPermission();
+
       _isInitialized = true;
     } catch (e) {
       debugPrint('[NotificationService] Init error: $e');
