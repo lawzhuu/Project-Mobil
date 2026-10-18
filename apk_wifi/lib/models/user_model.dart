@@ -69,6 +69,40 @@ class UserModel {
     };
   }
 
+  UserModel copyWith({
+    int? id,
+    String? nama,
+    String? email,
+    String? noHp,
+    String? role,
+    String? negara,
+    String? mataUang,
+    String? zonaWaktu,
+    String? alamat,
+    double? lat,
+    double? lng,
+    String? foto,
+    String? status,
+    int? paketId,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      nama: nama ?? this.nama,
+      email: email ?? this.email,
+      noHp: noHp ?? this.noHp,
+      role: role ?? this.role,
+      negara: negara ?? this.negara,
+      mataUang: mataUang ?? this.mataUang,
+      zonaWaktu: zonaWaktu ?? this.zonaWaktu,
+      alamat: alamat ?? this.alamat,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      foto: foto ?? this.foto,
+      status: status ?? this.status,
+      paketId: paketId ?? this.paketId,
+    );
+  }
+
   bool get isAdmin => role == 'admin';
   bool get isTeknisi => role == 'teknisi';
   bool get isPelanggan => role == 'pelanggan';

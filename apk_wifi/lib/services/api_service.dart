@@ -102,6 +102,40 @@ class ApiService {
     return null;
   }
 
+  Future<Map<String, dynamic>> updateProfile({
+    required String nama,
+    required String noHp,
+    required String negara,
+    required String mataUang,
+    required String zonaWaktu,
+    required String alamat,
+    required double lat,
+    required double lng,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/me');
+      final res = await http.put(
+        url,
+        headers: _headers,
+        body: jsonEncode({
+          'nama': nama,
+          'no_hp': noHp,
+          'negara': negara,
+          'mata_uang': mataUang,
+          'zona_waktu': zonaWaktu,
+          'alamat': alamat,
+          'lat': lat,
+          'lng': lng,
+        }),
+      ).timeout(const Duration(seconds: 8));
+
+      return jsonDecode(res.body);
+    } catch (e) {
+      debugPrint('[ApiService] updateProfile error: $e');
+      return {'success': false, 'message': 'Gagal memperbarui profil: $e'};
+    }
+  }
+
   // --- PACKAGES ---
   Future<List<PackageModel>> getPackages() async {
     const cacheKey = 'packages';

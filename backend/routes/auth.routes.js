@@ -131,12 +131,15 @@ router.put('/me', authMiddleware, upload.single('foto'), (req, res) => {
   const idx = db.users.findIndex(u => u.id === req.user.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
 
-  const { nama, no_hp, alamat, negara, zona_waktu } = req.body;
+  const { nama, no_hp, alamat, negara, zona_waktu, mata_uang, lat, lng } = req.body;
   if (nama) db.users[idx].nama = nama;
-  if (no_hp) db.users[idx].no_hp = no_hp;
-  if (alamat) db.users[idx].alamat = alamat;
+  if (no_hp !== undefined) db.users[idx].no_hp = no_hp;
+  if (alamat !== undefined) db.users[idx].alamat = alamat;
   if (negara) db.users[idx].negara = negara;
   if (zona_waktu) db.users[idx].zona_waktu = zona_waktu;
+  if (mata_uang) db.users[idx].mata_uang = mata_uang;
+  if (lat !== undefined && lat !== null) db.users[idx].lat = parseFloat(lat);
+  if (lng !== undefined && lng !== null) db.users[idx].lng = parseFloat(lng);
   if (req.file) {
     db.users[idx].foto = `/uploads/${req.file.filename}`;
   }
