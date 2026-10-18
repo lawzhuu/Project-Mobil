@@ -55,6 +55,9 @@ class CustomCard extends StatelessWidget {
         ),
       );
     }
-    return content;
+    return Material(
+      color: Colors.transparent,
+      child: content,
+    );
   }
 }
