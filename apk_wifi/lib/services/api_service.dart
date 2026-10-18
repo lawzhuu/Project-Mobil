@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
 import '../config/app_config.dart';
 import '../models/feedback_model.dart';
 import '../models/invoice_model.dart';
@@ -33,20 +35,28 @@ class ApiService {
   }
 
   // --- AUTH ---
-  Future<Map<String, dynamic>> login({required String username, required String password}) async {
+  Future<Map<String, dynamic>> login({
+    required String username,
+    required String password,
+  }) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/auth/login');
-      final res = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
-      ).timeout(const Duration(seconds: 8));
+      final res = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'username': username, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 8));
 
       final data = jsonDecode(res.body);
       return data;
     } catch (e) {
       debugPrint('[ApiService] Login error: $e');
-      return {'success': false, 'message': 'Tidak dapat terhubung ke server backend ($e)'};
+      return {
+        'success': false,
+        'message': 'Tidak dapat terhubung ke server backend ($e)',
+      };
     }
   }
 
@@ -63,21 +73,23 @@ class ApiService {
   }) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/auth/register');
-      final res = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'nama': nama,
-          'email': email,
-          'no_hp': noHp,
-          'password': password,
-          'negara': negara,
-          'alamat': alamat,
-          'lat': lat,
-          'lng': lng,
-          'paket_id': paketId,
-        }),
-      ).timeout(const Duration(seconds: 8));
+      final res = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'nama': nama,
+              'email': email,
+              'no_hp': noHp,
+              'password': password,
+              'negara': negara,
+              'alamat': alamat,
+              'lat': lat,
+              'lng': lng,
+              'paket_id': paketId,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
 
       return jsonDecode(res.body);
     } catch (e) {
@@ -89,7 +101,9 @@ class ApiService {
   Future<UserModel?> getMe() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/me');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['success'] == true && data['user'] != null) {
@@ -141,17 +155,23 @@ class ApiService {
     const cacheKey = 'packages';
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/packages');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 5));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['success'] == true && data['packages'] is List) {
-          final list = (data['packages'] as List).map((p) => PackageModel.fromJson(p)).toList();
+          final list = (data['packages'] as List)
+              .map((p) => PackageModel.fromJson(p))
+              .toList();
           await LocalDbService.instance.saveCache(cacheKey, data['packages']);
           return list;
         }
       }
     } catch (e) {
-      debugPrint('[ApiService] getPackages error: $e. Loading from offline cache...');
+      debugPrint(
+        '[ApiService] getPackages error: $e. Loading from offline cache...',
+      );
     }
 
     // Offline cache fallback
@@ -268,11 +288,15 @@ class ApiService {
   Future<List<UserModel>> getCustomers() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/customers');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 5));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['success'] == true && data['customers'] is List) {
-          return (data['customers'] as List).map((u) => UserModel.fromJson(u)).toList();
+          return (data['customers'] as List)
+              .map((u) => UserModel.fromJson(u))
+              .toList();
         }
       }
     } catch (e) {
@@ -283,7 +307,9 @@ class ApiService {
 
   Future<bool> activateCustomer(int customerId, {int? paketId}) async {
     try {
-      final url = Uri.parse('${AppConfig.baseUrl}/customers/$customerId/activate');
+      final url = Uri.parse(
+        '${AppConfig.baseUrl}/customers/$customerId/activate',
+      );
       final res = await http.patch(
         url,
         headers: _headers,
@@ -330,11 +356,15 @@ class ApiService {
     const cacheKey = 'invoices';
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/invoices');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['success'] == true && data['invoices'] is List) {
-          final list = (data['invoices'] as List).map((i) => InvoiceModel.fromJson(i)).toList();
+          final list = (data['invoices'] as List)
+              .map((i) => InvoiceModel.fromJson(i))
+              .toList();
           await LocalDbService.instance.saveCache(cacheKey, data['invoices']);
           return list;
         }
@@ -428,11 +458,15 @@ class ApiService {
   Future<List<LedgerBlockModel>> getLedger() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/ledger');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['success'] == true && data['ledger'] is List) {
-          return (data['ledger'] as List).map((b) => LedgerBlockModel.fromJson(b)).toList();
+          return (data['ledger'] as List)
+              .map((b) => LedgerBlockModel.fromJson(b))
+              .toList();
         }
       }
     } catch (e) {
@@ -444,7 +478,9 @@ class ApiService {
   Future<Map<String, dynamic>> verifyLedger() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/ledger/verify');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       return jsonDecode(res.body);
     } catch (e) {
       debugPrint('[ApiService] verifyLedger error: $e');
@@ -460,11 +496,15 @@ class ApiService {
     const cacheKey = 'tasks';
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/tasks');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['success'] == true && data['tasks'] is List) {
-          final list = (data['tasks'] as List).map((t) => TaskModel.fromJson(t)).toList();
+          final list = (data['tasks'] as List)
+              .map((t) => TaskModel.fromJson(t))
+              .toList();
           await LocalDbService.instance.saveCache(cacheKey, data['tasks']);
           return list;
         }
@@ -524,11 +564,15 @@ class ApiService {
   Future<List<UpstreamBillModel>> getUpstreamBills() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/upstream-bills');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['success'] == true && data['upstream_bills'] is List) {
-          return (data['upstream_bills'] as List).map((b) => UpstreamBillModel.fromJson(b)).toList();
+          return (data['upstream_bills'] as List)
+              .map((b) => UpstreamBillModel.fromJson(b))
+              .toList();
         }
       }
     } catch (e) {
@@ -565,7 +609,9 @@ class ApiService {
   Future<Map<String, dynamic>?> getReportSummary() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/reports/summary');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         return data['summary'];
@@ -580,7 +626,9 @@ class ApiService {
   Future<Map<String, dynamic>?> getForecast() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/analytics/forecast');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         return jsonDecode(res.body);
       }
@@ -590,10 +638,28 @@ class ApiService {
     return null;
   }
 
+  // --- COMPOSITE AI: ML REGRESSION + GEMINI LLM INSIGHT ---
+  Future<Map<String, dynamic>?> runAiInsightAnalysis() async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/analytics/analyze-insight');
+      final res = await http
+          .post(url, headers: _headers)
+          .timeout(const Duration(seconds: 20));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      debugPrint('[ApiService] runAiInsightAnalysis error: $e');
+    }
+    return null;
+  }
+
   Future<List<dynamic>> getLateRisk() async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/analytics/late-risk');
-      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         return data['late_risks'] ?? [];
@@ -608,11 +674,9 @@ class ApiService {
   Future<String> sendChatMessage(String message) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/chat');
-      final res = await http.post(
-        url,
-        headers: _headers,
-        body: jsonEncode({'message': message}),
-      ).timeout(const Duration(seconds: 8));
+      final res = await http
+          .post(url, headers: _headers, body: jsonEncode({'message': message}))
+          .timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -633,18 +697,23 @@ class ApiService {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final map = (data['data']['idrPerCurrency'] as Map).map(
-          (k, v) => MapEntry(k.toString(), double.tryParse(v.toString()) ?? 1.0),
+          (k, v) =>
+              MapEntry(k.toString(), double.tryParse(v.toString()) ?? 1.0),
         );
         await LocalDbService.instance.saveCache(cacheKey, map);
         return map;
       }
     } catch (e) {
-      debugPrint('[ApiService] getExchangeRates error: $e. Using offline rates.');
+      debugPrint(
+        '[ApiService] getExchangeRates error: $e. Using offline rates.',
+      );
     }
 
     final cached = await LocalDbService.instance.getCache(cacheKey);
     if (cached is Map) {
-      return cached.map((k, v) => MapEntry(k.toString(), double.tryParse(v.toString()) ?? 1.0));
+      return cached.map(
+        (k, v) => MapEntry(k.toString(), double.tryParse(v.toString()) ?? 1.0),
+      );
     }
     return AppConfig.idrPerCurrency;
   }
@@ -657,7 +726,9 @@ class ApiService {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['feedback'] is List) {
-          return (data['feedback'] as List).map((f) => FeedbackModel.fromJson(f)).toList();
+          return (data['feedback'] as List)
+              .map((f) => FeedbackModel.fromJson(f))
+              .toList();
         }
       }
     } catch (e) {
@@ -666,7 +737,10 @@ class ApiService {
     return [];
   }
 
-  Future<bool> submitFeedback({required String saran, required String kesan}) async {
+  Future<bool> submitFeedback({
+    required String saran,
+    required String kesan,
+  }) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/feedback');
       final res = await http.post(

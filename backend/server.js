@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { PORT, UPLOAD_DIR } = require('./config');
+
 const routes = require('./routes');
 
 const app = express();

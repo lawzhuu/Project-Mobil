@@ -29,7 +29,6 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   // Data states
   Map<String, dynamic>? _summary;
   Map<String, dynamic>? _forecastData;
-  List<dynamic> _lateRisks = [];
   List<UserModel> _customers = [];
   List<InvoiceModel> _invoices = [];
   List<LedgerBlockModel> _ledgerBlocks = [];
@@ -38,6 +37,8 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   bool _isLoading = true;
   VerificationResult? _blockchainVerification;
   bool _isVerifyingLedger = false;
+  bool _isAnalyzingAi = false;
+  Map<String, dynamic>? _aiInsightResult;
 
   @override
   void initState() {
@@ -58,7 +59,6 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     try {
       final summaryFuture = ApiService.instance.getReportSummary();
       final forecastFuture = ApiService.instance.getForecast();
-      final lateRiskFuture = ApiService.instance.getLateRisk();
       final customersFuture = ApiService.instance.getCustomers();
       final invoicesFuture = ApiService.instance.getInvoices();
       final ledgerFuture = ApiService.instance.getLedger();
@@ -67,7 +67,6 @@ class _AdminHubScreenState extends State<AdminHubScreen>
       final results = await Future.wait([
         summaryFuture,
         forecastFuture,
-        lateRiskFuture,
         customersFuture,
         invoicesFuture,
         ledgerFuture,
@@ -78,17 +77,51 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         setState(() {
           _summary = results[0] as Map<String, dynamic>?;
           _forecastData = results[1] as Map<String, dynamic>?;
-          _lateRisks = results[2] as List<dynamic>;
-          _customers = results[3] as List<UserModel>;
-          _invoices = results[4] as List<InvoiceModel>;
-          _ledgerBlocks = results[5] as List<LedgerBlockModel>;
-          _upstreamBills = results[6] as List<UpstreamBillModel>;
+          _customers = results[2] as List<UserModel>;
+          _invoices = results[3] as List<InvoiceModel>;
+          _ledgerBlocks = results[4] as List<LedgerBlockModel>;
+          _upstreamBills = results[5] as List<UpstreamBillModel>;
           _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint('[AdminHub] Error loading admin data: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- TRIGGER COMPOSITE AI: ML REGRESSION + GEMINI LLM INSIGHT ---
+  Future<void> _triggerAiInsightAnalysis() async {
+    setState(() => _isAnalyzingAi = true);
+    try {
+      final res = await ApiService.instance.runAiInsightAnalysis();
+      if (res != null && res['success'] == true) {
+        setState(() {
+          _aiInsightResult = res;
+          _forecastData = res;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✨ Analisis AI & Gemini LLM Insight berhasil digenerate!'),
+              backgroundColor: AppTheme.success,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal menjalankan analisis AI.'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[AdminHub] Error triggering AI analysis: $e');
+    } finally {
+      if (mounted) setState(() => _isAnalyzingAi = false);
     }
   }
 
@@ -464,20 +497,83 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     );
   }
 
-  // --- TAB 1: AI & REVENUE FORECAST (A6, A4 SUMMARY) ---
+  // --- TAB 1: AI & REVENUE FORECAST (PRIORITAS PEMASUKAN & LLM INSIGHT) ---
   Widget _buildAiAnalyticsTab() {
     final rev = _summary?['total_revenue_idr'] ?? 725000;
     final cost = _summary?['total_upstream_cost_idr'] ?? 4500000;
-    final profit = _summary?['net_profit_idr'] ?? -3775000;
-    final activeCust = _summary?['active_customers'] ?? 3;
-    final pendingCust = _summary?['pending_customers'] ?? 1;
+    final growth = _forecastData?['growth_rate_pct'] ?? 16.5;
+    final confidenceScore = ((_forecastData?['model_r2'] ?? 0.94) * 100).toStringAsFixed(0);
+
+    // Ambil data historis & proyeksi masa depan dari respons AI
+    final historicalList = (_forecastData?['historical'] as List?) ?? [
+      {'bulan': 'Mei', 'pemasukan': 3200000},
+      {'bulan': 'Jun', 'pemasukan': 4100000},
+      {'bulan': 'Jul', 'pemasukan': 5300000},
+      {'bulan': 'Agt', 'pemasukan': 6800000},
+      {'bulan': 'Sep', 'pemasukan': 7900000},
+      {'bulan': 'Okt', 'pemasukan': 9200000},
+    ];
+
+    final forecastList = (_forecastData?['forecast'] as List?) ?? [
+      {'bulan': 'Nov 2026 (Est)', 'pemasukan': 10800000, 'confidence': 0.94}
+    ];
+
+    final nextForecast = forecastList.isNotEmpty ? forecastList[0] : null;
+    final nextMonthName = nextForecast?['bulan'] ?? 'Nov 2026';
+    final nextMonthNominalJt = nextForecast != null
+        ? ((nextForecast['pemasukan'] as num) / 1000000).toStringAsFixed(1)
+        : '10.8';
+
+    // Susun bar rods grafik secara dinamis
+    final List<BarChartGroupData> barGroups = [];
+    final List<String> monthLabels = [];
+
+    int chartIdx = 0;
+    for (var h in historicalList) {
+      final valJt = ((h['pemasukan'] as num? ?? 0) / 1000000).toDouble();
+      final String rawBln = h['bulan']?.toString() ?? '';
+      final String shortLabel = rawBln.split(' ').first;
+      monthLabels.add(shortLabel);
+      barGroups.add(
+        BarChartGroupData(
+          x: chartIdx,
+          barRods: [
+            BarChartRodData(
+              toY: valJt,
+              color: AppTheme.primary,
+              width: 14,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ],
+        ),
+      );
+      chartIdx++;
+    }
+
+    if (nextForecast != null) {
+      final valJt = ((nextForecast['pemasukan'] as num? ?? 0) / 1000000).toDouble();
+      monthLabels.add('Nov*');
+      barGroups.add(
+        BarChartGroupData(
+          x: chartIdx,
+          barRods: [
+            BarChartRodData(
+              toY: valJt,
+              color: AppTheme.accent,
+              width: 14,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ],
+        ),
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Stat Metrics Row
+          // Stat Metrics Row: Prioritaskan Pemasukan & Pertumbuhan
           Row(
             children: [
               Expanded(
@@ -486,19 +582,19 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                   value: 'Rp ${(rev / 1000).toStringAsFixed(0)}K',
                   icon: Icons.payments,
                   iconColor: AppTheme.success,
-                  trend: '+16.5%',
-                  subtitle: 'Bulan ini',
+                  trend: '+$growth% MoM',
+                  subtitle: 'Bulan berjalan',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: StatMetricCard(
-                  title: 'Beban Operasional',
-                  value: 'Rp ${(cost / 1000).toStringAsFixed(0)}K',
-                  icon: Icons.account_balance_wallet,
-                  iconColor: AppTheme.warning,
-                  trend: 'Terkontrol',
-                  subtitle: 'Pengeluaran ISP',
+                  title: 'Estimasi Bulan Depan',
+                  value: 'Rp $nextMonthNominalJt Juta',
+                  icon: Icons.trending_up,
+                  iconColor: AppTheme.accent,
+                  trend: 'AI Predicted',
+                  subtitle: nextMonthName.toString(),
                 ),
               ),
             ],
@@ -508,21 +604,22 @@ class _AdminHubScreenState extends State<AdminHubScreen>
             children: [
               Expanded(
                 child: StatMetricCard(
-                  title: 'Pelanggan Aktif',
-                  value: '$activeCust User',
-                  icon: Icons.people,
-                  iconColor: AppTheme.primary,
-                  subtitle: '$pendingCust Menunggu aktivasi',
+                  title: 'Beban Upstream',
+                  value: 'Rp ${(cost / 1000).toStringAsFixed(0)}K',
+                  icon: Icons.account_balance_wallet,
+                  iconColor: AppTheme.warning,
+                  trend: 'Terkontrol',
+                  subtitle: 'Pengeluaran ISP',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: StatMetricCard(
-                  title: 'Ledger Hash Blocks',
-                  value: '${_ledgerBlocks.length} Block',
-                  icon: Icons.security,
-                  iconColor: AppTheme.secondary,
-                  subtitle: 'SHA-256 Valid',
+                  title: 'Akurasi Model (R²)',
+                  value: '$confidenceScore%',
+                  icon: Icons.verified,
+                  iconColor: AppTheme.primary,
+                  subtitle: 'Linear Regression ML',
                 ),
               ),
             ],
@@ -530,7 +627,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
 
           const SizedBox(height: 20),
 
-          // AI REVENUE FORECAST (A6)
+          // GRAFIK AI REVENUE FORECAST (DINAMIS DARI MACHINE LEARNING)
           CustomCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,7 +646,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'AI Forecast Pemasukan (Non-LLM)',
+                              'Tren & Prediksi Pemasukan (AI ML)',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -572,9 +669,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                         color: AppTheme.primary.withOpacity(0.18),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Text(
-                        'Confidence 94%',
-                        style: TextStyle(
+                      child: Text(
+                        'R² $confidenceScore%',
+                        style: const TextStyle(
                           fontSize: 10,
                           color: AppTheme.primary,
                           fontWeight: FontWeight.bold,
@@ -585,18 +682,18 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Model regresi tren historis 6 bulan terakhir memproyeksikan pertumbuhan omset reseller ISP:',
+                  'Model Regresi Linier menghitung tren pertumbuhan omset reseller ISP berdasarkan data aktual:',
                   style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                 ),
                 const SizedBox(height: 20),
 
-                // Interactive Chart
+                // Interactive Dynamic Chart
                 SizedBox(
                   height: 190,
                   child: BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
-                      maxY: 15,
+                      maxY: 16,
                       barTouchData: BarTouchData(enabled: true),
                       titlesData: FlTitlesData(
                         show: true,
@@ -604,20 +701,11 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                           sideTitles: SideTitles(
                             showTitles: true,
                             getTitlesWidget: (val, meta) {
-                              const labels = [
-                                'Mei',
-                                'Jun',
-                                'Jul',
-                                'Agt',
-                                'Sep',
-                                'Okt',
-                                'Nov*',
-                              ];
                               final i = val.toInt();
                               return Padding(
                                 padding: const EdgeInsets.only(top: 6),
                                 child: Text(
-                                  i < labels.length ? labels[i] : '',
+                                  i < monthLabels.length ? monthLabels[i] : '',
                                   style: const TextStyle(
                                     color: AppTheme.textMuted,
                                     fontSize: 10,
@@ -658,60 +746,33 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                         ),
                       ),
                       borderData: FlBorderData(show: false),
-                      barGroups: [
-                        BarChartGroupData(
-                          x: 0,
-                          barRods: [
-                            BarChartRodData(toY: 3.2, color: AppTheme.primary),
-                          ],
-                        ),
-                        BarChartGroupData(
-                          x: 1,
-                          barRods: [
-                            BarChartRodData(toY: 4.1, color: AppTheme.primary),
-                          ],
-                        ),
-                        BarChartGroupData(
-                          x: 2,
-                          barRods: [
-                            BarChartRodData(toY: 5.3, color: AppTheme.primary),
-                          ],
-                        ),
-                        BarChartGroupData(
-                          x: 3,
-                          barRods: [
-                            BarChartRodData(toY: 6.8, color: AppTheme.primary),
-                          ],
-                        ),
-                        BarChartGroupData(
-                          x: 4,
-                          barRods: [
-                            BarChartRodData(toY: 7.9, color: AppTheme.primary),
-                          ],
-                        ),
-                        BarChartGroupData(
-                          x: 5,
-                          barRods: [
-                            BarChartRodData(toY: 9.2, color: AppTheme.primary),
-                          ],
-                        ),
-                        BarChartGroupData(
-                          x: 6,
-                          barRods: [
-                            BarChartRodData(toY: 10.8, color: AppTheme.accent),
-                          ],
-                        ), // Projection
-                      ],
+                      barGroups: barGroups,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                const Text(
-                  '*Nov: Estimasi Rp 10.8 Juta (Pertumbuhan rata-rata +16.5% MoM)',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.accent,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.accent.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 16, color: AppTheme.accent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '*$nextMonthName: Estimasi Rp $nextMonthNominalJt Juta (Pertumbuhan rata-rata +$growth% MoM)',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.accent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -720,21 +781,17 @@ class _AdminHubScreenState extends State<AdminHubScreen>
 
           const SizedBox(height: 20),
 
-          // LATE-RISK SCORING TABLE (A6)
+          // TOMBOL START ANALISIS AI & GENERATE LLM INSIGHT
           CustomCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
                   children: const [
-                    Icon(
-                      Icons.warning_amber,
-                      color: AppTheme.warning,
-                      size: 20,
-                    ),
+                    Icon(Icons.psychology, color: AppTheme.primary, size: 22),
                     SizedBox(width: 8),
                     Text(
-                      'AI Skor Risiko Telat Bayar Pelanggan',
+                      'AI & LLM Financial Intelligence',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -745,77 +802,137 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Algoritma multi-faktor menganalisis historis tagihan, valuta asing, dan perilaku pembayaran:',
+                  'Jalankan model Machine Learning untuk menganalisis keuangan dan biarkan Google Gemini LLM mentranslasikan angka menjadi narasi rekomendasi strategi bisnis.',
                   style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-                ..._lateRisks.map((item) {
-                  final score = item['risk_score'] ?? 20;
-                  final level = item['risk_level'] ?? 'Rendah';
-                  final name = item['nama'] ?? 'Pelanggan';
-                  final currency = item['mata_uang'] ?? 'IDR';
-                  final rec = item['recommendation'] ?? '';
-
-                  Color scoreColor = AppTheme.success;
-                  if (level == 'Tinggi') scoreColor = AppTheme.error;
-                  if (level == 'Sedang') scoreColor = AppTheme.warning;
-
-                  return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: AppTheme.border, width: 0.8),
-                      ),
+                // Action Button
+                ElevatedButton.icon(
+                  onPressed: _isAnalyzingAi ? null : _triggerAiInsightAnalysis,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    elevation: 2,
+                  ),
+                  icon: _isAnalyzingAi
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.auto_awesome, size: 20),
+                  label: Text(
+                    _isAnalyzingAi
+                        ? 'Sedang Menganalisis dengan AI & Gemini...'
+                        : 'Mulai Analisis AI & Generate Insight',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // HASIL INSIGHT LLM CARD
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _aiInsightResult != null
+                          ? AppTheme.primary.withOpacity(0.5)
+                          : AppTheme.border,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
                             children: [
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: AppTheme.textPrimary,
-                                ),
+                              Icon(
+                                Icons.lightbulb,
+                                size: 16,
+                                color: _aiInsightResult != null
+                                    ? AppTheme.accent
+                                    : AppTheme.textMuted,
                               ),
+                              const SizedBox(width: 6),
                               Text(
-                                '$currency • $rec',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppTheme.textMuted,
+                                _aiInsightResult != null
+                                    ? 'Insight Hasil Analisis AI'
+                                    : 'Belum Ada Analisis yang Dijalankan',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _aiInsightResult != null
+                                      ? AppTheme.textPrimary
+                                      : AppTheme.textMuted,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: scoreColor.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: scoreColor),
-                          ),
-                          child: Text(
-                            '$score / 100 ($level)',
-                            style: TextStyle(
-                              color: scoreColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
+                          if (_aiInsightResult != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accent.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _aiInsightResult?['source']?.toString().contains('Gemini') == true
+                                    ? 'Google Gemini Live'
+                                    : 'ML Engine',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  color: AppTheme.accent,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _aiInsightResult?['insight_text'] ??
+                            'Tekan tombol "Mulai Analisis AI & Generate Insight" di atas. Sistem akan menghitung model regresi linier pemasukan dan meminta Google Gemini LLM merangkum narasi proyeksi serta rekomendasi bisnis untuk Anda.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.5,
+                          color: _aiInsightResult != null
+                              ? AppTheme.textPrimary
+                              : AppTheme.textMuted,
+                        ),
+                      ),
+                      if (_aiInsightResult?['timestamp'] != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Dianalisis pada: ${_aiInsightResult!['timestamp']}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppTheme.textMuted,
+                            fontStyle: FontStyle.italic,
                           ),
                         ),
                       ],
-                    ),
-                  );
-                }).toList(),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

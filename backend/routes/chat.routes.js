@@ -1,20 +1,75 @@
 const express = require('express');
+const { GoogleGenAI } = require('@google/genai');
 const { loadDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
 // LLM Chatbot CS proxy endpoint (Keeps API key secure on server per PRD)
-router.post('/chat', authMiddleware, (req, res) => {
+router.post('/chat', authMiddleware, async (req, res) => {
   const db = loadDB();
   const { message } = req.body;
   const user = db.users.find(u => u.id === req.user.id) || {};
   const pkg = db.packages.find(p => p.id === user.paket_id);
 
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  // Jika GEMINI_API_KEY tersedia, panggil Google Gemini Gen AI
+  if (apiKey && apiKey.trim() !== '' && !apiKey.includes('YOUR_GEMINI_API_KEY')) {
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const prompt = `Anda adalah Customer Support AI profesional untuk Sima.net (Penyedia Internet Reseller & Smart Billing).
+Informasi Pelanggan:
+- Nama: ${user.nama || 'Pelanggan'}
+- Paket: ${pkg ? pkg.nama : 'Belum memilih'} (${pkg ? pkg.kecepatan_mbps : '30'} Mbps)
+- Mata Uang: ${user.mata_uang || 'IDR'}
+- Status: ${user.status || 'active'}
+
+Pesan Pelanggan: "${message}"
+
+Berikan respon bantuan yang ramah, solutif, ringkas, dan jelas dalam Bahasa Indonesia.`;
+
+      let reply = '';
+      if (ai.interactions && typeof ai.interactions.create === 'function') {
+        try {
+          const interaction = await ai.interactions.create({
+            model: modelName,
+            input: prompt
+          });
+          reply = interaction.output_text || (interaction.outputs && interaction.outputs[0]?.text);
+        } catch (err1) {
+          const genResult = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt
+          });
+          reply = genResult.text || (genResult.candidates && genResult.candidates[0]?.content?.parts?.[0]?.text);
+        }
+      } else {
+        const genResult = await ai.models.generateContent({
+          model: modelName,
+          contents: prompt
+        });
+        reply = genResult.text || (genResult.candidates && genResult.candidates[0]?.content?.parts?.[0]?.text);
+      }
+
+      if (reply && reply.trim() !== '') {
+        return res.json({
+          success: true,
+          reply: reply.trim(),
+          source: `Gemini (${modelName})`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.warn('[Gemini Chatbot Fallback Triggered]:', err.message);
+    }
+  }
+
+  // Fallback context-aware response jika API key belum diisi atau offline
   const query = (message || '').toLowerCase();
   let botReply = '';
 
-  // Smart context-aware AI assistant responses
   if (query.includes('paket') || query.includes('upgrade') || query.includes('kecepatan')) {
     botReply = `Halo Kak ${user.nama || 'Pelanggan'}! Anda saat ini berlangganan ${pkg ? pkg.nama : 'Paket Sima.net'} (${pkg ? pkg.kecepatan_mbps : '30'} Mbps). Kami menyediakan paket hingga 100 Mbps dengan latency rendah untuk gaming & streaming 4K. Anda dapat mengajukan permohonan upgrade langsung ke admin via menu Saran & Bantuan.`;
   } else if (query.includes('lambat') || query.includes('lemot') || query.includes('gangguan') || query.includes('merah')) {
@@ -28,6 +83,7 @@ router.post('/chat', authMiddleware, (req, res) => {
   return res.json({
     success: true,
     reply: botReply,
+    source: 'Context Engine (Set GEMINI_API_KEY in .env for Live Gemini)',
     timestamp: new Date().toISOString()
   });
 });
