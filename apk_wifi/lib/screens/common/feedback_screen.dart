@@ -87,7 +87,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saran & Kesan'),
+        title: const Text('Saran & Evaluasi SIMA.NET'),
       ),
       body: RefreshIndicator(
         onRefresh: _loadFeedback,

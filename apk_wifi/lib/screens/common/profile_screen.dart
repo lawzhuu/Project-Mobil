@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
 import '../../models/user_model.dart';
@@ -12,7 +14,6 @@ import '../../services/auth_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/glowing_button.dart';
 import '../../widgets/status_badge.dart';
-import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -99,39 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surfaceCard,
-        title: const Text('Konfirmasi Logout', style: TextStyle(color: AppTheme.textPrimary)),
-        content: const Text(
-          'Apakah Anda yakin ingin keluar dari aplikasi Sima.net?',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Keluar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
 
-    if (confirm == true) {
-      await AuthService.instance.logout();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
-  }
 
   void _showServerDialog() {
     final controller = TextEditingController(text: AppConfig.baseUrl);
@@ -200,6 +169,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditProfileDialog(UserModel currentUser) {
     final formKey = GlobalKey<FormState>();
+    final mapController = MapController();
     final namaController = TextEditingController(text: currentUser.nama);
     final noHpController = TextEditingController(text: currentUser.noHp);
     final alamatController = TextEditingController(text: currentUser.alamat);
@@ -209,6 +179,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String selectedZonaWaktu = currentUser.zonaWaktu;
     double currentLat = currentUser.lat;
     double currentLng = currentUser.lng;
+    if (currentLat == 0 && currentLng == 0) {
+      currentLat = -7.7956;
+      currentLng = 110.3695;
+    }
     bool isSaving = false;
     bool isFetchingGps = false;
 
@@ -259,6 +233,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   currentLng = 110.3695;
                 }
               });
+              try {
+                mapController.move(LatLng(currentLat, currentLng), 13.0);
+              } catch (_) {}
             }
 
             // Fungsi otomatis update koordinat & timezone berdasarkan input alamat
@@ -273,6 +250,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       selectedZonaWaktu = entry.value['tz'];
                     }
                   });
+                  try {
+                    mapController.move(LatLng(currentLat, currentLng), 13.0);
+                  } catch (_) {}
                   break;
                 }
               }
@@ -379,6 +359,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                 });
 
+                try {
+                  mapController.move(LatLng(pos.latitude, pos.longitude), 15.0);
+                } catch (_) {}
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Alamat & Koordinat berhasil di-autofill dari GPS!'),
@@ -457,8 +441,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 right: 20,
                 bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
               ),
-              child: SingleChildScrollView(
-                child: Form(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(modalCtx).size.height * 0.88,
+                ),
+                child: SingleChildScrollView(
+                  child: Form(
                   key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -608,32 +596,99 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Koordinat GPS (terisi otomatis sebagai input biasa)
+                      // Titik Koordinat Peta (seperti di RegisterScreen)
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
-                            child: TextFormField(
-                              key: ValueKey('lat_$currentLat'),
-                              initialValue: currentLat.toStringAsFixed(4),
-                              readOnly: true,
-                              style: const TextStyle(color: AppTheme.textPrimary),
-                              decoration: const InputDecoration(
-                                labelText: 'Latitude',
-                                prefixIcon: Icon(Icons.pin_drop, color: AppTheme.primary),
-                              ),
+                          const Text(
+                            'Titik Lokasi Pemasangan (LBS)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              key: ValueKey('lng_$currentLng'),
-                              initialValue: currentLng.toStringAsFixed(4),
-                              readOnly: true,
-                              style: const TextStyle(color: AppTheme.textPrimary),
-                              decoration: const InputDecoration(
-                                labelText: 'Longitude',
-                                prefixIcon: Icon(Icons.explore, color: AppTheme.primary),
+                          TextButton.icon(
+                            onPressed: isFetchingGps ? null : fetchGps,
+                            icon: isFetchingGps
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.my_location, size: 16, color: AppTheme.primary),
+                            label: const Text(
+                              'GPS Saya',
+                              style: TextStyle(color: AppTheme.primary, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Ketuk peta untuk menentukan titik koordinat rumah Anda:',
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Map Container (FlutterMap OpenStreetMap)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          height: 210,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppTheme.border),
+                          ),
+                          child: FlutterMap(
+                            mapController: mapController,
+                            options: MapOptions(
+                              initialCenter: LatLng(currentLat, currentLng),
+                              initialZoom: 14.0,
+                              onTap: (tapPosition, point) {
+                                setModalState(() {
+                                  currentLat = point.latitude;
+                                  currentLng = point.longitude;
+                                });
+                              },
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                userAgentPackageName: 'com.example.apk_wifi',
                               ),
+                              MarkerLayer(
+                                markers: [
+                                  Marker(
+                                    point: LatLng(currentLat, currentLng),
+                                    width: 50,
+                                    height: 50,
+                                    child: const Icon(
+                                      Icons.location_pin,
+                                      color: Colors.redAccent,
+                                      size: 44,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Pin: Lat ${currentLat.toStringAsFixed(5)}, Lng ${currentLng.toStringAsFixed(5)}',
+                            style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                          ),
+                          Text(
+                            'Ketuk peta untuk pindah pin',
+                            style: TextStyle(
+                              color: AppTheme.primary.withOpacity(0.85),
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
                             ),
                           ),
                         ],
@@ -668,6 +723,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
+                ),
               ),
             );
           },
@@ -698,18 +754,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profil Pengguna'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: AppTheme.primary),
-            tooltip: 'Edit Profil & Wilayah',
-            onPressed: () => _showEditProfileDialog(user),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppTheme.error),
-            tooltip: 'Logout',
-            onPressed: _handleLogout,
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(18),
@@ -757,27 +801,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        user.nama,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      InkWell(
-                        onTap: () => _showEditProfileDialog(user),
-                        borderRadius: BorderRadius.circular(20),
-                        child: const Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(Icons.edit_outlined, size: 18, color: AppTheme.primary),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    user.nama,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -894,24 +924,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
 
             const SizedBox(height: 24),
-
-            // Logout Button
-            OutlinedButton.icon(
-              onPressed: _handleLogout,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.error,
-                side: const BorderSide(color: AppTheme.error),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              icon: const Icon(Icons.logout),
-              label: const Text(
-                'KELUAR DARI APLIKASI (LOGOUT)',
-                style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
-              ),
-            ),
-
-            const SizedBox(height: 20),
           ],
         ),
       ),

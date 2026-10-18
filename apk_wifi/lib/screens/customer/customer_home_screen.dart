@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_card.dart';
 import '../common/currency_time_screen.dart';
+import '../common/feedback_screen.dart';
 import 'customer_chatbot_screen.dart';
 import 'customer_game_screen.dart';
 import 'customer_invoices_screen.dart';
@@ -238,7 +239,17 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                   ),
 
-                  // Action Icons (Search, Chatbot Headset, Notification Bell)
+                  // Action Icons (Saran SIMA.NET, Search, Chatbot Headset, Notification Bell)
+                  IconButton(
+                    icon: const Icon(Icons.rate_review_outlined, color: Colors.white, size: 22),
+                    tooltip: 'Saran & Masukan Sima.net',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FeedbackScreen()),
+                      );
+                    },
+                  ),
                   IconButton(
                     icon: const Icon(Icons.search, color: Colors.white, size: 22),
                     tooltip: 'Cari Paket',
