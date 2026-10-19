@@ -34,7 +34,7 @@
       "lng": 110.3802,
       "foto": "https://ysokrzhqtlpdwypauvjk.supabase.co/storage/v1/object/public/profile-photos/avatars/1792337447873-998618276.jpg",
       "status": "active",
-      "paket_id": 2,
+      "paket_id": 1,
       "created_at": "2026-10-18T12:34:55.343691+00:00",
       "updated_at": "2026-10-18T12:34:55.343691+00:00"
     },
@@ -231,7 +231,7 @@
       "mata_uang": "IDR",
       "kurs_terkunci": 1,
       "jatuh_tempo": "2026-10-25T23:59:59+00:00",
-      "status": "lunas",
+      "status": "belum",
       "created_at": null
     },
     {
@@ -249,11 +249,11 @@
       "id": 6,
       "user_id": 2,
       "periode": "November 2026",
-      "nominal_idr": 275000,
+      "nominal_idr": 175000,
       "mata_uang": "IDR",
       "kurs_terkunci": 1,
       "jatuh_tempo": "2026-11-25T23:59:59+00:00",
-      "status": "belum",
+      "status": "lunas",
       "created_at": "2026-10-18T17:24:15.408+00:00"
     }
   ],
@@ -295,7 +295,18 @@
       "bukti_path": "/uploads/sample_receipt.png",
       "nominal_idr": 450000,
       "status": "diverifikasi",
-      "verified_at": "2026-10-18T18:06:01.621Z"
+      "verified_at": "2026-10-18T18:06:01.621+00:00",
+      "created_at": null
+    },
+    {
+      "id": 5,
+      "invoice_id": 6,
+      "user_id": 2,
+      "bukti_path": "https://ysokrzhqtlpdwypauvjk.supabase.co/storage/v1/object/public/profile-photos/receipts/1792424854682-653965016.jpg",
+      "nominal_idr": 175000,
+      "status": "diverifikasi",
+      "verified_at": "2026-10-19T15:48:39.421+00:00",
+      "created_at": null
     }
   ],
   "ledger_blocks": [
@@ -319,11 +330,21 @@
     },
     {
       "idx": 2,
-      "waktu": "2026-10-18T18:06:01.621Z",
+      "waktu": "2026-10-18T18:06:01.621+00:00",
       "payment_id": 4,
       "nominal_idr": 450000,
       "prev_hash": "dd88e2b376951e67e79fae63de09014675d571f1995fa6755e678459bf9e5da3",
-      "hash": "b958d61fffe5c0b8f3be06a74a55b9c714ea145a6b9e473697e066048b084993"
+      "hash": "b958d61fffe5c0b8f3be06a74a55b9c714ea145a6b9e473697e066048b084993",
+      "created_at": null
+    },
+    {
+      "idx": 3,
+      "waktu": "2026-10-19T15:48:39.421+00:00",
+      "payment_id": 5,
+      "nominal_idr": 175000,
+      "prev_hash": "b958d61fffe5c0b8f3be06a74a55b9c714ea145a6b9e473697e066048b084993",
+      "hash": "91160b6dee38a474cca266ddeb98b65e1e4519c86b6f70a83856519b042c0b67",
+      "created_at": null
     }
   ],
   "tasks": [
@@ -360,7 +381,8 @@
       "pelanggan_id": 6,
       "jenis": "perbaikan",
       "status": "selesai",
-      "catatan": ""
+      "catatan": "",
+      "created_at": null
     }
   ],
   "upstream_bills": [
@@ -421,8 +443,31 @@
       "alasan": "Membutuhkan bandwidth lebih tinggi untuk streaming 4K dan gaming stabil.",
       "status": "approved",
       "admin_catatan": "Disetujui. Perangkat & konfigurasi siap disesuaikan.",
-      "created_at": "2026-10-18T17:23:23.273Z",
-      "updated_at": "2026-10-18T17:24:15.408Z"
+      "created_at": "2026-10-18T17:23:23.273+00:00",
+      "updated_at": "2026-10-18T17:24:15.408+00:00"
+    },
+    {
+      "id": 4,
+      "user_id": 2,
+      "user_nama": "Budi Santoso",
+      "user_email": "budi@gmail.com",
+      "user_alamat": "Jl. Kaliurang KM 5 No. 12, Sleman",
+      "user_no_hp": "085678912345",
+      "paket_lama_id": 2,
+      "paket_lama_nama": "Paket Turbo Home 50",
+      "paket_lama_kecepatan": 50,
+      "paket_lama_harga": 275000,
+      "paket_baru_id": 1,
+      "paket_baru_nama": "Paket Hemat Fiber 20",
+      "paket_baru_kecepatan": 20,
+      "paket_baru_harga": 175000,
+      "selisih_harga": -100000,
+      "tipe": "Hemat Biaya (Downgrade)",
+      "alasan": "Penyesuaian kebutuhan penggunaan internet keluarga.",
+      "status": "approved",
+      "admin_catatan": "Disetujui. Perangkat & konfigurasi siap disesuaikan.",
+      "created_at": "2026-10-19T15:36:29.098865+00:00",
+      "updated_at": "2026-10-19T15:37:16.545+00:00"
     }
   ]
 }

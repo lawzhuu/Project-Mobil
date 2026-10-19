@@ -136,14 +136,6 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
     });
   }
 
-  void _manualNudge(double dx, double dy) {
-    if (_isPlaying && !_isSuccess) {
-      setState(() {
-        _velX += dx;
-        _velY += dy;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +328,7 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
                                       const Padding(
                                         padding: EdgeInsets.symmetric(horizontal: 24),
                                         child: Text(
-                                          'Miringkan perangkat Anda ke kiri/kanan/depan/belakang atau gunakan tombol arah untuk memasukkan kabel ke Port ODP.',
+                                          'Miringkan perangkat Anda ke kiri/kanan/depan/belakang untuk mengarahkan pulsa optik ke Port ODP.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                                         ),
@@ -427,46 +419,10 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
             ),
 
             const SizedBox(height: 12),
-
-            // On-screen manual directional pads for desktop/emulator fallback
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => _manualNudge(-0.04, 0),
-                  tooltip: 'Tilt Kiri',
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  children: [
-                    IconButton.filledTonal(
-                      icon: const Icon(Icons.arrow_upward),
-                      onPressed: () => _manualNudge(0, -0.04),
-                      tooltip: 'Tilt Atas',
-                    ),
-                    const SizedBox(height: 6),
-                    IconButton.filledTonal(
-                      icon: const Icon(Icons.arrow_downward),
-                      onPressed: () => _manualNudge(0, 0.04),
-                      tooltip: 'Tilt Bawah',
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.arrow_forward),
-                  onPressed: () => _manualNudge(0.04, 0),
-                  tooltip: 'Tilt Kanan',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 6),
             Text(
               _statusMsg,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+              style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
             ),
           ],
         ),
