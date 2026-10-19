@@ -231,7 +231,7 @@
       "mata_uang": "IDR",
       "kurs_terkunci": 1,
       "jatuh_tempo": "2026-10-25T23:59:59+00:00",
-      "status": "belum",
+      "status": "lunas",
       "created_at": null
     },
     {
@@ -287,6 +287,15 @@
       "status": "diverifikasi",
       "verified_at": "2026-10-18T15:22:26.537+00:00",
       "created_at": null
+    },
+    {
+      "id": 4,
+      "invoice_id": 4,
+      "user_id": 6,
+      "bukti_path": "/uploads/sample_receipt.png",
+      "nominal_idr": 450000,
+      "status": "diverifikasi",
+      "verified_at": "2026-10-18T18:06:01.621Z"
     }
   ],
   "ledger_blocks": [
@@ -307,6 +316,14 @@
       "prev_hash": "c6374a3f4e3c4aa485df6496e7195bb263fa7907f185ef03bf7d101dcf2a6948",
       "hash": "dd88e2b376951e67e79fae63de09014675d571f1995fa6755e678459bf9e5da3",
       "created_at": null
+    },
+    {
+      "idx": 2,
+      "waktu": "2026-10-18T18:06:01.621Z",
+      "payment_id": 4,
+      "nominal_idr": 450000,
+      "prev_hash": "dd88e2b376951e67e79fae63de09014675d571f1995fa6755e678459bf9e5da3",
+      "hash": "b958d61fffe5c0b8f3be06a74a55b9c714ea145a6b9e473697e066048b084993"
     }
   ],
   "tasks": [
@@ -336,6 +353,14 @@
       "status": "baru",
       "catatan": "Pergantian/konfigurasi perangkat ONT untuk upgrade paket \"Paket Turbo Home 50\" (50 Mbps). Pelanggan: Budi Santoso (085678912345).",
       "created_at": null
+    },
+    {
+      "id": 4,
+      "teknisi_id": 4,
+      "pelanggan_id": 6,
+      "jenis": "perbaikan",
+      "status": "selesai",
+      "catatan": ""
     }
   ],
   "upstream_bills": [

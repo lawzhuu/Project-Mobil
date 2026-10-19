@@ -26,6 +26,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _localImageFile;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final me = await ApiService.instance.getMe();
+      if (me != null && mounted) {
+        AuthService.instance.updateUserProfile(me);
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('[ProfileScreen] Error loading profile: $e');
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final picked = await _picker.pickImage(
@@ -620,8 +638,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         maxLines: 2,
                         style: const TextStyle(color: AppTheme.textPrimary),
                         decoration: InputDecoration(
-                          labelText: 'Alamat Pemasangan Fiber',
-                          hintText: 'Contoh: Jl. Malioboro No. 12, Yogyakarta',
+                          labelText: currentUser.role == 'admin'
+                              ? 'Alamat Kantor / Operasional'
+                              : (currentUser.role == 'teknisi' ? 'Alamat Basecamp Teknisi' : 'Alamat Pemasangan Fiber'),
+                          hintText: currentUser.role == 'admin'
+                              ? 'Contoh: Kantor Pusat Sima.net, Jl. Telekomunikasi No. 1, Yogyakarta'
+                              : (currentUser.role == 'teknisi'
+                                  ? 'Contoh: Basecamp Teknisi Sima, Jl. Palagan, Sleman'
+                                  : 'Contoh: Jl. Malioboro No. 12, Yogyakarta'),
                           prefixIcon: const Icon(Icons.location_on, color: AppTheme.primary),
                           suffixIcon: IconButton(
                             tooltip: 'Gunakan GPS saat ini',
@@ -643,9 +667,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Titik Lokasi Pemasangan (LBS)',
-                            style: TextStyle(
+                          Text(
+                            currentUser.role == 'admin'
+                                ? 'Titik Lokasi Kantor (LBS)'
+                                : (currentUser.role == 'teknisi' ? 'Titik Lokasi Basecamp (LBS)' : 'Titik Lokasi Pemasangan (LBS)'),
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.textPrimary,
@@ -668,9 +694,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Ketuk peta untuk menentukan titik koordinat rumah Anda:',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                      Text(
+                        currentUser.role == 'admin'
+                            ? 'Ketuk peta untuk menentukan koordinat kantor:'
+                            : (currentUser.role == 'teknisi'
+                                ? 'Ketuk peta untuk menentukan koordinat basecamp:'
+                                : 'Ketuk peta untuk menentukan titik koordinat rumah Anda:'),
+                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                       ),
                       const SizedBox(height: 8),
 
@@ -794,149 +824,181 @@ class _ProfileScreenState extends State<ProfileScreen> {
           status: 'active',
         );
 
+    final hasImage = _localImageFile != null || user.foto.trim().isNotEmpty;
+    final ImageProvider? imageProvider = _localImageFile != null
+        ? FileImage(_localImageFile!)
+        : (user.foto.trim().isNotEmpty
+            ? NetworkImage(AppConfig.resolveImageUrl(user.foto))
+            : null);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profil Pengguna'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Avatar & Name Card
-            CustomCard(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.primary, width: 2),
-                        ),
-                        child: CircleAvatar(
-                          radius: 46,
-                          backgroundImage: _localImageFile != null
-                              ? FileImage(_localImageFile!) as ImageProvider
-                              : (user.foto.isNotEmpty
-                                  ? NetworkImage(AppConfig.resolveImageUrl(user.foto)) as ImageProvider
-                                  : null),
-                          onBackgroundImageError: (exception, stackTrace) {
-                            debugPrint('[ProfileScreen] Failed loading avatar: $exception');
-                          },
-                          child: (_localImageFile == null && user.foto.isEmpty)
-                              ? const Icon(Icons.person, size: 54, color: AppTheme.primary)
-                              : null,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: _showImagePickerModal,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: AppTheme.primary,
+      body: RefreshIndicator(
+        onRefresh: _loadProfile,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Avatar & Name Card
+              CustomCard(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
+                            border: Border.all(color: AppTheme.primary, width: 2),
                           ),
-                          child: const Icon(Icons.camera_alt, size: 18, color: Colors.black),
+                          child: CircleAvatar(
+                            radius: 46,
+                            backgroundColor: AppTheme.surfaceElevated,
+                            backgroundImage: imageProvider,
+                            onBackgroundImageError: hasImage
+                                ? (exception, stackTrace) {
+                                    debugPrint('[ProfileScreen] Failed loading avatar: $exception');
+                                  }
+                                : null,
+                            child: !hasImage
+                                ? Text(
+                                    user.nama.trim().isNotEmpty
+                                        ? user.nama.trim()[0].toUpperCase()
+                                        : (user.role == 'admin' ? 'A' : (user.role == 'teknisi' ? 'T' : 'U')),
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppTheme.primary,
+                                    ),
+                                  )
+                                : null,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    user.nama,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                        GestureDetector(
+                          onTap: _showImagePickerModal,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: AppTheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.camera_alt, size: 18, color: Colors.black),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.email,
-                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      StatusBadge(status: user.status),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.secondary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.secondary),
-                        ),
-                        child: Text(
-                          user.role.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.secondary,
+                    const SizedBox(height: 14),
+                    Text(
+                      user.nama,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.email,
+                      style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        StatusBadge(status: user.status),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.secondary.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.secondary),
+                          ),
+                          child: Text(
+                            user.role.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.secondary,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 18),
+              const SizedBox(height: 18),
 
-            // Account Detail Card
-            CustomCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Informasi Akun & Wilayah',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => _showEditProfileDialog(user),
-                        icon: const Icon(Icons.edit, size: 14, color: AppTheme.primary),
-                        label: const Text(
-                          'Ubah',
-                          style: TextStyle(fontSize: 12, color: AppTheme.primary, fontWeight: FontWeight.bold),
+              // Account Detail Card
+              CustomCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Informasi Akun & Wilayah',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
                         ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        TextButton.icon(
+                          onPressed: () => _showEditProfileDialog(user),
+                          icon: const Icon(Icons.edit, size: 14, color: AppTheme.primary),
+                          label: const Text(
+                            'Ubah',
+                            style: TextStyle(fontSize: 12, color: AppTheme.primary, fontWeight: FontWeight.bold),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    _buildDetailRow(Icons.phone, 'Nomor Telepon / WA', user.noHp.isNotEmpty ? user.noHp : '-'),
+                    const Divider(color: AppTheme.border, height: 20),
+                    _buildDetailRow(Icons.flag, 'Negara Terdaftar', user.negara),
+                    const Divider(color: AppTheme.border, height: 20),
+                    if (user.role == 'pelanggan') ...[
+                      _buildDetailRow(Icons.payments, 'Mata Uang Tagihan', '${user.mataUang} (Terkunci per invoice)'),
+                      const Divider(color: AppTheme.border, height: 20),
+                    ] else if (user.role == 'admin') ...[
+                      _buildDetailRow(Icons.admin_panel_settings_outlined, 'Tingkat Hak Akses', 'Super Admin (Manajemen Operasional & Keuangan)'),
+                      const Divider(color: AppTheme.border, height: 20),
+                    ] else ...[
+                      _buildDetailRow(Icons.engineering_outlined, 'Divisi Tugas', 'Teknisi Lapangan (Instalasi & Maintenance)'),
+                      const Divider(color: AppTheme.border, height: 20),
                     ],
-                  ),
-                  const SizedBox(height: 14),
-                  _buildDetailRow(Icons.phone, 'Nomor Telepon / WA', user.noHp.isNotEmpty ? user.noHp : '-'),
-                  const Divider(color: AppTheme.border, height: 20),
-                  _buildDetailRow(Icons.flag, 'Negara Terdaftar', user.negara),
-                  const Divider(color: AppTheme.border, height: 20),
-                  _buildDetailRow(Icons.payments, 'Mata Uang Tagihan', '${user.mataUang} (Terkunci per invoice)'),
-                  const Divider(color: AppTheme.border, height: 20),
-                  _buildDetailRow(Icons.schedule, 'Zona Waktu Default', user.zonaWaktu),
-                  const Divider(color: AppTheme.border, height: 20),
-                  _buildDetailRow(Icons.location_on, 'Alamat Pemasangan', user.alamat.isNotEmpty ? user.alamat : '-'),
-                  const Divider(color: AppTheme.border, height: 20),
-                  _buildDetailRow(
-                    Icons.pin_drop,
-                    'Koordinat GPS',
-                    'Lat: ${user.lat.toStringAsFixed(4)}, Lng: ${user.lng.toStringAsFixed(4)}',
-                  ),
-                ],
+                    _buildDetailRow(Icons.schedule, 'Zona Waktu Default', user.zonaWaktu),
+                    const Divider(color: AppTheme.border, height: 20),
+                    _buildDetailRow(
+                      Icons.location_on,
+                      user.role == 'admin'
+                          ? 'Alamat Kantor / Operasional'
+                          : (user.role == 'teknisi' ? 'Alamat Basecamp Teknisi' : 'Alamat Pemasangan'),
+                      user.alamat.isNotEmpty ? user.alamat : '-',
+                    ),
+                    const Divider(color: AppTheme.border, height: 20),
+                    _buildDetailRow(
+                      Icons.pin_drop,
+                      'Koordinat GPS',
+                      'Lat: ${user.lat.toStringAsFixed(4)}, Lng: ${user.lng.toStringAsFixed(4)}',
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 18),
+              const SizedBox(height: 18),
 
             // Settings Card
             CustomCard(
@@ -972,8 +1034,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(

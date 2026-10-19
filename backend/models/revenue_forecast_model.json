@@ -2,16 +2,16 @@
   "model_name": "RevenueForecastLinearRegression",
   "library": "ml-regression (npm)",
   "type": "Supervised Learning - Time Series Trend Regression",
-  "trained_at": "2026-10-18T17:24:16.430Z",
+  "trained_at": "2026-10-18T18:07:04.602Z",
   "training_samples_count": 6,
   "parameters": {
-    "slope": 1368571.4285714286,
-    "intercept": 2828571.428571428,
-    "r2_confidence_score": 0.979742511262462
+    "slope": 1432857.142857143,
+    "intercept": 2742857.1428571427,
+    "r2_confidence_score": 0.9663824861552063
   },
   "serialized": {
     "name": "simpleLinearRegression",
-    "slope": 1368571.4285714286,
-    "intercept": 2828571.428571428
+    "slope": 1432857.142857143,
+    "intercept": 2742857.1428571427
   }
 }
