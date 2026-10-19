@@ -1,10 +1,14 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
+import 'package:sensors_plus/sensors_plus.dart';
 import '../../config/app_theme.dart';
 import '../../models/task_model.dart';
 import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/status_badge.dart';
 import 'technician_compass_screen.dart';
@@ -26,11 +30,44 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
   LatLng _technicianLocation = const LatLng(-7.7550, 110.3750); // Sleman basecamp default
   bool _isLoading = true;
 
+  StreamSubscription<MagnetometerEvent>? _magnetometerSub;
+  double _headingDegrees = 0.0;
+  bool _sensorAvailable = true;
+
   @override
   void initState() {
     super.initState();
     _activeTask = widget.selectedTask;
     _loadTasksAndGPS();
+    _startCompass();
+  }
+
+  @override
+  void dispose() {
+    _magnetometerSub?.cancel();
+    super.dispose();
+  }
+
+  void _startCompass() {
+    try {
+      _magnetometerSub = magnetometerEventStream().listen(
+        (MagnetometerEvent event) {
+          double heading = atan2(event.y, event.x) * (180 / pi);
+          if (heading < 0) heading += 360;
+          if (mounted) {
+            setState(() {
+              _headingDegrees = heading;
+              _sensorAvailable = true;
+            });
+          }
+        },
+        onError: (_) {
+          if (mounted) setState(() => _sensorAvailable = false);
+        },
+      );
+    } catch (_) {
+      if (mounted) setState(() => _sensorAvailable = false);
+    }
   }
 
   Future<void> _loadTasksAndGPS() async {
@@ -48,6 +85,11 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
         _isLoading = false;
         if (_activeTask == null && tasks.isNotEmpty) {
           _activeTask = tasks.first;
+        } else if (_activeTask != null) {
+          _activeTask = tasks.firstWhere(
+            (t) => t.id == _activeTask!.id,
+            orElse: () => _activeTask!,
+          );
         }
       });
 
@@ -186,7 +228,7 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
                         ),
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ],
@@ -211,6 +253,112 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
                 ),
               ),
             ),
+
+          // Top-Right Live Compass Overlay
+          Positioned(
+            top: 16,
+            right: 16,
+            child: Tooltip(
+              message: 'Buka Kompas Digital (${_headingDegrees.toInt()}°)',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TechnicianCompassScreen(targetTask: _activeTask),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                      border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Compass Dial Needle
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF0F172A),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Positioned(
+                                top: 2,
+                                child: Text(
+                                  'U',
+                                  style: TextStyle(
+                                    color: Colors.redAccent,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              CustomPaint(
+                                size: const Size(44, 44),
+                                painter: CompassNeedlePainter(heading: _headingDegrees),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          '${_headingDegrees.toInt()}°',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _sensorAvailable ? Icons.explore : Icons.explore_off,
+                              size: 10,
+                              color: AppTheme.secondary,
+                            ),
+                            const SizedBox(width: 2),
+                            const Text(
+                              'Kompas',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
 
           // Selected Customer Floating Bottom Detail Card
           if (_activeTask != null)
@@ -304,19 +452,107 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primary,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        if (_activeTask!.isDone)
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.success.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppTheme.success.withValues(alpha: 0.4)),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.lock, size: 14, color: AppTheme.success),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Selesai (Terkunci)',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.success,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            icon: const Icon(Icons.update, size: 16),
-                            label: const Text('Update Status', style: TextStyle(fontSize: 12)),
-                            onPressed: () => _showStatusUpdateDialog(_activeTask!),
+                          )
+                        else if (_activeTask!.isNew)
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF59E0B),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.engineering, size: 16),
+                              label: const Text('Dikerjakan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final user = AuthService.instance.currentUser;
+                                await ApiService.instance.updateTaskStatus(
+                                  _activeTask!.id,
+                                  'dikerjakan',
+                                  teknisiId: _activeTask!.teknisiId ?? user?.id,
+                                );
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Status tugas #${_activeTask!.id} berhasil diubah menjadi "Dikerjakan"!'),
+                                    backgroundColor: AppTheme.success,
+                                  ),
+                                );
+                                _loadTasksAndGPS();
+                              },
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.success,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.check_circle, size: 16),
+                              label: const Text('Selesai', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Selesaikan Tugas'),
+                                    content: Text('Selesaikan tugas #${_activeTask!.id}? Tugas yang sudah selesai akan dikunci permanen.'),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+                                        onPressed: () => Navigator.pop(ctx, true),
+                                        child: const Text('Ya, Selesaikan', style: TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  final user = AuthService.instance.currentUser;
+                                  await ApiService.instance.updateTaskStatus(
+                                    _activeTask!.id,
+                                    'selesai',
+                                    teknisiId: _activeTask!.teknisiId ?? user?.id,
+                                  );
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text('Tugas #${_activeTask!.id} telah selesai dan terkunci permanen!'),
+                                      backgroundColor: AppTheme.success,
+                                    ),
+                                  );
+                                  _loadTasksAndGPS();
+                                }
+                              },
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ],
@@ -327,46 +563,53 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
       ),
     );
   }
+}
 
-  void _showStatusUpdateDialog(TaskModel task) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surfaceCard,
-        title: Text('Update Status Tugas #${task.id}', style: const TextStyle(color: AppTheme.textPrimary)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.fiber_new, color: AppTheme.info),
-              title: const Text('Baru Diterima', style: TextStyle(color: AppTheme.textPrimary)),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await ApiService.instance.updateTaskStatus(task.id, 'baru');
-                _loadTasksAndGPS();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.engineering, color: AppTheme.warning),
-              title: const Text('Sedang Dikerjakan di Lapangan', style: TextStyle(color: AppTheme.textPrimary)),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await ApiService.instance.updateTaskStatus(task.id, 'dikerjakan');
-                _loadTasksAndGPS();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.check_circle, color: AppTheme.success),
-              title: const Text('Selesai Dipasang / Diperbaiki', style: TextStyle(color: AppTheme.textPrimary)),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await ApiService.instance.updateTaskStatus(task.id, 'selesai');
-                _loadTasksAndGPS();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+class CompassNeedlePainter extends CustomPainter {
+  final double heading;
+
+  CompassNeedlePainter({required this.heading});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    // Rotate needle relative to compass heading
+    canvas.rotate((360 - heading) * pi / 180);
+
+    // North Needle (Red)
+    final redPaint = Paint()
+      ..color = const Color(0xFFEF4444)
+      ..style = PaintingStyle.fill;
+    final northPath = Path()
+      ..moveTo(0, -radius + 5)
+      ..lineTo(4, -1)
+      ..lineTo(-4, -1)
+      ..close();
+    canvas.drawPath(northPath, redPaint);
+
+    // South Needle (Silver/White)
+    final whitePaint = Paint()
+      ..color = const Color(0xFFE2E8F0)
+      ..style = PaintingStyle.fill;
+    final southPath = Path()
+      ..moveTo(0, radius - 5)
+      ..lineTo(4, 1)
+      ..lineTo(-4, 1)
+      ..close();
+    canvas.drawPath(southPath, whitePaint);
+
+    // Center pivot point
+    final pivotPaint = Paint()..color = Colors.white;
+    canvas.drawCircle(Offset.zero, 2.5, pivotPaint);
+
+    canvas.restore();
   }
+
+  @override
+  bool shouldRepaint(covariant CompassNeedlePainter oldDelegate) =>
+      oldDelegate.heading != heading;
 }

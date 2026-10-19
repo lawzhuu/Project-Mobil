@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../services/auth_service.dart';
 import '../admin/admin_hub_screen.dart';
-import '../auth/login_screen.dart';
 import '../customer/customer_home_screen.dart';
 import '../technician/technician_hub_screen.dart';
+import '../technician/technician_my_tasks_screen.dart';
 import 'course_feedback_screen.dart';
 import 'profile_screen.dart';
 
@@ -18,122 +18,104 @@ class MainShellScreen extends StatefulWidget {
 class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0;
 
-  void _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: Colors.white,
-        title: const Row(
-          children: [
-            Icon(Icons.logout, color: AppTheme.error),
-            SizedBox(width: 10),
-            Text(
-              'Konfirmasi Logout',
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Apakah Anda yakin ingin keluar dari aplikasi SIMA.NET?',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.error,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Keluar',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await AuthService.instance.logout();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = AuthService.instance.currentUser;
     final role = user?.role ?? 'pelanggan';
 
-    // 1. First Page according to role
-    Widget homeScreen;
-    IconData homeIcon;
-    IconData activeHomeIcon;
+    List<Widget> pages;
+    List<BottomNavigationBarItem> navItems;
 
     if (role == 'admin') {
-      homeScreen = const AdminHubScreen();
-      homeIcon = Icons.dashboard_outlined;
-      activeHomeIcon = Icons.dashboard;
+      pages = const [
+        AdminHubScreen(),
+        CourseFeedbackScreen(),
+        ProfileScreen(),
+      ];
+      navItems = const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.dashboard_outlined),
+          activeIcon: Icon(Icons.dashboard),
+          label: 'Beranda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.school_outlined),
+          activeIcon: Icon(Icons.school),
+          label: 'Kesan & Saran',
+          tooltip: 'Saran dan Kesan Matakuliah Mobile',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          activeIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ];
     } else if (role == 'teknisi') {
-      homeScreen = const TechnicianHubScreen();
-      homeIcon = Icons.engineering_outlined;
-      activeHomeIcon = Icons.engineering;
+      pages = [
+        TechnicianHubScreen(
+          onGoToMyTasks: () => setState(() => _currentIndex = 1),
+        ),
+        TechnicianMyTasksScreen(
+          onGoToHub: () => setState(() => _currentIndex = 0),
+        ),
+        const CourseFeedbackScreen(),
+        const ProfileScreen(),
+      ];
+      navItems = const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.dashboard_outlined),
+          activeIcon: Icon(Icons.dashboard),
+          label: 'Beranda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.assignment_outlined),
+          activeIcon: Icon(Icons.assignment),
+          label: 'Tugas Anda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.school_outlined),
+          activeIcon: Icon(Icons.school),
+          label: 'Kesan & Saran',
+          tooltip: 'Saran dan Kesan Matakuliah Mobile',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          activeIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ];
     } else {
-      homeScreen = const CustomerHomeScreen();
-      homeIcon = Icons.home_outlined;
-      activeHomeIcon = Icons.home;
+      // Pelanggan
+      pages = const [
+        CustomerHomeScreen(),
+        CourseFeedbackScreen(),
+        ProfileScreen(),
+      ];
+      navItems = const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: 'Beranda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.school_outlined),
+          activeIcon: Icon(Icons.school),
+          label: 'Kesan & Saran',
+          tooltip: 'Saran dan Kesan Matakuliah Mobile',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          activeIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ];
     }
 
-    // 4 standard pages: Beranda, Saran & Kesan Matkul Mobile, Profile, Placeholder for Logout
-    final List<Widget> pages = [
-      homeScreen,
-      const CourseFeedbackScreen(),
-      const ProfileScreen(),
-      const SizedBox.shrink(),
-    ];
-
-    final List<BottomNavigationBarItem> navItems = [
-      BottomNavigationBarItem(
-        icon: Icon(homeIcon),
-        activeIcon: Icon(activeHomeIcon),
-        label: 'Beranda',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.school_outlined),
-        activeIcon: Icon(Icons.school),
-        label: 'Kesan & Saran',
-        tooltip: 'Saran dan Kesan Matakuliah Mobile',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.person_outline),
-        activeIcon: Icon(Icons.person),
-        label: 'Profile',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.logout, color: AppTheme.error),
-        activeIcon: Icon(Icons.logout, color: AppTheme.error),
-        label: 'Logout',
-      ),
-    ];
+    final safeIndex = _currentIndex.clamp(0, pages.length - 1);
 
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
+        index: safeIndex,
         children: pages,
       ),
       bottomNavigationBar: Container(
@@ -158,16 +140,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
           selectedFontSize: 11,
           unselectedFontSize: 11,
           elevation: 0,
-          currentIndex: _currentIndex,
+          currentIndex: safeIndex,
           onTap: (index) {
-            if (index == 3) {
-              // Logout action
-              _handleLogout();
-            } else {
-              setState(() {
-                _currentIndex = index;
-              });
-            }
+            setState(() {
+              _currentIndex = index;
+            });
           },
           items: navItems,
         ),

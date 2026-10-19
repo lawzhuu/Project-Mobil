@@ -643,12 +643,14 @@ class ApiService {
   }
 
   // --- TASKS (TEKNISI & ADMIN) ---
-  Future<List<TaskModel>> getTasks() async {
-    const cacheKey = 'tasks';
+  Future<List<TaskModel>> getTasks({bool myTasks = false}) async {
+    final cacheKey = myTasks ? 'my_tasks' : 'tasks';
     try {
-      final url = Uri.parse('${AppConfig.baseUrl}/tasks');
+      final uri = Uri.parse('${AppConfig.baseUrl}/tasks').replace(
+        queryParameters: myTasks ? {'my_tasks': 'true'} : null,
+      );
       final res = await http
-          .get(url, headers: _headers)
+          .get(uri, headers: _headers)
           .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -669,6 +671,19 @@ class ApiService {
       return cached.map((t) => TaskModel.fromJson(t)).toList();
     }
     return [];
+  }
+
+  Future<bool> claimTask(int taskId) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/tasks/$taskId/claim');
+      final res = await http
+          .post(url, headers: _headers)
+          .timeout(const Duration(seconds: 6));
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('[ApiService] claimTask error: $e');
+      return false;
+    }
   }
 
   Future<bool> createTask({
@@ -696,13 +711,17 @@ class ApiService {
     }
   }
 
-  Future<bool> updateTaskStatus(int taskId, String status) async {
+  Future<bool> updateTaskStatus(int taskId, String status, {int? teknisiId}) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/tasks/$taskId');
+      final Map<String, dynamic> body = {'status': status};
+      if (teknisiId != null) {
+        body['teknisi_id'] = teknisiId;
+      }
       final res = await http.patch(
         url,
         headers: _headers,
-        body: jsonEncode({'status': status}),
+        body: jsonEncode(body),
       );
       return res.statusCode == 200;
     } catch (e) {

@@ -1,6 +1,6 @@
 class TaskModel {
   final int id;
-  final int teknisiId;
+  final int? teknisiId;
   final int pelangganId;
   final String jenis; // 'instalasi', 'perbaikan'
   final String status; // 'baru', 'dikerjakan', 'selesai'
@@ -11,10 +11,11 @@ class TaskModel {
   final double pelangganLat;
   final double pelangganLng;
   final String? teknisiNama;
+  final bool isMyTask;
 
   TaskModel({
     required this.id,
-    required this.teknisiId,
+    this.teknisiId,
     required this.pelangganId,
     required this.jenis,
     required this.status,
@@ -25,12 +26,17 @@ class TaskModel {
     this.pelangganLat = -7.7956,
     this.pelangganLng = 110.3695,
     this.teknisiNama,
+    this.isMyTask = false,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     return TaskModel(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
-      teknisiId: json['teknisi_id'] is int ? json['teknisi_id'] : int.tryParse(json['teknisi_id'].toString()) ?? 0,
+      teknisiId: json['teknisi_id'] != null
+          ? (json['teknisi_id'] is int
+              ? json['teknisi_id']
+              : int.tryParse(json['teknisi_id'].toString()))
+          : null,
       pelangganId: json['pelanggan_id'] is int ? json['pelanggan_id'] : int.tryParse(json['pelanggan_id'].toString()) ?? 0,
       jenis: json['jenis'] ?? 'instalasi',
       status: json['status'] ?? 'baru',
@@ -45,6 +51,7 @@ class TaskModel {
           ? double.tryParse(json['pelanggan_lng'].toString()) ?? 110.3695
           : 110.3695,
       teknisiNama: json['teknisi_nama'],
+      isMyTask: json['is_my_task'] == true,
     );
   }
 
@@ -62,10 +69,13 @@ class TaskModel {
       'pelanggan_lat': pelangganLat,
       'pelanggan_lng': pelangganLng,
       'teknisi_nama': teknisiNama,
+      'is_my_task': isMyTask,
     };
   }
 
   bool get isNew => status == 'baru';
   bool get isInProgress => status == 'dikerjakan';
   bool get isDone => status == 'selesai';
+  bool get isAvailable => teknisiId == null || teknisiId == 0;
+  bool get isTakenByOther => !isAvailable && !isMyTask;
 }

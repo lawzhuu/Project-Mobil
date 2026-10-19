@@ -353,7 +353,7 @@
       "teknisi_id": 4,
       "pelanggan_id": 2,
       "jenis": "perbaikan",
-      "status": "baru",
+      "status": "selesai",
       "catatan": "Pengecekan redaman kabel optik dan ganti drop core port 2.",
       "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
@@ -362,7 +362,7 @@
       "teknisi_id": 4,
       "pelanggan_id": 5,
       "jenis": "instalasi",
-      "status": "dikerjakan",
+      "status": "selesai",
       "catatan": "Tarik kabel FO dari ODP-SLM-08 ke rumah pelanggan baru.",
       "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
@@ -371,18 +371,73 @@
       "teknisi_id": 4,
       "pelanggan_id": 2,
       "jenis": "instalasi",
-      "status": "baru",
+      "status": "selesai",
       "catatan": "Pergantian/konfigurasi perangkat ONT untuk upgrade paket \"Paket Turbo Home 50\" (50 Mbps). Pelanggan: Budi Santoso (085678912345).",
       "created_at": null
     },
     {
       "id": 4,
       "teknisi_id": 4,
-      "pelanggan_id": 6,
+      "pelanggan_id": 3,
       "jenis": "perbaikan",
       "status": "selesai",
-      "catatan": "",
-      "created_at": null
+      "catatan": "Kabel putus di ODP"
+    },
+    {
+      "id": 5,
+      "teknisi_id": 4,
+      "pelanggan_id": 6,
+      "jenis": "instalasi",
+      "status": "selesai",
+      "catatan": "Pasang baru paket fiber 20"
+    },
+    {
+      "id": 6,
+      "teknisi_id": 4,
+      "pelanggan_id": 2,
+      "jenis": "perbaikan",
+      "status": "selesai",
+      "catatan": "Kabelnya putus jempoooooolll"
+    },
+    {
+      "id": 7,
+      "teknisi_id": 4,
+      "pelanggan_id": 6,
+      "jenis": "instalasi",
+      "status": "selesai",
+      "catatan": "pasang baru anjay"
+    },
+    {
+      "id": 8,
+      "teknisi_id": 4,
+      "pelanggan_id": 3,
+      "jenis": "perbaikan",
+      "status": "selesai",
+      "catatan": "aduhay rusak lagi"
+    },
+    {
+      "id": 9,
+      "teknisi_id": 4,
+      "pelanggan_id": 3,
+      "jenis": "perbaikan",
+      "status": "selesai",
+      "catatan": "rusak lagi ajah"
+    },
+    {
+      "id": 10,
+      "teknisi_id": 4,
+      "pelanggan_id": 6,
+      "jenis": "instalasi",
+      "status": "selesai",
+      "catatan": "pasang kuy"
+    },
+    {
+      "id": 11,
+      "teknisi_id": 4,
+      "pelanggan_id": 5,
+      "jenis": "perbaikan",
+      "status": "selesai",
+      "catatan": "rusak anjing"
     }
   ],
   "upstream_bills": [
