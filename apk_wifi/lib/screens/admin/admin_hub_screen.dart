@@ -5,7 +5,6 @@ import '../../config/app_theme.dart';
 import '../../models/invoice_model.dart';
 import '../../models/ledger_model.dart';
 import '../../models/package_request_model.dart';
-import '../../models/payment_model.dart';
 import '../../models/upstream_bill_model.dart';
 import '../../models/user_model.dart';
 import '../../services/api_service.dart';
@@ -37,6 +36,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   List<PackageRequestModel> _packageRequests = [];
 
   bool _isLoading = true;
+  int? _selectedSection; // null = Executive Dashboard Hub, 0..5 = Modul detail
   VerificationResult? _blockchainVerification;
   bool _isVerifyingLedger = false;
   bool _isAnalyzingAi = false;
@@ -342,11 +342,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   }
 
   void _showAssignTaskDialog() {
-    final customerCtrl = TextEditingController();
     final catatanCtrl = TextEditingController();
     String jenis = 'instalasi';
     int? selectedCustomerId;
-    int? selectedTechnicianId;
 
     final customers = _customers.where((c) => c.status == 'active').toList();
 
@@ -442,65 +440,443 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     );
   }
 
+  String _getSectionTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'AI & Analisis Finansial';
+      case 1:
+        return 'Aktivasi Pelanggan';
+      case 2:
+        return 'Pengajuan Ubah Paket';
+      case 3:
+        return 'Verifikasi Pembayaran';
+      case 4:
+        return 'Blockchain Ledger';
+      case 5:
+        return 'Penugasan Teknisi';
+      case 6:
+        return 'Tagihan ISP Utama (Upstream)';
+      default:
+        return 'Admin Operations Hub';
+    }
+  }
+
+  Widget _buildSectionDetail(int index) {
+    switch (index) {
+      case 0:
+        return _buildAiAnalyticsTab();
+      case 1:
+        return _buildCustomerActivationTab();
+      case 2:
+        return _buildPackageRequestsTab();
+      case 3:
+        return _buildPaymentVerificationTab();
+      case 4:
+        return _buildBlockchainLedgerTab();
+      case 5:
+        return _buildTaskDispatchTab();
+      case 6:
+        return _buildUpstreamBillsTab();
+      default:
+        return _buildAiAnalyticsTab();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.asset(
-                'assets/images/logo.png',
-                width: 24,
-                height: 24,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.admin_panel_settings, color: AppTheme.primary, size: 22),
+    return PopScope(
+      canPop: _selectedSection == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_selectedSection != null) {
+          setState(() => _selectedSection = null);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: _selectedSection != null
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                  tooltip: 'Kembali ke Hub',
+                  onPressed: () => setState(() => _selectedSection = null),
+                )
+              : null,
+          title: _selectedSection == null
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.admin_panel_settings,
+                          color: AppTheme.primary,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('Admin Operations Hub'),
+                  ],
+                )
+              : Text(_getSectionTitle(_selectedSection!)),
+          actions: [
+            if (_selectedSection != null)
+              IconButton(
+                icon: const Icon(Icons.dashboard_outlined),
+                tooltip: 'Kembali ke Dashboard Utama',
+                onPressed: () => setState(() => _selectedSection = null),
               ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Segarkan Data',
+              onPressed: _loadAllAdminData,
             ),
-            const SizedBox(width: 8),
-            const Text('Admin Operations Hub'),
           ],
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: AppTheme.primary,
-          labelColor: AppTheme.primary,
-          unselectedLabelColor: AppTheme.textMuted,
-          tabs: const [
-            Tab(icon: Icon(Icons.analytics, size: 18), text: 'AI & Keuangan'),
-            Tab(icon: Icon(Icons.how_to_reg, size: 18), text: 'Aktivasi (A1)'),
-            Tab(icon: Icon(Icons.swap_horiz, size: 18), text: 'Ubah Paket'),
-            Tab(
-              icon: Icon(Icons.verified_user, size: 18),
-              text: 'Verifikasi Bayar (A3)',
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : (_selectedSection == null
+                ? _buildExecutiveHubDashboard()
+                : _buildSectionDetail(_selectedSection!)),
+      ),
+    );
+  }
+
+  // --- EXECUTIVE HUB DASHBOARD (GRID MENU & EXECUTIVE SUMMARY) ---
+  Widget _buildExecutiveHubDashboard() {
+    final rev = (_summary?['total_revenue_idr'] as num?)?.toDouble() ?? 725000.0;
+    final growth = _forecastData?['growth_rate_pct'] ?? 16.5;
+
+    final forecastList = (_forecastData?['forecast'] as List?) ?? [];
+    final nextForecast = forecastList.isNotEmpty ? forecastList[0] : null;
+    final nextMonthNominalJt = nextForecast != null
+        ? ((nextForecast['pemasukan'] as num) / 1000000).toStringAsFixed(1)
+        : '10.8';
+
+    final pendingActivations = _customers.where((c) => c.status == 'pending').length;
+    final pendingPackageReqs = _packageRequests.where((r) => r.status == 'pending').length;
+    final unpaidInvoices = _invoices.where((i) => i.status == 'belum').length;
+    final activeTasks = (_summary?['active_tasks_count'] as num?)?.toInt() ?? 1;
+
+    return RefreshIndicator(
+      onRefresh: _loadAllAdminData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. Metrik Kunci Ringkas (Pemasukan Realtime & Estimasi AI)
+            Row(
+              children: [
+                Expanded(
+                  child: StatMetricCard(
+                    title: 'Pemasukan Realtime',
+                    value: 'Rp ${(rev / 1000).toStringAsFixed(0)}K',
+                    icon: Icons.payments_rounded,
+                    iconColor: AppTheme.success,
+                    trend: '+$growth% MoM',
+                    subtitle: 'Bulan berjalan',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatMetricCard(
+                    title: 'Estimasi Bulan Depan',
+                    value: 'Rp $nextMonthNominalJt Juta',
+                    icon: Icons.trending_up_rounded,
+                    iconColor: AppTheme.accent,
+                    subtitle: 'AI Proyeksi ML',
+                  ),
+                ),
+              ],
             ),
-            Tab(
-              icon: Icon(Icons.link, size: 18),
-              text: 'Blockchain Ledger (A7)',
+
+            const SizedBox(height: 10),
+
+            // CTA: Selengkapnya Soal Keuangan (Tampilan Normal Tanpa Gradien)
+            InkWell(
+              onTap: () => setState(() => _selectedSection = 0),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.border.withValues(alpha: 0.6)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Selengkapnya Soal Keuangan & Proyeksi AI',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Laporan cashflow, laba rugi, dan forecasting ML',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
             ),
-            Tab(
-              icon: Icon(Icons.assignment, size: 18),
-              text: 'Tugas Teknisi (A5)',
+
+            const SizedBox(height: 14),
+
+            // 2. Strip Minimalis Tindakan Diperlukan (Notifikasi Merah Seragam)
+            if (pendingActivations > 0 || pendingPackageReqs > 0 || unpaidInvoices > 0)
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        [
+                          if (pendingPackageReqs > 0) '$pendingPackageReqs pengajuan paket',
+                          if (pendingActivations > 0) '$pendingActivations aktivasi baru',
+                          if (unpaidInvoices > 0) '$unpaidInvoices tagihan belum lunas',
+                        ].join(' • '),
+                        style: const TextStyle(
+                          color: Color(0xFFEF4444),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        if (pendingPackageReqs > 0) {
+                          setState(() => _selectedSection = 2);
+                        } else if (pendingActivations > 0) {
+                          setState(() => _selectedSection = 1);
+                        } else {
+                          setState(() => _selectedSection = 3);
+                        }
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Tinjau',
+                              style: TextStyle(
+                                color: Color(0xFFEF4444),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: 2),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: Color(0xFFEF4444),
+                              size: 14,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // 3. Header Modul Operasional List Beraksen
+            const Padding(
+              padding: EdgeInsets.only(left: 2, bottom: 10),
+              child: Text(
+                'Menu Operasional Admin',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
             ),
+
+            // 4. Modul Operasional: List Beraksen tanpa icon (teks lega & tidak terpotong)
+            _buildAdminAccentListItem(
+              title: 'Aktivasi Pelanggan Baru',
+              subtitle: 'Verifikasi pendaftaran & persetujuan akun',
+              accentColor: AppTheme.primary,
+              badgeCount: pendingActivations,
+              onTap: () => setState(() => _selectedSection = 1),
+            ),
+            _buildAdminAccentListItem(
+              title: 'Pengajuan Ubah Paket',
+              subtitle: 'Permintaan upgrade / downgrade kecepatan',
+              accentColor: Colors.amber,
+              badgeCount: pendingPackageReqs,
+              onTap: () => setState(() => _selectedSection = 2),
+            ),
+            _buildAdminAccentListItem(
+              title: 'Verifikasi Pembayaran',
+              subtitle: 'Pengecekan bukti transfer & status invoice',
+              accentColor: AppTheme.accent,
+              badgeCount: unpaidInvoices,
+              onTap: () => setState(() => _selectedSection = 3),
+            ),
+            _buildAdminAccentListItem(
+              title: 'Penugasan Teknisi',
+              subtitle: 'Disposisi tiket gangguan & pekerjaan instalasi',
+              accentColor: Colors.lightBlueAccent,
+              badgeCount: activeTasks,
+              onTap: () => setState(() => _selectedSection = 5),
+            ),
+            _buildAdminAccentListItem(
+              title: 'Blockchain Ledger',
+              subtitle: 'Audit jejak pembayaran anti-tamper SHA-256',
+              accentColor: Colors.tealAccent,
+              badgeCount: 0,
+              onTap: () => setState(() => _selectedSection = 4),
+            ),
+            _buildAdminAccentListItem(
+              title: 'Tagihan ISP Utama (Upstream)',
+              subtitle: 'Rekap biaya internet induk & bandwidth grosir',
+              accentColor: Colors.deepPurpleAccent,
+              badgeCount: 0,
+              onTap: () => setState(() => _selectedSection = 6),
+            ),
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
+    );
+  }
+
+  // Helper widget: List item beraksen tanpa icon (teks luas tanpa kepotong) dengan badge merah seragam
+  Widget _buildAdminAccentListItem({
+    required String title,
+    required String subtitle,
+    required Color accentColor,
+    required int badgeCount,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.border.withValues(alpha: 0.6)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: IntrinsicHeight(
+            child: Row(
               children: [
-                _buildAiAnalyticsTab(),
-                _buildCustomerActivationTab(),
-                _buildPackageRequestsTab(),
-                _buildPaymentVerificationTab(),
-                _buildBlockchainLedgerTab(),
-                _buildTaskDispatchTab(),
+                // Garis Aksen Berwarna di sisi kiri
+                Container(
+                  width: 5,
+                  color: accentColor,
+                ),
+                // Konten Teks (Judul & Subtitle Lega)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Badge Notifikasi (Warna Merah Seragam untuk Semua Status Tindakan)
+                if (badgeCount > 0)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$badgeCount',
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                const Padding(
+                  padding: EdgeInsets.only(right: 12),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
               ],
             ),
+          ),
+        ),
+      ),
     );
   }
 

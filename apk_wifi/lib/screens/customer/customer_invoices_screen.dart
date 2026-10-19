@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../config/app_theme.dart';
@@ -39,7 +39,9 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
   }
 
   void _showPaymentModal(InvoiceModel invoice) {
-    File? selectedImage;
+    Uint8List? selectedImageBytes;
+    String? selectedImageName;
+    String? selectedImagePath;
 
     showModalBottomSheet(
       context: context,
@@ -125,7 +127,7 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Image upload area
+                  // Image upload area (Compatible with Flutter Web & Mobile)
                   GestureDetector(
                     onTap: () async {
                       final picked = await _picker.pickImage(
@@ -133,8 +135,11 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                         imageQuality: 80,
                       );
                       if (picked != null) {
+                        final bytes = await picked.readAsBytes();
                         setModalState(() {
-                          selectedImage = File(picked.path);
+                          selectedImageBytes = bytes;
+                          selectedImageName = picked.name;
+                          selectedImagePath = picked.path;
                         });
                       }
                     },
@@ -145,10 +150,10 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: AppTheme.primary.withOpacity(0.5), style: BorderStyle.solid),
                       ),
-                      child: selectedImage != null
+                      child: selectedImageBytes != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(14),
-                              child: Image.file(selectedImage!, fit: BoxFit.cover, width: double.infinity),
+                              child: Image.memory(selectedImageBytes!, fit: BoxFit.cover, width: double.infinity),
                             )
                           : Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -173,7 +178,12 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                     icon: Icons.check,
                     onPressed: () async {
                       Navigator.pop(ctx);
-                      _uploadProof(invoice.id, selectedImage?.path);
+                      _uploadProof(
+                        invoice.id,
+                        bytes: selectedImageBytes,
+                        fileName: selectedImageName,
+                        path: selectedImagePath,
+                      );
                     },
                   ),
                 ],
@@ -185,11 +195,20 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
     );
   }
 
-  Future<void> _uploadProof(int invoiceId, String? path) async {
+  Future<void> _uploadProof(
+    int invoiceId, {
+    Uint8List? bytes,
+    String? fileName,
+    String? path,
+  }) async {
     final success = await ApiService.instance.uploadPaymentProof(
       invoiceId: invoiceId,
+      fileBytes: bytes,
+      fileName: fileName,
       filePath: path,
     );
+
+    if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(

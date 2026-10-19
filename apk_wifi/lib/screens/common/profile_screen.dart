@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+
 import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
 import '../../models/user_model.dart';
@@ -24,7 +27,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
-  File? _localImageFile;
+  Uint8List? _localImageBytes;
 
   @override
   void initState() {
@@ -53,9 +56,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         imageQuality: 85,
       );
       if (picked != null) {
-        final imageFile = File(picked.path);
+        final bytes = await picked.readAsBytes();
         setState(() {
-          _localImageFile = imageFile;
+          _localImageBytes = bytes;
         });
 
         if (mounted) {
@@ -66,7 +69,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   ),
                   SizedBox(width: 12),
                   Text('Mengunggah foto profil ke Storage...'),
@@ -77,7 +83,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        final res = await ApiService.instance.uploadProfilePhoto(imageFile);
+        final res = await ApiService.instance.uploadProfilePhoto(
+          fileBytes: bytes,
+          fileName: picked.name,
+          file: !kIsWeb ? File(picked.path) : null,
+        );
         if (res['success'] == true) {
           final currentUser = AuthService.instance.currentUser;
           if (currentUser != null && res['foto'] != null) {
@@ -87,7 +97,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Foto profil berhasil diunggah dan disimpan ke Storage!'),
+                content: Text(
+                  'Foto profil berhasil diunggah dan disimpan ke Storage!',
+                ),
                 backgroundColor: AppTheme.success,
               ),
             );
@@ -140,15 +152,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: AppTheme.primary),
-                title: const Text('Kamera Langsung', style: TextStyle(color: AppTheme.textPrimary)),
+                title: const Text(
+                  'Kamera Langsung',
+                  style: TextStyle(color: AppTheme.textPrimary),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.camera);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppTheme.accent),
-                title: const Text('Galeri Gambar', style: TextStyle(color: AppTheme.textPrimary)),
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: AppTheme.accent,
+                ),
+                title: const Text(
+                  'Galeri Gambar',
+                  style: TextStyle(color: AppTheme.textPrimary),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.gallery);
@@ -161,15 +182,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-
-
   void _showServerDialog() {
     final controller = TextEditingController(text: AppConfig.baseUrl);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surfaceCard,
-        title: const Text('Atur Alamat Backend', style: TextStyle(color: AppTheme.textPrimary)),
+        title: const Text(
+          'Atur Alamat Backend',
+          style: TextStyle(color: AppTheme.textPrimary),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,7 +214,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppTheme.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -248,7 +273,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool isFetchingGps = false;
 
     // Pastikan selectedCountry ada di daftar supportedCountries
-    if (!AppConfig.supportedCountries.any((c) => c['name'] == selectedCountry)) {
+    if (!AppConfig.supportedCountries.any(
+      (c) => c['name'] == selectedCountry,
+    )) {
       selectedCountry = AppConfig.supportedCountries.first['name']!;
     }
 
@@ -289,7 +316,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 } else if (countryName == 'Australia') {
                   currentLat = -33.8688;
                   currentLng = 151.2093;
-                } else if (countryName == 'Indonesia' && currentLat == 0 && currentLng == 0) {
+                } else if (countryName == 'Indonesia' &&
+                    currentLat == 0 &&
+                    currentLng == 0) {
                   currentLat = -7.7956;
                   currentLng = 110.3695;
                 }
@@ -322,7 +351,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Future<void> fetchGps() async {
               setModalState(() => isFetchingGps = true);
               try {
-                LocationPermission permission = await Geolocator.checkPermission();
+                LocationPermission permission =
+                    await Geolocator.checkPermission();
                 if (permission == LocationPermission.denied) {
                   permission = await Geolocator.requestPermission();
                   if (permission == LocationPermission.denied) {
@@ -341,21 +371,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   final geoUrl = Uri.parse(
                     'https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.latitude}&lon=${pos.longitude}&zoom=18&addressdetails=1',
                   );
-                  final geoRes = await http.get(
-                    geoUrl,
-                    headers: {'User-Agent': 'SimaNet-App/1.0 (Mobile Fiber Operation)'},
-                  ).timeout(const Duration(seconds: 4));
+                  final geoRes = await http
+                      .get(
+                        geoUrl,
+                        headers: {
+                          'User-Agent':
+                              'SimaNet-App/1.0 (Mobile Fiber Operation)',
+                        },
+                      )
+                      .timeout(const Duration(seconds: 4));
 
                   if (geoRes.statusCode == 200) {
                     final geoData = jsonDecode(geoRes.body);
                     final addr = geoData['address'] as Map<String, dynamic>?;
                     if (addr != null) {
-                      final road = addr['road'] ?? addr['suburb'] ?? addr['neighbourhood'] ?? '';
-                      final city = addr['city'] ?? addr['town'] ?? addr['county'] ?? addr['regency'] ?? '';
+                      final road =
+                          addr['road'] ??
+                          addr['suburb'] ??
+                          addr['neighbourhood'] ??
+                          '';
+                      final city =
+                          addr['city'] ??
+                          addr['town'] ??
+                          addr['county'] ??
+                          addr['regency'] ??
+                          '';
                       final state = addr['state'] ?? '';
                       final country = addr['country'] ?? '';
 
-                      final parts = [road, city, state].where((p) => p.toString().isNotEmpty).toList();
+                      final parts = [
+                        road,
+                        city,
+                        state,
+                      ].where((p) => p.toString().isNotEmpty).toList();
                       if (parts.isNotEmpty) {
                         fetchedAddress = parts.join(', ');
                       } else if (geoData['display_name'] != null) {
@@ -365,7 +413,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // Cocokkan negara jika ditemukan
                       if (country.toString().isNotEmpty) {
                         for (final c in AppConfig.supportedCountries) {
-                          if (country.toString().toLowerCase().contains(c['name']!.toLowerCase())) {
+                          if (country.toString().toLowerCase().contains(
+                            c['name']!.toLowerCase(),
+                          )) {
                             detectedCountry = c['name']!;
                             break;
                           }
@@ -426,7 +476,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Alamat & Koordinat berhasil di-autofill dari GPS!'),
+                    content: Text(
+                      'Alamat & Koordinat berhasil di-autofill dari GPS!',
+                    ),
                     backgroundColor: AppTheme.success,
                   ),
                 );
@@ -508,294 +560,361 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: SingleChildScrollView(
                   child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header Modal
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(10),
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header Modal
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.edit_note,
+                                color: AppTheme.primary,
+                                size: 24,
+                              ),
                             ),
-                            child: const Icon(Icons.edit_note, color: AppTheme.primary, size: 24),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Edit Profil & Wilayah',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.textPrimary,
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Edit Profil & Wilayah',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.textPrimary,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  'Perbarui data informasi akun Anda',
-                                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: AppTheme.textMuted),
-                            onPressed: () => Navigator.pop(modalCtx),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(color: AppTheme.border),
-                      const SizedBox(height: 12),
-
-                      // Input Nama
-                      TextFormField(
-                        controller: namaController,
-                        style: const TextStyle(color: AppTheme.textPrimary),
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Lengkap',
-                          prefixIcon: Icon(Icons.person, color: AppTheme.primary),
-                        ),
-                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama tidak boleh kosong' : null,
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Input No HP
-                      TextFormField(
-                        controller: noHpController,
-                        keyboardType: TextInputType.phone,
-                        style: const TextStyle(color: AppTheme.textPrimary),
-                        decoration: const InputDecoration(
-                          labelText: 'Nomor Telepon / WhatsApp',
-                          prefixIcon: Icon(Icons.phone, color: AppTheme.primary),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Dropdown Negara
-                      DropdownButtonFormField<String>(
-                        value: selectedCountry,
-                        dropdownColor: AppTheme.surfaceCard,
-                        style: const TextStyle(color: AppTheme.textPrimary),
-                        decoration: const InputDecoration(
-                          labelText: 'Negara',
-                          prefixIcon: Icon(Icons.public, color: AppTheme.primary),
-                        ),
-                        items: AppConfig.supportedCountries.map((c) {
-                          return DropdownMenuItem<String>(
-                            value: c['name'],
-                            child: Text(
-                              '${c['flag']} ${c['name']}',
-                              style: const TextStyle(color: AppTheme.textPrimary),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: updateCountry,
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Mata Uang & Zona Waktu (terisi otomatis sebagai input biasa)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              key: ValueKey('mata_uang_$selectedMataUang'),
-                              initialValue: selectedMataUang,
-                              readOnly: true,
-                              style: const TextStyle(color: AppTheme.textPrimary),
-                              decoration: const InputDecoration(
-                                labelText: 'Mata Uang',
-                                prefixIcon: Icon(Icons.payments, color: AppTheme.accent),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              key: ValueKey('zona_waktu_$selectedZonaWaktu'),
-                              initialValue: selectedZonaWaktu,
-                              readOnly: true,
-                              style: const TextStyle(color: AppTheme.textPrimary),
-                              decoration: const InputDecoration(
-                                labelText: 'Zona Waktu',
-                                prefixIcon: Icon(Icons.schedule, color: AppTheme.secondary),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Input Alamat (Otomatis deteksi kota jika ada)
-                      TextFormField(
-                        controller: alamatController,
-                        maxLines: 2,
-                        style: const TextStyle(color: AppTheme.textPrimary),
-                        decoration: InputDecoration(
-                          labelText: currentUser.role == 'admin'
-                              ? 'Alamat Kantor / Operasional'
-                              : (currentUser.role == 'teknisi' ? 'Alamat Basecamp Teknisi' : 'Alamat Pemasangan Fiber'),
-                          hintText: currentUser.role == 'admin'
-                              ? 'Contoh: Kantor Pusat Sima.net, Jl. Telekomunikasi No. 1, Yogyakarta'
-                              : (currentUser.role == 'teknisi'
-                                  ? 'Contoh: Basecamp Teknisi Sima, Jl. Palagan, Sleman'
-                                  : 'Contoh: Jl. Malioboro No. 12, Yogyakarta'),
-                          prefixIcon: const Icon(Icons.location_on, color: AppTheme.primary),
-                          suffixIcon: IconButton(
-                            tooltip: 'Gunakan GPS saat ini',
-                            icon: isFetchingGps
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.my_location, color: AppTheme.primary, size: 20),
-                            onPressed: isFetchingGps ? null : fetchGps,
-                          ),
-                        ),
-                        onChanged: detectAddressChanges,
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Titik Koordinat Peta (seperti di RegisterScreen)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            currentUser.role == 'admin'
-                                ? 'Titik Lokasi Kantor (LBS)'
-                                : (currentUser.role == 'teknisi' ? 'Titik Lokasi Basecamp (LBS)' : 'Titik Lokasi Pemasangan (LBS)'),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: isFetchingGps ? null : fetchGps,
-                            icon: isFetchingGps
-                                ? const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.my_location, size: 16, color: AppTheme.primary),
-                            label: const Text(
-                              'GPS Saya',
-                              style: TextStyle(color: AppTheme.primary, fontSize: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        currentUser.role == 'admin'
-                            ? 'Ketuk peta untuk menentukan koordinat kantor:'
-                            : (currentUser.role == 'teknisi'
-                                ? 'Ketuk peta untuk menentukan koordinat basecamp:'
-                                : 'Ketuk peta untuk menentukan titik koordinat rumah Anda:'),
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Map Container (FlutterMap OpenStreetMap)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          height: 210,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppTheme.border),
-                          ),
-                          child: FlutterMap(
-                            mapController: mapController,
-                            options: MapOptions(
-                              initialCenter: LatLng(currentLat, currentLng),
-                              initialZoom: 14.0,
-                              onTap: (tapPosition, point) {
-                                setModalState(() {
-                                  currentLat = point.latitude;
-                                  currentLng = point.longitude;
-                                });
-                              },
-                            ),
-                            children: [
-                              TileLayer(
-                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                userAgentPackageName: 'com.example.apk_wifi',
-                              ),
-                              MarkerLayer(
-                                markers: [
-                                  Marker(
-                                    point: LatLng(currentLat, currentLng),
-                                    width: 50,
-                                    height: 50,
-                                    child: const Icon(
-                                      Icons.location_pin,
-                                      color: Colors.redAccent,
-                                      size: 44,
+                                  Text(
+                                    'Perbarui data informasi akun Anda',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.textSecondary,
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: AppTheme.textMuted,
+                              ),
+                              onPressed: () => Navigator.pop(modalCtx),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(color: AppTheme.border),
+                        const SizedBox(height: 12),
+
+                        // Input Nama
+                        TextFormField(
+                          controller: namaController,
+                          style: const TextStyle(color: AppTheme.textPrimary),
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Lengkap',
+                            prefixIcon: Icon(
+                              Icons.person,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Nama tidak boleh kosong'
+                              : null,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Input No HP
+                        TextFormField(
+                          controller: noHpController,
+                          keyboardType: TextInputType.phone,
+                          style: const TextStyle(color: AppTheme.textPrimary),
+                          decoration: const InputDecoration(
+                            labelText: 'Nomor Telepon / WhatsApp',
+                            prefixIcon: Icon(
+                              Icons.phone,
+                              color: AppTheme.primary,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Pin: Lat ${currentLat.toStringAsFixed(5)}, Lng ${currentLng.toStringAsFixed(5)}',
-                            style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
-                          ),
-                          Text(
-                            'Ketuk peta untuk pindah pin',
-                            style: TextStyle(
-                              color: AppTheme.primary.withOpacity(0.85),
-                              fontSize: 11,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 14),
 
-                      // Action Buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: isSaving ? null : () => Navigator.pop(modalCtx),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        // Dropdown Negara
+                        DropdownButtonFormField<String>(
+                          value: selectedCountry,
+                          dropdownColor: AppTheme.surfaceCard,
+                          style: const TextStyle(color: AppTheme.textPrimary),
+                          decoration: const InputDecoration(
+                            labelText: 'Negara',
+                            prefixIcon: Icon(
+                              Icons.public,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                          items: AppConfig.supportedCountries.map((c) {
+                            return DropdownMenuItem<String>(
+                              value: c['name'],
+                              child: Text(
+                                '${c['flag']} ${c['name']}',
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                ),
                               ),
-                              child: const Text('Batal'),
+                            );
+                          }).toList(),
+                          onChanged: updateCountry,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Mata Uang & Zona Waktu (terisi otomatis sebagai input biasa)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                key: ValueKey('mata_uang_$selectedMataUang'),
+                                initialValue: selectedMataUang,
+                                readOnly: true,
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Mata Uang',
+                                  prefixIcon: Icon(
+                                    Icons.payments,
+                                    color: AppTheme.accent,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                key: ValueKey('zona_waktu_$selectedZonaWaktu'),
+                                initialValue: selectedZonaWaktu,
+                                readOnly: true,
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Zona Waktu',
+                                  prefixIcon: Icon(
+                                    Icons.schedule,
+                                    color: AppTheme.secondary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Input Alamat (Otomatis deteksi kota jika ada)
+                        TextFormField(
+                          controller: alamatController,
+                          maxLines: 2,
+                          style: const TextStyle(color: AppTheme.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: currentUser.role == 'admin'
+                                ? 'Alamat Kantor / Operasional'
+                                : (currentUser.role == 'teknisi'
+                                      ? 'Alamat Basecamp Teknisi'
+                                      : 'Alamat Pemasangan Fiber'),
+                            hintText: currentUser.role == 'admin'
+                                ? 'Contoh: Kantor Pusat Sima.net, Jl. Telekomunikasi No. 1, Yogyakarta'
+                                : (currentUser.role == 'teknisi'
+                                      ? 'Contoh: Basecamp Teknisi Sima, Jl. Palagan, Sleman'
+                                      : 'Contoh: Jl. Malioboro No. 12, Yogyakarta'),
+                            prefixIcon: const Icon(
+                              Icons.location_on,
+                              color: AppTheme.primary,
+                            ),
+                            suffixIcon: IconButton(
+                              tooltip: 'Gunakan GPS saat ini',
+                              icon: isFetchingGps
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.my_location,
+                                      color: AppTheme.primary,
+                                      size: 20,
+                                    ),
+                              onPressed: isFetchingGps ? null : fetchGps,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: GlowingButton(
-                              text: 'Simpan Perubahan',
-                              icon: Icons.check,
-                              isLoading: isSaving,
-                              onPressed: saveProfile,
+                          onChanged: detectAddressChanges,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Titik Koordinat Peta (seperti di RegisterScreen)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              currentUser.role == 'admin'
+                                  ? 'Titik Lokasi Kantor (LBS)'
+                                  : (currentUser.role == 'teknisi'
+                                        ? 'Titik Lokasi Basecamp (LBS)'
+                                        : 'Titik Lokasi Pemasangan (LBS)'),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: isFetchingGps ? null : fetchGps,
+                              icon: isFetchingGps
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.my_location,
+                                      size: 16,
+                                      color: AppTheme.primary,
+                                    ),
+                              label: const Text(
+                                'GPS Saya',
+                                style: TextStyle(
+                                  color: AppTheme.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          currentUser.role == 'admin'
+                              ? 'Ketuk peta untuk menentukan koordinat kantor:'
+                              : (currentUser.role == 'teknisi'
+                                    ? 'Ketuk peta untuk menentukan koordinat basecamp:'
+                                    : 'Ketuk peta untuk menentukan titik koordinat rumah Anda:'),
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Map Container (FlutterMap OpenStreetMap)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            height: 210,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppTheme.border),
+                            ),
+                            child: FlutterMap(
+                              mapController: mapController,
+                              options: MapOptions(
+                                initialCenter: LatLng(currentLat, currentLng),
+                                initialZoom: 14.0,
+                                onTap: (tapPosition, point) {
+                                  setModalState(() {
+                                    currentLat = point.latitude;
+                                    currentLng = point.longitude;
+                                  });
+                                },
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.example.apk_wifi',
+                                ),
+                                MarkerLayer(
+                                  markers: [
+                                    Marker(
+                                      point: LatLng(currentLat, currentLng),
+                                      width: 50,
+                                      height: 50,
+                                      child: const Icon(
+                                        Icons.location_pin,
+                                        color: Colors.redAccent,
+                                        size: 44,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Pin: Lat ${currentLat.toStringAsFixed(5)}, Lng ${currentLng.toStringAsFixed(5)}',
+                              style: const TextStyle(
+                                color: AppTheme.textMuted,
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              'Ketuk peta untuk pindah pin',
+                              style: TextStyle(
+                                color: AppTheme.primary.withOpacity(0.85),
+                                fontSize: 11,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: isSaving
+                                    ? null
+                                    : () => Navigator.pop(modalCtx),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: const Text('Batal'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: GlowingButton(
+                                text: 'Simpan Perubahan',
+                                icon: Icons.check,
+                                isLoading: isSaving,
+                                onPressed: saveProfile,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 ),
               ),
             );
@@ -807,7 +926,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = AuthService.instance.currentUser ??
+    final user =
+        AuthService.instance.currentUser ??
         UserModel(
           id: 0,
           nama: 'Tamu Sima.net',
@@ -824,17 +944,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           status: 'active',
         );
 
-    final hasImage = _localImageFile != null || user.foto.trim().isNotEmpty;
-    final ImageProvider? imageProvider = _localImageFile != null
-        ? FileImage(_localImageFile!)
+    final hasImage = _localImageBytes != null || user.foto.trim().isNotEmpty;
+    final ImageProvider? imageProvider = _localImageBytes != null
+        ? MemoryImage(_localImageBytes!)
         : (user.foto.trim().isNotEmpty
-            ? NetworkImage(AppConfig.resolveImageUrl(user.foto))
-            : null);
+              ? NetworkImage(AppConfig.resolveImageUrl(user.foto))
+              : null);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profil Pengguna'),
-      ),
+      appBar: AppBar(title: const Text('Profil Pengguna')),
       body: RefreshIndicator(
         onRefresh: _loadProfile,
         child: SingleChildScrollView(
@@ -845,7 +963,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               // Avatar & Name Card
               CustomCard(
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 16,
+                ),
                 child: Column(
                   children: [
                     Stack(
@@ -855,7 +976,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppTheme.primary, width: 2),
+                            border: Border.all(
+                              color: AppTheme.primary,
+                              width: 2,
+                            ),
                           ),
                           child: CircleAvatar(
                             radius: 46,
@@ -863,14 +987,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             backgroundImage: imageProvider,
                             onBackgroundImageError: hasImage
                                 ? (exception, stackTrace) {
-                                    debugPrint('[ProfileScreen] Failed loading avatar: $exception');
+                                    debugPrint(
+                                      '[ProfileScreen] Failed loading avatar: $exception',
+                                    );
                                   }
                                 : null,
                             child: !hasImage
                                 ? Text(
                                     user.nama.trim().isNotEmpty
                                         ? user.nama.trim()[0].toUpperCase()
-                                        : (user.role == 'admin' ? 'A' : (user.role == 'teknisi' ? 'T' : 'U')),
+                                        : (user.role == 'admin'
+                                              ? 'A'
+                                              : (user.role == 'teknisi'
+                                                    ? 'T'
+                                                    : 'U')),
                                     style: const TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.w900,
@@ -888,7 +1018,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               color: AppTheme.primary,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.camera_alt, size: 18, color: Colors.black),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 18,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ],
@@ -905,7 +1039,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 4),
                     Text(
                       user.email,
-                      style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -914,7 +1051,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         StatusBadge(status: user.status),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.secondary.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(16),
@@ -947,17 +1087,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         const Text(
                           'Informasi Akun & Wilayah',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
                         ),
                         TextButton.icon(
                           onPressed: () => _showEditProfileDialog(user),
-                          icon: const Icon(Icons.edit, size: 14, color: AppTheme.primary),
+                          icon: const Icon(
+                            Icons.edit,
+                            size: 14,
+                            color: AppTheme.primary,
+                          ),
                           label: const Text(
                             'Ubah',
-                            style: TextStyle(fontSize: 12, color: AppTheme.primary, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
@@ -965,27 +1120,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    _buildDetailRow(Icons.phone, 'Nomor Telepon / WA', user.noHp.isNotEmpty ? user.noHp : '-'),
+                    _buildDetailRow(
+                      Icons.phone,
+                      'Nomor Telepon / WA',
+                      user.noHp.isNotEmpty ? user.noHp : '-',
+                    ),
                     const Divider(color: AppTheme.border, height: 20),
-                    _buildDetailRow(Icons.flag, 'Negara Terdaftar', user.negara),
+                    _buildDetailRow(
+                      Icons.flag,
+                      'Negara Terdaftar',
+                      user.negara,
+                    ),
                     const Divider(color: AppTheme.border, height: 20),
                     if (user.role == 'pelanggan') ...[
-                      _buildDetailRow(Icons.payments, 'Mata Uang Tagihan', '${user.mataUang} (Terkunci per invoice)'),
+                      _buildDetailRow(
+                        Icons.payments,
+                        'Mata Uang Tagihan',
+                        '${user.mataUang} (Terkunci per invoice)',
+                      ),
                       const Divider(color: AppTheme.border, height: 20),
                     ] else if (user.role == 'admin') ...[
-                      _buildDetailRow(Icons.admin_panel_settings_outlined, 'Tingkat Hak Akses', 'Super Admin (Manajemen Operasional & Keuangan)'),
+                      _buildDetailRow(
+                        Icons.admin_panel_settings_outlined,
+                        'Tingkat Hak Akses',
+                        'Super Admin (Manajemen Operasional & Keuangan)',
+                      ),
                       const Divider(color: AppTheme.border, height: 20),
                     ] else ...[
-                      _buildDetailRow(Icons.engineering_outlined, 'Divisi Tugas', 'Teknisi Lapangan (Instalasi & Maintenance)'),
+                      _buildDetailRow(
+                        Icons.engineering_outlined,
+                        'Divisi Tugas',
+                        'Teknisi Lapangan (Instalasi & Maintenance)',
+                      ),
                       const Divider(color: AppTheme.border, height: 20),
                     ],
-                    _buildDetailRow(Icons.schedule, 'Zona Waktu Default', user.zonaWaktu),
+                    _buildDetailRow(
+                      Icons.schedule,
+                      'Zona Waktu Default',
+                      user.zonaWaktu,
+                    ),
                     const Divider(color: AppTheme.border, height: 20),
                     _buildDetailRow(
                       Icons.location_on,
                       user.role == 'admin'
                           ? 'Alamat Kantor / Operasional'
-                          : (user.role == 'teknisi' ? 'Alamat Basecamp Teknisi' : 'Alamat Pemasangan'),
+                          : (user.role == 'teknisi'
+                                ? 'Alamat Basecamp Teknisi'
+                                : 'Alamat Pemasangan'),
                       user.alamat.isNotEmpty ? user.alamat : '-',
                     ),
                     const Divider(color: AppTheme.border, height: 20),
@@ -1000,43 +1181,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 18),
 
-            // Settings Card
-            CustomCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Pengaturan Aplikasi & Keamanan',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                  ),
-                  const SizedBox(height: 12),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.fingerprint, color: AppTheme.primary),
-                    title: const Text('Login Sidik Jari (Biometrik)', style: TextStyle(color: AppTheme.textPrimary, fontSize: 14)),
-                    subtitle: const Text('Pintasan login cepat tanpa memasukkan password', style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
-                    trailing: const Icon(Icons.check_circle, color: AppTheme.success, size: 20),
-                  ),
-                  const Divider(color: AppTheme.border),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.dns, color: AppTheme.accent),
-                    title: const Text('Server Backend URL', style: TextStyle(color: AppTheme.textPrimary, fontSize: 14)),
-                    subtitle: Text(AppConfig.baseUrl, style: const TextStyle(color: AppTheme.textMuted, fontSize: 12)),
-                    trailing: const Icon(Icons.edit, color: AppTheme.textSecondary, size: 18),
-                    onTap: _showServerDialog,
-                  ),
-                ],
+              // Settings Card
+              CustomCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pengaturan Aplikasi & Keamanan',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(
+                        Icons.fingerprint,
+                        color: AppTheme.primary,
+                      ),
+                      title: const Text(
+                        'Login Sidik Jari (Biometrik)',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Pintasan login cepat tanpa memasukkan password',
+                        style: TextStyle(
+                          color: AppTheme.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.check_circle,
+                        color: AppTheme.success,
+                        size: 20,
+                      ),
+                    ),
+                    const Divider(color: AppTheme.border),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.dns, color: AppTheme.accent),
+                      title: const Text(
+                        'Server Backend URL',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: Text(
+                        AppConfig.baseUrl,
+                        style: const TextStyle(
+                          color: AppTheme.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.edit,
+                        color: AppTheme.textSecondary,
+                        size: 18,
+                      ),
+                      onTap: _showServerDialog,
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
@@ -1048,9 +1268,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+              ),
               const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),

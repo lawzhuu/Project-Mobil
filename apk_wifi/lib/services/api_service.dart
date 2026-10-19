@@ -156,14 +156,30 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> uploadProfilePhoto(File file) async {
+  Future<Map<String, dynamic>> uploadProfilePhoto({
+    File? file,
+    Uint8List? fileBytes,
+    String? fileName,
+  }) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/me/photo');
       final req = http.MultipartRequest('POST', url);
       if (_authToken != null) {
         req.headers['Authorization'] = 'Bearer $_authToken';
       }
-      req.files.add(await http.MultipartFile.fromPath('foto', file.path));
+
+      if (fileBytes != null && fileBytes.isNotEmpty) {
+        req.files.add(http.MultipartFile.fromBytes(
+          'foto',
+          fileBytes,
+          filename: fileName ?? 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ));
+      } else if (file != null && !kIsWeb) {
+        req.files.add(await http.MultipartFile.fromPath('foto', file.path));
+      } else {
+        return {'success': false, 'message': 'Tidak ada berkas foto yang dipilih'};
+      }
+
       final streamed = await req.send().timeout(const Duration(seconds: 20));
       final res = await http.Response.fromStream(streamed);
       return jsonDecode(res.body);
@@ -527,10 +543,26 @@ class ApiService {
   Future<bool> uploadPaymentProof({
     required int invoiceId,
     String? filePath,
+    Uint8List? fileBytes,
+    String? fileName,
   }) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/payments');
-      if (filePath != null && filePath.isNotEmpty) {
+      if (fileBytes != null && fileBytes.isNotEmpty) {
+        final req = http.MultipartRequest('POST', url);
+        req.headers.addAll({
+          if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+        });
+        req.fields['invoice_id'] = invoiceId.toString();
+        req.files.add(http.MultipartFile.fromBytes(
+          'bukti',
+          fileBytes,
+          filename: fileName ?? 'bukti_transfer_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ));
+        final streamed = await req.send();
+        final res = await http.Response.fromStream(streamed);
+        return res.statusCode == 201 || res.statusCode == 200;
+      } else if (filePath != null && filePath.isNotEmpty && !kIsWeb) {
         final req = http.MultipartRequest('POST', url);
         req.headers.addAll({
           if (_authToken != null) 'Authorization': 'Bearer $_authToken',

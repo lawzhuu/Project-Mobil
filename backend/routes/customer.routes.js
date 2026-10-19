@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { loadDB, saveDB } = require('../db');
 const { STATIC_RATES } = require('../config');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
+const { getSupabaseClient, isSupabaseConfigured } = require('../config/supabase');
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.get('/customers', authMiddleware, roleMiddleware(['admin']), (req, res) =
 });
 
 // Admin activate customer account and generate first invoice
-router.patch('/customers/:id/activate', authMiddleware, roleMiddleware(['admin']), (req, res) => {
+router.patch('/customers/:id/activate', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
   const id = parseInt(req.params.id);
   const user = db.users.find(u => u.id === id);
@@ -26,11 +27,12 @@ router.patch('/customers/:id/activate', authMiddleware, roleMiddleware(['admin']
   if (req.body.paket_id) user.paket_id = parseInt(req.body.paket_id);
 
   // Automatically create first invoice when activated if none exists for this month
+  let newInv = null;
   const existingInv = db.invoices.find(inv => inv.user_id === user.id && inv.periode === 'Oktober 2026');
   if (!existingInv && user.paket_id) {
     const pkg = db.packages.find(p => p.id === user.paket_id) || db.packages[0];
     const rate = STATIC_RATES.idrPerCurrency[user.mata_uang] || 1.0;
-    const newInv = {
+    newInv = {
       id: db.invoices.length ? Math.max(...db.invoices.map(i => i.id)) + 1 : 1,
       user_id: user.id,
       periode: 'Oktober 2026',
@@ -43,12 +45,22 @@ router.patch('/customers/:id/activate', authMiddleware, roleMiddleware(['admin']
     db.invoices.push(newInv);
   }
 
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      await sb.from('users').update({ status: 'active', paket_id: user.paket_id }).eq('id', id);
+      if (newInv) {
+        await sb.from('invoices').upsert(newInv, { onConflict: 'id' });
+      }
+    }
+  }
+
   saveDB(db);
   return res.json({ success: true, message: 'Pelanggan berhasil diaktifkan', user });
 });
 
 // Admin add new staff / technician
-router.post('/staff', authMiddleware, roleMiddleware(['admin']), (req, res) => {
+router.post('/staff', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
   const { nama, email, no_hp, password, role, alamat, lat, lng } = req.body;
 
@@ -77,6 +89,13 @@ router.post('/staff', authMiddleware, roleMiddleware(['admin']), (req, res) => {
     paket_id: null
   };
 
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      await sb.from('users').upsert(newStaff, { onConflict: 'id' });
+    }
+  }
+
   db.users.push(newStaff);
   saveDB(db);
   const { password_hash: _, ...safeStaff } = newStaff;
@@ -84,11 +103,11 @@ router.post('/staff', authMiddleware, roleMiddleware(['admin']), (req, res) => {
 });
 
 // ==========================================
-// PACKAGE CHANGE REQUESTS (APPROVAL WORKFLOW)
+// PACKAGE CHANGE REQUESTS (APPROVAL WORKFLOW - ONLINE SUPABASE)
 // ==========================================
 
 // 1. Pelanggan mengajukan perubahan paket
-const handlePackageChangeRequest = (req, res) => {
+const handlePackageChangeRequest = async (req, res) => {
   const db = loadDB();
   const userId = req.user.id;
   const user = db.users.find(u => u.id === userId);
@@ -110,10 +129,29 @@ const handlePackageChangeRequest = (req, res) => {
     return res.status(400).json({ success: false, message: 'Ini adalah paket aktif Anda saat ini' });
   }
 
-  // Cek apakah ada request pending sebelumnya
-  const existingPending = (db.package_requests || []).find(
-    r => r.user_id === user.id && r.status === 'pending'
-  );
+  // Cek apakah ada request pending sebelumnya di Supabase / lokal
+  let existingPending = null;
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      const { data: remotePending } = await sb
+        .from('package_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+      if (remotePending) {
+        existingPending = remotePending;
+      }
+    }
+  }
+
+  if (!existingPending) {
+    existingPending = (db.package_requests || []).find(
+      r => r.user_id === user.id && r.status === 'pending'
+    );
+  }
+
   if (existingPending) {
     return res.status(400).json({
       success: false,
@@ -126,31 +164,80 @@ const handlePackageChangeRequest = (req, res) => {
   const oldSpeed = oldPkg ? oldPkg.kecepatan_mbps : 0;
 
   const detectedType = tipe || (newPkg.kecepatan_mbps > oldSpeed ? 'Upgrade Kecepatan' : 'Hemat Biaya (Downgrade)');
+  const detectedReason = alasan || (detectedType === 'Upgrade Kecepatan' ? 'Ingin koneksi lebih cepat dan stabil' : 'Penyesuaian kebutuhan keluarga');
 
-  const newRequest = {
-    id: db.package_requests.length ? Math.max(...db.package_requests.map(r => r.id)) + 1 : 1,
-    user_id: user.id,
-    user_nama: user.nama,
-    user_email: user.email,
-    user_alamat: user.alamat || '',
-    user_no_hp: user.no_hp || '',
-    paket_lama_id: oldPkg ? oldPkg.id : null,
-    paket_lama_nama: oldPkg ? oldPkg.nama : 'Belum Ada',
-    paket_lama_kecepatan: oldSpeed,
-    paket_lama_harga: oldPrice,
-    paket_baru_id: newPkg.id,
-    paket_baru_nama: newPkg.nama,
-    paket_baru_kecepatan: newPkg.kecepatan_mbps,
-    paket_baru_harga: newPkg.harga_idr,
-    selisih_harga: newPkg.harga_idr - oldPrice,
-    tipe: detectedType,
-    alasan: alasan || (detectedType === 'Upgrade Kecepatan' ? 'Ingin koneksi lebih cepat dan stabil' : 'Penyesuaian kebutuhan keluarga'),
-    status: 'pending',
-    admin_catatan: '',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
+  let newRequest = null;
 
+  // Insert langsung ke Supabase jika terhubung online
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        const { data: inserted, error: insertErr } = await sb
+          .from('package_requests')
+          .insert({
+            user_id: user.id,
+            user_nama: user.nama,
+            user_email: user.email,
+            user_alamat: user.alamat || '',
+            user_no_hp: user.no_hp || '',
+            paket_lama_id: oldPkg ? oldPkg.id : null,
+            paket_lama_nama: oldPkg ? oldPkg.nama : 'Belum Ada',
+            paket_lama_kecepatan: oldSpeed,
+            paket_lama_harga: oldPrice,
+            paket_baru_id: newPkg.id,
+            paket_baru_nama: newPkg.nama,
+            paket_baru_kecepatan: newPkg.kecepatan_mbps,
+            paket_baru_harga: newPkg.harga_idr,
+            selisih_harga: newPkg.harga_idr - oldPrice,
+            tipe: detectedType,
+            alasan: detectedReason,
+            status: 'pending',
+            admin_catatan: ''
+          })
+          .select()
+          .single();
+
+        if (!insertErr && inserted) {
+          newRequest = inserted;
+          console.log(`[Supabase DB] Package request #${inserted.id} successfully created online.`);
+        } else if (insertErr) {
+          console.error('[Supabase DB Package Request Insert Error]:', insertErr.message);
+        }
+      } catch (err) {
+        console.error('[Supabase DB Exception]:', err.message);
+      }
+    }
+  }
+
+  // Fallback offline bila Supabase tidak merespons
+  if (!newRequest) {
+    newRequest = {
+      id: db.package_requests.length ? Math.max(...db.package_requests.map(r => r.id)) + 1 : 1,
+      user_id: user.id,
+      user_nama: user.nama,
+      user_email: user.email,
+      user_alamat: user.alamat || '',
+      user_no_hp: user.no_hp || '',
+      paket_lama_id: oldPkg ? oldPkg.id : null,
+      paket_lama_nama: oldPkg ? oldPkg.nama : 'Belum Ada',
+      paket_lama_kecepatan: oldSpeed,
+      paket_lama_harga: oldPrice,
+      paket_baru_id: newPkg.id,
+      paket_baru_nama: newPkg.nama,
+      paket_baru_kecepatan: newPkg.kecepatan_mbps,
+      paket_baru_harga: newPkg.harga_idr,
+      selisih_harga: newPkg.harga_idr - oldPrice,
+      tipe: detectedType,
+      alasan: detectedReason,
+      status: 'pending',
+      admin_catatan: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  // Sinkronkan ke cache lokal memory & json
   db.package_requests.push(newRequest);
   saveDB(db);
 
@@ -164,10 +251,40 @@ const handlePackageChangeRequest = (req, res) => {
 router.post('/packages/change-request', authMiddleware, handlePackageChangeRequest);
 router.post('/customer/change-request', authMiddleware, handlePackageChangeRequest);
 
-// 2. Pelanggan melihat riwayat & status pengajuan aktifnya
-router.get('/customer/change-request', authMiddleware, (req, res) => {
+// 2. Pelanggan melihat riwayat & status pengajuan aktifnya (Langsung Supabase Online)
+router.get('/customer/change-request', authMiddleware, async (req, res) => {
   const db = loadDB();
   const userId = req.user.id;
+
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        const { data: remoteReqs, error } = await sb
+          .from('package_requests')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (!error && remoteReqs) {
+          // Sinkronkan ke local cache
+          const otherReqs = (db.package_requests || []).filter(r => r.user_id !== userId);
+          db.package_requests = [...otherReqs, ...remoteReqs];
+
+          const pending = remoteReqs.find(r => r.status === 'pending') || null;
+          return res.json({
+            success: true,
+            pending,
+            requests: remoteReqs
+          });
+        }
+      } catch (err) {
+        console.warn('[Supabase DB GET Requests Note]:', err.message);
+      }
+    }
+  }
+
+  // Fallback lokal
   const requests = (db.package_requests || [])
     .filter(r => r.user_id === userId)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -181,9 +298,30 @@ router.get('/customer/change-request', authMiddleware, (req, res) => {
   });
 });
 
-// 3. Admin melihat semua pengajuan ubah paket
-router.get('/admin/package-requests', authMiddleware, roleMiddleware(['admin']), (req, res) => {
+// 3. Admin melihat semua pengajuan ubah paket (Langsung Supabase Online)
+router.get('/admin/package-requests', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
+
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        const { data: remoteReqs, error } = await sb
+          .from('package_requests')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && remoteReqs) {
+          db.package_requests = remoteReqs;
+          return res.json({ success: true, requests: remoteReqs });
+        }
+      } catch (err) {
+        console.warn('[Supabase DB GET All Requests Note]:', err.message);
+      }
+    }
+  }
+
+  // Fallback lokal
   const requests = (db.package_requests || [])
     .slice()
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -191,8 +329,8 @@ router.get('/admin/package-requests', authMiddleware, roleMiddleware(['admin']),
   return res.json({ success: true, requests });
 });
 
-// 4. Admin menyetujui (Approve) pengajuan ubah paket
-router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddleware(['admin']), (req, res) => {
+// 4. Admin menyetujui (Approve) pengajuan ubah paket (Sinkron Supabase Online)
+router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
   const id = parseInt(req.params.id);
   const request = (db.package_requests || []).find(r => r.id === id);
@@ -220,12 +358,13 @@ router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddlewar
 
   // Update tagihan pelanggan: jika ada tagihan yang belum lunas, sesuaikan nominalnya.
   // Jika semua tagihan sudah lunas, terbitkan tagihan periode berikutnya dengan harga paket baru.
+  let newInvoice = null;
   const unpaidInv = db.invoices.find(inv => inv.user_id === user.id && inv.status === 'belum');
   if (unpaidInv) {
     unpaidInv.nominal_idr = request.paket_baru_harga;
   } else {
     const nextInvoiceId = db.invoices.length ? Math.max(...db.invoices.map(i => i.id)) + 1 : 1;
-    const newInvoice = {
+    newInvoice = {
       id: nextInvoiceId,
       user_id: user.id,
       periode: "November 2026",
@@ -240,9 +379,10 @@ router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddlewar
   }
 
   // Jika upgrade kecepatan, otomatis buat tugas teknisi (penggantian/penyesuaian perangkat)
+  let newTask = null;
   if (request.paket_baru_kecepatan > request.paket_lama_kecepatan) {
     const tech = db.users.find(u => u.role === 'teknisi') || { id: 1 };
-    const newTask = {
+    newTask = {
       id: db.tasks.length ? Math.max(...db.tasks.map(t => t.id)) + 1 : 1,
       teknisi_id: tech.id,
       pelanggan_id: user.id,
@@ -253,18 +393,48 @@ router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddlewar
     db.tasks.push(newTask);
   }
 
+  // SINKRONISASI LANGSUNG KE SUPABASE ONLINE
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        await Promise.all([
+          // 1. Update status request
+          sb.from('package_requests').update({
+            status: 'approved',
+            admin_catatan: request.admin_catatan,
+            updated_at: request.updated_at
+          }).eq('id', id),
+          // 2. Update user paket_id
+          sb.from('users').update({
+            paket_id: request.paket_baru_id
+          }).eq('id', user.id),
+          // 3. Update / Insert invoice
+          unpaidInv
+            ? sb.from('invoices').update({ nominal_idr: unpaidInv.nominal_idr }).eq('id', unpaidInv.id)
+            : (newInvoice ? sb.from('invoices').upsert(newInvoice, { onConflict: 'id' }) : Promise.resolve()),
+          // 4. Insert task jika ada
+          newTask ? sb.from('tasks').upsert(newTask, { onConflict: 'id' }) : Promise.resolve()
+        ]);
+        console.log(`[Supabase DB] Package request #${id} approved and synced online.`);
+      } catch (err) {
+        console.error('[Supabase DB Approval Sync Error]:', err.message);
+      }
+    }
+  }
+
   saveDB(db);
 
   return res.json({
     success: true,
-    message: `Pengajuan ${request.user_nama} berhasil disetujui! Paket aktif dan tagihan telah diperbarui.`,
+    message: `Pengajuan ${request.user_nama} berhasil disetujui! Paket aktif dan tagihan telah diperbarui secara online.`,
     request,
     user
   });
 });
 
-// 5. Admin menolak (Reject) pengajuan ubah paket
-router.post('/admin/package-requests/:id/reject', authMiddleware, roleMiddleware(['admin']), (req, res) => {
+// 5. Admin menolak (Reject) pengajuan ubah paket (Sinkron Supabase Online)
+router.post('/admin/package-requests/:id/reject', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
   const id = parseInt(req.params.id);
   const request = (db.package_requests || []).find(r => r.id === id);
@@ -280,6 +450,23 @@ router.post('/admin/package-requests/:id/reject', authMiddleware, roleMiddleware
   request.status = 'rejected';
   request.admin_catatan = req.body.admin_catatan || 'Maaf, jaringan di wilayah Anda belum mendukung kapasitas paket ini.';
   request.updated_at = new Date().toISOString();
+
+  // SINKRONISASI LANGSUNG KE SUPABASE ONLINE
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        await sb.from('package_requests').update({
+          status: 'rejected',
+          admin_catatan: request.admin_catatan,
+          updated_at: request.updated_at
+        }).eq('id', id);
+        console.log(`[Supabase DB] Package request #${id} rejected and synced online.`);
+      } catch (err) {
+        console.error('[Supabase DB Rejection Sync Error]:', err.message);
+      }
+    }
+  }
 
   saveDB(db);
 

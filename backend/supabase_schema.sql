@@ -184,6 +184,7 @@ ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.upstream_bills ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.package_requests ENABLE ROW LEVEL SECURITY;
 
 -- Berikan akses penuh untuk backend API (anon & service_role)
 DROP POLICY IF EXISTS "Backend access users" ON public.users;
@@ -212,6 +213,9 @@ CREATE POLICY "Backend access feedback" ON public.feedback FOR ALL USING (true) 
 
 DROP POLICY IF EXISTS "Backend access devices" ON public.devices;
 CREATE POLICY "Backend access devices" ON public.devices FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Backend access package_requests" ON public.package_requests;
+CREATE POLICY "Backend access package_requests" ON public.package_requests FOR ALL USING (true) WITH CHECK (true);
 
 -- ==============================================================================
 -- 13. SEED DATA AWAL (Default Password: "123")
@@ -296,3 +300,20 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('feedback_id_seq', (SELECT MAX(id) FROM public.feedback));
+
+-- SEED PACKAGE REQUESTS
+INSERT INTO public.package_requests (
+  id, user_id, user_nama, user_email, user_alamat, user_no_hp,
+  paket_lama_id, paket_lama_nama, paket_lama_kecepatan, paket_lama_harga,
+  paket_baru_id, paket_baru_nama, paket_baru_kecepatan, paket_baru_harga,
+  selisih_harga, tipe, alasan, status, admin_catatan, created_at, updated_at
+) VALUES (
+  1, 2, 'Budi Santoso', 'budi@gmail.com', 'Jl. Kaliurang KM 5 No. 12, Sleman', '085678912345',
+  1, 'Paket Hemat Fiber 20', 20, 175000,
+  2, 'Paket Turbo Home 50', 50, 275000,
+  100000, 'Upgrade Kecepatan', 'Membutuhkan bandwidth lebih tinggi untuk streaming 4K dan gaming stabil.',
+  'approved', 'Disetujui. Perangkat & konfigurasi siap disesuaikan.',
+  '2026-10-18 17:23:23+00', '2026-10-18 17:24:15+00'
+) ON CONFLICT (id) DO NOTHING;
+
+SELECT setval('package_requests_id_seq', COALESCE((SELECT MAX(id) FROM public.package_requests), 1));
