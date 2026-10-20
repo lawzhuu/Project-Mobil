@@ -953,7 +953,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : null);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil Pengguna')),
+      appBar: AppBar(
+        title: Text(
+          user.role == 'teknisi'
+              ? 'Profil Teknisi'
+              : (user.role == 'admin' ? 'Profil Admin' : 'Profil Pengguna'),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: AppTheme.error),
+            tooltip: 'Keluar dari Akun (Logout)',
+            onPressed: _handleLogout,
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _loadProfile,
         child: SingleChildScrollView(
@@ -1246,6 +1259,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         size: 18,
                       ),
                       onTap: _showServerDialog,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Tombol Logout Akun
+              CustomCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _handleLogout,
+                      icon: const Icon(Icons.logout, color: Colors.white, size: 20),
+                      label: const Text(
+                        'Keluar dari Akun (Logout)',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.error,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Keluar akan mengakhiri sesi aktif akun pada perangkat ini.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textMuted,
+                      ),
                     ),
                   ],
                 ),
