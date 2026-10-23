@@ -212,7 +212,7 @@ class _CustomerChatbotScreenState extends State<CustomerChatbotScreen> {
                       controller: _msgController,
                       style: const TextStyle(color: AppTheme.textPrimary),
                       decoration: InputDecoration(
-                        hintText: 'Tanyakan kendala atau pertanyaan...',
+                        hintText: 'Tanya kendala WiFi, paket, atau tagihan...',
                         hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         filled: true,
