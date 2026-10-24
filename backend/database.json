@@ -26,9 +26,9 @@
       "no_hp": "087860051285",
       "password_hash": "$2a$10$2MLFYkhOqROlSjVEDUZnZOw7S9QrZasCdSI0RtU.gvBmYLvRWR5WG",
       "role": "pelanggan",
-      "negara": "United States",
-      "mata_uang": "USD",
-      "zona_waktu": "London",
+      "negara": "Indonesia",
+      "mata_uang": "IDR",
+      "zona_waktu": "WIB",
       "alamat": "Amphitheatre Parkway, Mountain View, California",
       "lat": 37.4219983,
       "lng": -122.084,
@@ -433,7 +433,7 @@
   "devices": [],
   "package_requests": [
     {
-      "id": 1,
+      "id": 5,
       "user_id": 2,
       "user_nama": "Budi Santoso",
       "user_email": "budi@gmail.com",
@@ -450,10 +450,10 @@
       "selisih_harga": 100000,
       "tipe": "Upgrade Kecepatan",
       "alasan": "Membutuhkan bandwidth lebih tinggi untuk streaming 4K dan gaming stabil.",
-      "status": "approved",
-      "admin_catatan": "Disetujui. Perangkat & konfigurasi siap disesuaikan.",
-      "created_at": "2026-10-18T17:23:23.273+00:00",
-      "updated_at": "2026-10-18T17:24:15.408+00:00"
+      "status": "pending",
+      "admin_catatan": "",
+      "created_at": "2026-10-19T17:28:35.878+00:00",
+      "updated_at": "2026-10-19T17:28:35.878+00:00"
     },
     {
       "id": 4,
@@ -479,7 +479,7 @@
       "updated_at": "2026-10-19T15:37:16.545+00:00"
     },
     {
-      "id": 5,
+      "id": 1,
       "user_id": 2,
       "user_nama": "Budi Santoso",
       "user_email": "budi@gmail.com",
@@ -496,10 +496,10 @@
       "selisih_harga": 100000,
       "tipe": "Upgrade Kecepatan",
       "alasan": "Membutuhkan bandwidth lebih tinggi untuk streaming 4K dan gaming stabil.",
-      "status": "pending",
-      "admin_catatan": "",
-      "created_at": "2026-10-19T17:28:35.878+00:00",
-      "updated_at": "2026-10-19T17:28:35.878+00:00"
+      "status": "approved",
+      "admin_catatan": "Disetujui. Perangkat & konfigurasi siap disesuaikan.",
+      "created_at": "2026-10-18T17:23:23.273+00:00",
+      "updated_at": "2026-10-18T17:24:15.408+00:00"
     }
   ]
 }
