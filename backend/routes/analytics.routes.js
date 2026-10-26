@@ -5,6 +5,7 @@ const { SimpleLinearRegression } = require('ml-regression');
 const Groq = require('groq-sdk');
 const { loadDB } = require('../db');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
+const { sanitizeAiText } = require('../utils/ai_sanitizer');
 
 const router = express.Router();
 
@@ -126,7 +127,8 @@ Berikut adalah data numerik hasil kalkulasi model Machine Learning (Linear Regre
 Instruksi Tugas:
 1. Terjemahkan data kuantitatif di atas menjadi narasi insight eksekutif yang ringkas, berbobot, dan mudah dipahami oleh pemilik bisnis.
 2. Berikan analisis tren pemasukan dan 2 poin rekomendasi aksi bisnis yang konkret.
-3. Tulis dalam Bahasa Indonesia yang formal dan profesional. Maksimal 120 kata.`;
+3. Tulis dalam Bahasa Indonesia yang formal dan profesional. Maksimal 120 kata.
+4. ATURAN FORMAT PENTING: DILARANG menggunakan tanda asteris ganda (**), simbol markdown, tanda pagar (#), atau backtick. Tulis teks polos (plain text) biasa yang rapi.`;
 
   try {
     const client = new Groq({ apiKey });
@@ -151,15 +153,18 @@ Instruksi Tugas:
       textResult += chunk.choices[0]?.delta?.content || '';
     }
 
+    const cleanResult = sanitizeAiText(textResult) || 'Analisis insight berhasil di-generate.';
+
     return {
-      insight_text: textResult ? textResult.trim() : 'Analisis insight berhasil di-generate.',
+      insight_text: cleanResult,
       source: `Groq (${modelName})`,
       model_used: modelName
     };
   } catch (err) {
     console.error('[Groq GenAI Error]:', err.message);
+    const fallbackInsight = `Proyeksi omset bulan ${nextMonth.bulan} terhitung mencapai Rp ${nextMonthRevJt} Juta (+${growthRate}% MoM) dengan keyakinan model ${(score.r2 * 100).toFixed(1)}%.\n\nCatatan LLM: Permintaan ke Groq API mengalami kendala (${err.message}). Periksa kuota atau kunci GROQ_API_KEY di file .env backend.`;
     return {
-      insight_text: `Proyeksi omset bulan ${nextMonth.bulan} terhitung mencapai Rp ${nextMonthRevJt} Juta (+${growthRate}% MoM) dengan keyakinan model ${(score.r2 * 100).toFixed(1)}%.\n\nCatatan LLM: Permintaan ke Groq API mengalami kendala (${err.message}). Periksa kuota atau kunci GROQ_API_KEY di file .env backend.`,
+      insight_text: sanitizeAiText(fallbackInsight),
       source: 'Local ML Engine (API Error Fallback)',
       model_used: 'fallback'
     };
@@ -218,3 +223,4 @@ router.post('/analytics/analyze-insight', authMiddleware, roleMiddleware(['admin
 });
 
 module.exports = router;
+

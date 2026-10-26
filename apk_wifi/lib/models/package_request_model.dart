@@ -45,6 +45,11 @@ class PackageRequestModel {
     required this.updatedAt,
   });
 
+  bool get isTermination =>
+      tipe.toLowerCase().contains('berhenti') ||
+      tipe.toLowerCase().contains('putus') ||
+      tipe.toLowerCase().contains('stop');
+
   factory PackageRequestModel.fromJson(Map<String, dynamic> json) {
     return PackageRequestModel(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
@@ -57,7 +62,11 @@ class PackageRequestModel {
       paketLamaNama: json['paket_lama_nama'] ?? 'Belum Ada',
       paketLamaKecepatan: json['paket_lama_kecepatan'] is int ? json['paket_lama_kecepatan'] : int.tryParse(json['paket_lama_kecepatan']?.toString() ?? '0') ?? 0,
       paketLamaHarga: json['paket_lama_harga'] is int ? json['paket_lama_harga'] : int.tryParse(json['paket_lama_harga']?.toString() ?? '0') ?? 0,
-      paketBaruId: json['paket_baru_id'] is int ? json['paket_baru_id'] : int.tryParse(json['paket_baru_id'].toString()) ?? 0,
+      paketBaruId: json['paket_baru_id'] != null
+          ? (json['paket_baru_id'] is int
+              ? json['paket_baru_id']
+              : int.tryParse(json['paket_baru_id'].toString()) ?? 0)
+          : 0,
       paketBaruNama: json['paket_baru_nama'] ?? '',
       paketBaruKecepatan: json['paket_baru_kecepatan'] is int ? json['paket_baru_kecepatan'] : int.tryParse(json['paket_baru_kecepatan']?.toString() ?? '0') ?? 0,
       paketBaruHarga: json['paket_baru_harga'] is int ? json['paket_baru_harga'] : int.tryParse(json['paket_baru_harga']?.toString() ?? '0') ?? 0,

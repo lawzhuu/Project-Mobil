@@ -17,7 +17,10 @@ import '../../services/auth_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/glowing_button.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/termination_request_modal.dart';
 import '../auth/login_screen.dart';
+import '../customer/customer_chatbot_screen.dart';
+import 'feedback_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -959,13 +962,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? 'Profil Teknisi'
               : (user.role == 'admin' ? 'Profil Admin' : 'Profil Pengguna'),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppTheme.error),
-            tooltip: 'Keluar dari Akun (Logout)',
-            onPressed: _handleLogout,
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadProfile,
@@ -1194,6 +1190,198 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
 
               const SizedBox(height: 18),
+
+              // Status Langganan Internet (Pelanggan)
+              if (user.role == 'pelanggan') ...[
+                CustomCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Status Langganan Internet',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: user.status == 'active'
+                                  ? AppTheme.success.withValues(alpha: 0.15)
+                                  : AppTheme.warning.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              user.status == 'active' ? 'Aktif' : 'Nonaktif',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: user.status == 'active' ? AppTheme.success : AppTheme.warning,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.wifi, color: AppTheme.primary, size: 22),
+                        ),
+                        title: Text(
+                          user.status == 'inactive'
+                              ? 'Layanan Berhenti (Nonaktif)'
+                              : (user.paketId != null && user.paketId! > 0
+                                  ? 'Paket ID #${user.paketId}'
+                                  : 'Belum Berlangganan Paket'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: user.status == 'inactive' ? const Color(0xFFDC2626) : AppTheme.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          user.status == 'inactive'
+                              ? 'Tidak ada paket internet aktif. Modem siap ditarik teknisi.'
+                              : 'Koneksi Fiber Optik Dedicated Sima.net',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        ),
+                      ),
+                      if (user.status == 'active') ...[
+                        const Divider(color: AppTheme.border, height: 16),
+                        InkWell(
+                          onTap: () {
+                            TerminationRequestModal.show(
+                              context,
+                              currentPackageName: 'Paket #${user.paketId ?? 2}',
+                              onSubmitted: () {
+                                setState(() {});
+                              },
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: const [
+                                Icon(Icons.power_settings_new_rounded, color: Color(0xFFDC2626), size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Berhenti / Putus Langganan Internet',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                ),
+                                Spacer(),
+                                Icon(Icons.chevron_right, color: Color(0xFFDC2626), size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
+
+              // Pusat Bantuan & Pengaduan (Lapor Gangguan & Chatbot CS)
+              if (user.role == 'pelanggan') ...[
+                CustomCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pusat Bantuan & Layanan',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.error.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.report_problem_outlined, color: AppTheme.error, size: 22),
+                        ),
+                        title: const Text(
+                          'Lapor Gangguan Jaringan',
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Buat tiket perbaikan & pantau status kedatangan teknisi',
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                        ),
+                        trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted, size: 20),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const FeedbackScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(color: AppTheme.border, height: 16),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.smart_toy_outlined, color: AppTheme.primary, size: 22),
+                        ),
+                        title: const Text(
+                          'Chatbot Asisten CS (AI Support)',
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Tanya jawab 24 jam kendala koneksi & panduan mandiri',
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                        ),
+                        trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted, size: 20),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CustomerChatbotScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
 
               // Settings Card
               CustomCard(

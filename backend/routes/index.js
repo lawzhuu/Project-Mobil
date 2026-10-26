@@ -10,6 +10,7 @@ const taskRoutes = require('./task.routes');
 const reportRoutes = require('./report.routes');
 const analyticsRoutes = require('./analytics.routes');
 const chatRoutes = require('./chat.routes');
+const aiAdvisorRoutes = require('./ai_advisor.routes');
 const commonRoutes = require('./common.routes');
 
 router.use(authRoutes);
@@ -21,6 +22,7 @@ router.use(taskRoutes);
 router.use(reportRoutes);
 router.use(analyticsRoutes);
 router.use(chatRoutes);
+router.use(aiAdvisorRoutes);
 router.use(commonRoutes);
 
 module.exports = router;

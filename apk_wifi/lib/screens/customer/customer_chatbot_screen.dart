@@ -58,7 +58,11 @@ class _CustomerChatbotScreenState extends State<CustomerChatbotScreen> {
     });
     _scrollToBottom();
 
-    final reply = await ApiService.instance.sendChatMessage(cleanText);
+    final rawReply = await ApiService.instance.sendChatMessage(cleanText);
+    final reply = rawReply
+        .replaceAll('**', '')
+        .replaceAll('###', '')
+        .replaceAll('`', '');
 
     if (mounted) {
       setState(() {

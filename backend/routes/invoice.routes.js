@@ -78,10 +78,13 @@ router.post('/payments', authMiddleware, upload.single('bukti'), async (req, res
     bukti_path = await uploadFile(req.file, 'receipts');
   }
 
+  const netAmount = Math.max(0, invoice.nominal_idr - (invoice.diskon_idr || 0));
+
   // Check if a payment record already exists
   let payment = db.payments.find(p => p.invoice_id === invoice_id);
   if (payment) {
     payment.bukti_path = bukti_path;
+    payment.nominal_idr = netAmount;
     payment.status = 'menunggu';
   } else {
     payment = {
@@ -89,7 +92,7 @@ router.post('/payments', authMiddleware, upload.single('bukti'), async (req, res
       invoice_id,
       user_id: req.user.id,
       bukti_path,
-      nominal_idr: invoice.nominal_idr,
+      nominal_idr: netAmount,
       status: 'menunggu',
       verified_at: null
     };

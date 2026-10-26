@@ -188,6 +188,23 @@ class BillingApi {
     }
   }
 
+  Future<Map<String, dynamic>> submitTerminationRequest({
+    required String alasan,
+    String catatan = '',
+  }) async {
+    try {
+      final res = await _client.post(
+        '/customer/termination-request',
+        body: {'alasan': alasan, 'catatan': catatan},
+        timeout: const Duration(seconds: 10),
+      );
+      return jsonDecode(res.body);
+    } catch (e) {
+      debugPrint('[BillingApi] submitTerminationRequest error: $e');
+      return {'success': false, 'message': 'Gagal mengajukan pemutusan langganan: $e'};
+    }
+  }
+
   Future<PackageRequestModel?> getCustomerPendingPackageRequest() async {
     try {
       final res = await _client.get('/customer/change-request', timeout: const Duration(seconds: 6));
@@ -312,6 +329,62 @@ class BillingApi {
     } catch (e) {
       debugPrint('[BillingApi] createUpstreamBill error: $e');
       return false;
+    }
+  }
+
+  // Claim voucher discount from Mini-game Fiber
+  Future<Map<String, dynamic>> claimGameReward({required int score}) async {
+    try {
+      final res = await _client.post(
+        '/customer/claim-game-reward',
+        body: {'score': score},
+      );
+      return jsonDecode(res.body);
+    } catch (e) {
+      debugPrint('[BillingApi] claimGameReward error: $e');
+      return {'success': false, 'message': 'Gagal mengklaim voucher: $e'};
+    }
+  }
+
+  // Get game voucher reward claim status
+  Future<Map<String, dynamic>> getGameRewardStatus() async {
+    try {
+      final res = await _client.get('/customer/game-reward-status');
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      debugPrint('[BillingApi] getGameRewardStatus error: $e');
+    }
+    return {'success': false, 'already_claimed': false};
+  }
+
+  // --- AI SMART BANDWIDTH & PACKAGE ADVISOR ---
+  Future<Map<String, dynamic>> consultAiBandwidthAdvisor({
+    required Map<String, int> devices,
+    required List<String> activities,
+  }) async {
+    try {
+      final res = await _client.post(
+        '/customer/ai-bandwidth-advisor',
+        body: {
+          'devices': devices,
+          'activities': activities,
+        },
+        timeout: const Duration(seconds: 15),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+      try {
+        final err = jsonDecode(res.body);
+        return {'success': false, 'message': err['message'] ?? 'Gagal kalkulasi AI (${res.statusCode})'};
+      } catch (_) {
+        return {'success': false, 'message': 'Server mengembalikan HTTP ${res.statusCode}. Pastikan server backend telah di-restart.'};
+      }
+    } catch (e) {
+      debugPrint('[BillingApi] consultAiBandwidthAdvisor error: $e');
+      return {'success': false, 'message': 'Koneksi ke AI Advisor gagal: $e'};
     }
   }
 }

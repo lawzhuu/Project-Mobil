@@ -77,4 +77,22 @@ class TaskApi {
       return false;
     }
   }
+
+  Future<Map<String, dynamic>> reportTrouble({
+    required String kategori,
+    required String deskripsi,
+    String? noKontak,
+  }) async {
+    try {
+      final res = await _client.post('/customer/report-trouble', body: {
+        'kategori': kategori,
+        'deskripsi': deskripsi,
+        'no_kontak': noKontak,
+      });
+      return jsonDecode(res.body);
+    } catch (e) {
+      debugPrint('[TaskApi] reportTrouble error: $e');
+      return {'success': false, 'message': 'Gagal mengirim laporan gangguan: $e'};
+    }
+  }
 }

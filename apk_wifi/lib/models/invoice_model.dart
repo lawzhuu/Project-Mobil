@@ -6,6 +6,8 @@ class InvoiceModel {
   final int userId;
   final String periode;
   final int nominalIdr;
+  final int diskonIdr;
+  final String? voucherCode;
   final String mataUang;
   final double kursTerkunci;
   final String jatuhTempo; // ISO String
@@ -20,6 +22,8 @@ class InvoiceModel {
     required this.userId,
     required this.periode,
     required this.nominalIdr,
+    this.diskonIdr = 0,
+    this.voucherCode,
     required this.mataUang,
     required this.kursTerkunci,
     required this.jatuhTempo,
@@ -36,6 +40,8 @@ class InvoiceModel {
       userId: json['user_id'] is int ? json['user_id'] : int.tryParse(json['user_id'].toString()) ?? 0,
       periode: json['periode'] ?? '',
       nominalIdr: json['nominal_idr'] is int ? json['nominal_idr'] : int.tryParse(json['nominal_idr'].toString()) ?? 0,
+      diskonIdr: json['diskon_idr'] is int ? json['diskon_idr'] : int.tryParse(json['diskon_idr']?.toString() ?? '0') ?? 0,
+      voucherCode: json['voucher_code'],
       mataUang: json['mata_uang'] ?? 'IDR',
       kursTerkunci: (json['kurs_terkunci'] != null)
           ? double.tryParse(json['kurs_terkunci'].toString()) ?? 1.0
@@ -55,6 +61,8 @@ class InvoiceModel {
       'user_id': userId,
       'periode': periode,
       'nominal_idr': nominalIdr,
+      'diskon_idr': diskonIdr,
+      'voucher_code': voucherCode,
       'mata_uang': mataUang,
       'kurs_terkunci': kursTerkunci,
       'jatuh_tempo': jatuhTempo,
@@ -68,7 +76,13 @@ class InvoiceModel {
 
   bool get isPaid => status == 'lunas';
 
-  // Amount in customer's local currency based on locked exchange rate
+  // Check if invoice has discount from game or promo
+  bool get hasDiscount => diskonIdr > 0;
+
+  // Net payable IDR after discount
+  int get totalBayarIdr => (nominalIdr - diskonIdr).clamp(0, double.infinity).toInt();
+
+  // Amount in customer's local currency based on locked exchange rate (gross)
   double get nominalInCurrency {
     if (mataUang == 'IDR' || kursTerkunci <= 1.0) {
       return nominalIdr.toDouble();
@@ -76,8 +90,31 @@ class InvoiceModel {
     return nominalIdr / kursTerkunci;
   }
 
-  // Format currency with symbol
+  // Net amount in customer's local currency (after discount)
+  double get totalInCurrency {
+    if (mataUang == 'IDR' || kursTerkunci <= 1.0) {
+      return totalBayarIdr.toDouble();
+    }
+    return totalBayarIdr / kursTerkunci;
+  }
+
+  // Format currency with symbol (net payable)
   String get formattedAmount {
+    final amountToFormat = hasDiscount ? totalInCurrency : nominalInCurrency;
+    if (mataUang == 'USD') {
+      return NumberFormat.currency(locale: 'en_US', symbol: '\$', decimalDigits: 2)
+          .format(amountToFormat);
+    } else if (mataUang == 'EUR') {
+      return NumberFormat.currency(locale: 'de_DE', symbol: '€', decimalDigits: 2)
+          .format(amountToFormat);
+    } else {
+      return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
+          .format(hasDiscount ? totalBayarIdr : nominalIdr);
+    }
+  }
+
+  // Original gross amount formatted
+  String get formattedOriginalAmount {
     if (mataUang == 'USD') {
       return NumberFormat.currency(locale: 'en_US', symbol: '\$', decimalDigits: 2)
           .format(nominalInCurrency);
@@ -90,10 +127,16 @@ class InvoiceModel {
     }
   }
 
-  // Format IDR base amount
+  // Format IDR base amount (net payable)
   String get formattedAmountIdr {
     return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
-        .format(nominalIdr);
+        .format(totalBayarIdr);
+  }
+
+  // Format discount in IDR
+  String get formattedDiscountIdr {
+    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
+        .format(diskonIdr);
   }
 
   // Formatted due date string converted to timezone

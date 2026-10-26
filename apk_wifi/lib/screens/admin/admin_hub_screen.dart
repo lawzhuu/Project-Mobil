@@ -11,7 +11,6 @@ import '../../services/blockchain_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/glowing_button.dart';
-import '../../widgets/stat_metric_card.dart';
 import '../../widgets/status_badge.dart';
 import 'tabs/admin_forecast_tab.dart';
 import 'tabs/admin_invoices_tab.dart';
@@ -348,7 +347,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     String jenis = 'instalasi';
     int? selectedCustomerId;
 
-    final customers = _customers.where((c) => c.status == 'active').toList();
+    final customers = _customers;
 
     showDialog(
       context: context,
@@ -371,7 +370,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                       (c) => DropdownMenuItem(
                         value: c.id,
                         child: Text(
-                          '${c.nama} (${c.alamat})',
+                          '${c.nama} [${c.status == 'inactive' ? 'Nonaktif' : 'Aktif'}]',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -383,7 +382,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
               DropdownButtonFormField<String>(
                 value: jenis,
                 dropdownColor: AppTheme.surfaceCard,
-                decoration: const InputDecoration(labelText: 'Jenis Tugas'),
+                decoration: const InputDecoration(labelText: 'Jenis / Alasan Tugas'),
                 items: const [
                   DropdownMenuItem(
                     value: 'instalasi',
@@ -392,6 +391,10 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                   DropdownMenuItem(
                     value: 'perbaikan',
                     child: Text('Perbaikan Redaman / Putus Kabel'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'pencopotan',
+                    child: Text('Pencopotan Perangkat / Deaktivasi'),
                   ),
                 ],
                 onChanged: (v) =>
@@ -449,7 +452,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
       case 1:
         return 'Aktivasi Pelanggan';
       case 2:
-        return 'Pengajuan Ubah Paket';
+        return 'Persetujuan Paket & Berhenti Langganan';
       case 3:
         return 'Verifikasi Pembayaran';
       case 4:
@@ -739,14 +742,18 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Permintaan Ubah Paket (Pending Requests)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              const Expanded(
+                child: Text(
+                  'Pengajuan Paket & Berhenti Langganan',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppTheme.warning.withOpacity(0.2),
+                  color: AppTheme.warning.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -772,7 +779,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
               ),
               child: const Center(
                 child: Text(
-                  'Tidak ada permintaan ubah paket yang pending. Semua request telah diproses! 👍',
+                  'Tidak ada pengajuan ubah paket atau pemutusan yang pending. Semua request telah diproses! 👍',
                   style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
@@ -780,11 +787,14 @@ class _AdminHubScreenState extends State<AdminHubScreen>
             )
           else
             ...pending.map((req) {
+              final isTermination = req.isTermination;
               final isUpgrade = req.paketBaruKecepatan > req.paketLamaKecepatan;
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: CustomCard(
-                  borderColor: AppTheme.warning.withOpacity(0.6),
+                  borderColor: isTermination
+                      ? const Color(0xFFDC2626).withValues(alpha: 0.6)
+                      : AppTheme.warning.withValues(alpha: 0.6),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -804,7 +814,11 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isUpgrade ? const Color(0xFF059669).withOpacity(0.2) : const Color(0xFF2563EB).withOpacity(0.2),
+                              color: isTermination
+                                  ? const Color(0xFFDC2626).withValues(alpha: 0.2)
+                                  : (isUpgrade
+                                      ? const Color(0xFF059669).withValues(alpha: 0.2)
+                                      : const Color(0xFF2563EB).withValues(alpha: 0.2)),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -812,7 +826,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: isUpgrade ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                                color: isTermination
+                                    ? const Color(0xFFEF4444)
+                                    : (isUpgrade ? const Color(0xFF10B981) : const Color(0xFF38BDF8)),
                               ),
                             ),
                           ),
@@ -832,66 +848,118 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                       ],
                       const SizedBox(height: 10),
 
-                      // Box Detail Perubahan Paket
+                      // Box Detail Perubahan Paket / Pemutusan
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppTheme.background,
+                          color: isTermination
+                              ? const Color(0xFFFEF2F2).withValues(alpha: 0.5)
+                              : AppTheme.background,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.border),
+                          border: Border.all(
+                            color: isTermination
+                                ? const Color(0xFFFECACA)
+                                : AppTheme.border,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('Paket Lama:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
-                                      Text(
-                                        '${req.paketLamaNama} (${req.paketLamaKecepatan}M)',
-                                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                                      ),
-                                    ],
+                            if (isTermination) ...[
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Paket yang Diputus:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                        Text(
+                                          '${req.paketLamaNama} (${req.paketLamaKecepatan}M)',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const Icon(Icons.arrow_forward, size: 16, color: AppTheme.accent),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('Paket Baru:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
-                                      Text(
-                                        '${req.paketBaruNama} (${req.paketBaruKecepatan}M)',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary),
-                                      ),
-                                    ],
+                                  const Icon(Icons.arrow_forward, size: 16, color: Color(0xFFDC2626)),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Status Baru:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                        Text(
+                                          'Nonaktif / Berhenti',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const Divider(color: AppTheme.border, height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Selisih Harga:', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
-                                Text(
-                                  req.selisihHarga >= 0
-                                      ? '+Rp ${_formatRupiah(req.selisihHarga)} / bln'
-                                      : '-Rp ${_formatRupiah(-req.selisihHarga)} / bln',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: req.selisihHarga >= 0 ? AppTheme.success : AppTheme.accent,
+                                ],
+                              ),
+                              const Divider(color: AppTheme.border, height: 12),
+                              const Row(
+                                children: [
+                                  Icon(Icons.assignment_outlined, size: 14, color: AppTheme.warning),
+                                  SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Dampak: Diterbitkan SPK penarikan modem/ONT ke teknisi.',
+                                      style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
+                            ] else ...[
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Paket Lama:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                        Text(
+                                          '${req.paketLamaNama} (${req.paketLamaKecepatan}M)',
+                                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_forward, size: 16, color: AppTheme.accent),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Paket Baru:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                        Text(
+                                          '${req.paketBaruNama} (${req.paketBaruKecepatan}M)',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(color: AppTheme.border, height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Selisih Harga:', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                  Text(
+                                    req.selisihHarga >= 0
+                                        ? '+Rp ${_formatRupiah(req.selisihHarga)} / bln'
+                                        : '-Rp ${_formatRupiah(-req.selisihHarga)} / bln',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: req.selisihHarga >= 0 ? AppTheme.success : AppTheme.accent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                             if (req.alasan.isNotEmpty) ...[
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 6),
                               Text(
                                 'Alasan: "${req.alasan}"',
                                 style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppTheme.textMuted),
@@ -923,13 +991,16 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                             flex: 2,
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.success,
+                                backgroundColor: isTermination ? const Color(0xFFDC2626) : AppTheme.success,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                               ),
-                              icon: const Icon(Icons.check, size: 16),
-                              label: const Text('Setujui (Approve)', style: TextStyle(fontWeight: FontWeight.bold)),
+                              icon: Icon(isTermination ? Icons.power_settings_new_rounded : Icons.check, size: 16),
+                              label: Text(
+                                isTermination ? 'Setujui Pemutusan' : 'Setujui (Approve)',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               onPressed: () => _approvePackageRequestDialog(req),
                             ),
                           ),
@@ -1003,7 +1074,12 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   }
 
   Future<void> _approvePackageRequestDialog(PackageRequestModel req) async {
-    final noteController = TextEditingController(text: 'Disetujui. Perangkat & konfigurasi siap disesuaikan.');
+    final isTerm = req.isTermination;
+    final noteController = TextEditingController(
+      text: isTerm
+          ? 'Pemutusan layanan disetujui. SPK penarikan perangkat telah diterbitkan ke teknisi.'
+          : 'Disetujui. Perangkat & konfigurasi siap disesuaikan.',
+    );
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1011,10 +1087,15 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.check_circle, color: AppTheme.success),
+            Icon(
+              isTerm ? Icons.power_settings_new_rounded : Icons.check_circle,
+              color: isTerm ? const Color(0xFFDC2626) : AppTheme.success,
+            ),
             const SizedBox(width: 8),
             Text(
-              'Setujui Pengajuan #${req.id}',
+              isTerm
+                  ? 'Setujui Pemutusan #${req.id}'
+                  : 'Setujui Pengajuan #${req.id}',
               style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
             ),
           ],
@@ -1025,12 +1106,36 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           children: [
             Text('Pelanggan: ${req.userNama}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
             const SizedBox(height: 4),
-            Text(
-              '${req.paketLamaNama} (${req.paketLamaKecepatan}M) ➔ ${req.paketBaruNama} (${req.paketBaruKecepatan}M)',
-              style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            const SizedBox(height: 6),
-            Text('Selisih Harga: Rp ${_formatRupiah(req.selisihHarga)} / bulan', style: const TextStyle(color: AppTheme.accent, fontSize: 12)),
+            if (isTerm) ...[
+              Text(
+                'Paket yang Dihentikan: ${req.paketLamaNama} (${req.paketLamaKecepatan}M)',
+                style: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: const Text(
+                  'Perhatian: Akun pelanggan akan dinonaktifkan dan tiket penarikan modem/ONT otomatis dibuat untuk teknisi.',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF991B1B)),
+                ),
+              ),
+            ] else ...[
+              Text(
+                '${req.paketLamaNama} (${req.paketLamaKecepatan}M) ➔ ${req.paketBaruNama} (${req.paketBaruKecepatan}M)',
+                style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 6),
+              Text('Selisih Harga: Rp ${_formatRupiah(req.selisihHarga)} / bulan', style: const TextStyle(color: AppTheme.accent, fontSize: 12)),
+            ],
+            if (req.alasan.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Alasan: "${req.alasan}"', style: const TextStyle(fontSize: 11.5, fontStyle: FontStyle.italic, color: AppTheme.textMuted)),
+            ],
             const SizedBox(height: 12),
             const Text('Catatan Persetujuan Admin:', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
             const SizedBox(height: 6),
@@ -1050,9 +1155,14 @@ class _AdminHubScreenState extends State<AdminHubScreen>
             child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isTerm ? const Color(0xFFDC2626) : AppTheme.success,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ya, Setujui', style: TextStyle(color: Colors.white)),
+            child: Text(
+              isTerm ? 'Ya, Putus Layanan' : 'Ya, Setujui',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -1410,16 +1520,21 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Penugasan Teknisi Lapangan (A5)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              const Expanded(
+                child: Text(
+                  'Penugasan Teknisi Lapangan (A5)',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 icon: const Icon(Icons.add_task, size: 16),
-                label: const Text('Buat Tugas Baru'),
+                label: const Text('Buat Tugas'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.secondary,
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 onPressed: _showAssignTaskDialog,
               ),

@@ -268,8 +268,151 @@ const handlePackageChangeRequest = async (req, res) => {
   });
 };
 
+// 1.b Pelanggan mengajukan berhenti / putus langganan
+const handleTerminationRequest = async (req, res) => {
+  const db = loadDB();
+  const userId = req.user.id;
+  const user = db.users.find(u => u.id === userId);
+  if (!user) return res.status(404).json({ success: false, message: 'Pelanggan tidak ditemukan' });
+
+  // Cek apakah ada request pending sebelumnya di Supabase / lokal
+  let existingPending = null;
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      const { data: remotePending } = await sb
+        .from('package_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+      if (remotePending) {
+        existingPending = remotePending;
+      }
+    }
+  }
+
+  if (!existingPending) {
+    existingPending = (db.package_requests || []).find(
+      r => r.user_id === user.id && r.status === 'pending'
+    );
+  }
+
+  if (existingPending) {
+    return res.status(400).json({
+      success: false,
+      message: `Anda masih memiliki pengajuan "${existingPending.tipe}" yang sedang ditinjau admin.`
+    });
+  }
+
+  const { alasan, catatan } = req.body;
+  const fullReason = catatan && catatan.trim().length > 0 
+    ? `${alasan || 'Pemutusan Langganan'} - Catatan: ${catatan.trim()}`
+    : (alasan || 'Permintaan pemutusan layanan oleh pelanggan');
+
+  const oldPkg = db.packages.find(p => p.id === user.paket_id);
+  const oldPrice = oldPkg ? oldPkg.harga_idr : 0;
+  const oldSpeed = oldPkg ? oldPkg.kecepatan_mbps : 0;
+
+  const maxLocalId = (db.package_requests || []).length > 0 
+    ? Math.max(...db.package_requests.map(r => r.id || 0)) 
+    : 0;
+  let targetId = maxLocalId + 1;
+
+  let newRequest = null;
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        const { data: latestRows } = await sb
+          .from('package_requests')
+          .select('id')
+          .order('id', { ascending: false })
+          .limit(1);
+
+        if (latestRows && latestRows.length > 0 && latestRows[0].id >= targetId) {
+          targetId = latestRows[0].id + 1;
+        }
+
+        const requestPayload = {
+          id: targetId,
+          user_id: user.id,
+          user_nama: user.nama,
+          user_email: user.email,
+          user_alamat: user.alamat || '',
+          user_no_hp: user.no_hp || '',
+          paket_lama_id: oldPkg ? oldPkg.id : null,
+          paket_lama_nama: oldPkg ? oldPkg.nama : 'Paket Aktif',
+          paket_lama_kecepatan: oldSpeed,
+          paket_lama_harga: oldPrice,
+          paket_baru_id: 0,
+          paket_baru_nama: 'Nonaktif (Putus Langganan)',
+          paket_baru_kecepatan: 0,
+          paket_baru_harga: 0,
+          selisih_harga: -oldPrice,
+          tipe: 'Berhenti Berlangganan',
+          alasan: fullReason,
+          status: 'pending',
+          admin_catatan: ''
+        };
+
+        const { data: inserted, error: insertErr } = await sb
+          .from('package_requests')
+          .upsert(requestPayload, { onConflict: 'id' })
+          .select()
+          .single();
+
+        if (!insertErr && inserted) {
+          newRequest = inserted;
+          console.log(`[Supabase DB] Termination request #${inserted.id} successfully created online.`);
+        } else if (insertErr) {
+          console.error('[Supabase DB Termination Request Error]:', insertErr.message);
+        }
+      } catch (err) {
+        console.error('[Supabase DB Exception]:', err.message);
+      }
+    }
+  }
+
+  if (!newRequest) {
+    newRequest = {
+      id: targetId,
+      user_id: user.id,
+      user_nama: user.nama,
+      user_email: user.email,
+      user_alamat: user.alamat || '',
+      user_no_hp: user.no_hp || '',
+      paket_lama_id: oldPkg ? oldPkg.id : null,
+      paket_lama_nama: oldPkg ? oldPkg.nama : 'Paket Aktif',
+      paket_lama_kecepatan: oldSpeed,
+      paket_lama_harga: oldPrice,
+      paket_baru_id: 0,
+      paket_baru_nama: 'Nonaktif (Putus Langganan)',
+      paket_baru_kecepatan: 0,
+      paket_baru_harga: 0,
+      selisih_harga: -oldPrice,
+      tipe: 'Berhenti Berlangganan',
+      alasan: fullReason,
+      status: 'pending',
+      admin_catatan: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  db.package_requests.push(newRequest);
+  saveDB(db);
+
+  return res.status(201).json({
+    success: true,
+    message: 'Pengajuan berhenti berlangganan berhasil dikirim. Admin akan meninjau dan menjadwalkan penarikan perangkat.',
+    request: newRequest
+  });
+};
+
 router.post('/packages/change-request', authMiddleware, handlePackageChangeRequest);
 router.post('/customer/change-request', authMiddleware, handlePackageChangeRequest);
+router.post('/customer/termination-request', authMiddleware, handleTerminationRequest);
 
 // 2. Pelanggan melihat riwayat & status pengajuan aktifnya (Langsung Supabase Online)
 router.get('/customer/change-request', authMiddleware, async (req, res) => {
@@ -370,10 +513,60 @@ router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddlewar
 
   // Update status request
   request.status = 'approved';
-  request.admin_catatan = req.body.admin_catatan || 'Pengajuan disetujui oleh admin';
+  request.admin_catatan = req.body.admin_catatan || (request.tipe === 'Berhenti Berlangganan' ? 'Pemutusan langganan disetujui oleh admin.' : 'Pengajuan disetujui oleh admin.');
   request.updated_at = new Date().toISOString();
 
-  // Update paket pelanggan
+  // JIKA TIPE: BERHENTI BERLANGGANAN
+  if (request.tipe === 'Berhenti Berlangganan') {
+    user.status = 'inactive';
+    user.paket_id = null;
+
+    // Buat SPK Tugas Teknisi untuk penarikan modem/ONT & kabel
+    const tech = db.users.find(u => u.role === 'teknisi') || { id: 1 };
+    const terminationTask = {
+      id: db.tasks.length ? Math.max(...db.tasks.map(t => t.id)) + 1 : 1,
+      teknisi_id: tech.id,
+      pelanggan_id: user.id,
+      jenis: 'pencopotan',
+      status: 'baru',
+      catatan: `Pencopotan perangkat modem/ONT & penarikan kabel dropcore pemutusan langganan: ${user.nama} (${user.no_hp}). Alamat: ${user.alamat || '-'}. Alasan: ${request.alasan || '-'}`
+    };
+    db.tasks.push(terminationTask);
+
+    if (isSupabaseConfigured()) {
+      const sb = getSupabaseClient();
+      if (sb) {
+        try {
+          await Promise.all([
+            sb.from('package_requests').update({
+              status: 'approved',
+              admin_catatan: request.admin_catatan,
+              updated_at: request.updated_at
+            }).eq('id', id),
+            sb.from('users').update({
+              status: 'inactive',
+              paket_id: null
+            }).eq('id', user.id),
+            sb.from('tasks').upsert(terminationTask, { onConflict: 'id' })
+          ]);
+          console.log(`[Supabase DB] Termination request #${id} approved online.`);
+        } catch (err) {
+          console.error('[Supabase DB Termination Approval Sync Error]:', err.message);
+        }
+      }
+    }
+
+    saveDB(db);
+
+    return res.json({
+      success: true,
+      message: `Pemutusan langganan ${request.user_nama} berhasil disetujui. Status akun dinonaktifkan dan SPK penarikan perangkat telah dikirimkan ke teknisi.`,
+      request,
+      user
+    });
+  }
+
+  // Update paket pelanggan (untuk ubah/upgrade/downgrade paket)
   user.paket_id = request.paket_baru_id;
 
   // Update tagihan pelanggan: jika ada tagihan yang belum lunas, sesuaikan nominalnya.
@@ -494,6 +687,108 @@ router.post('/admin/package-requests/:id/reject', authMiddleware, roleMiddleware
     success: true,
     message: `Pengajuan ${request.user_nama} telah ditolak.`,
     request
+  });
+});
+
+// ==========================================
+// GAMIFICATION: TILT FIBER OPTIC REWARD
+// ==========================================
+
+// 1. Cek status klaim reward game pelanggan
+router.get('/customer/game-reward-status', authMiddleware, (req, res) => {
+  const db = loadDB();
+  const userId = req.user.id;
+
+  // Cek apakah ada invoice yang sudah diklaim voucher game
+  const claimedInvoice = (db.invoices || []).find(
+    inv => inv.user_id === userId && inv.voucher_code === 'FIBERHEMAT10'
+  );
+
+  return res.json({
+    success: true,
+    already_claimed: !!claimedInvoice,
+    claimed_invoice_id: claimedInvoice ? claimedInvoice.id : null,
+    voucher_code: 'FIBERHEMAT10',
+    discount_amount: 25000
+  });
+});
+
+// 2. Klaim voucher reward dari Mini-game Fiber ke Tagihan
+router.post('/customer/claim-game-reward', authMiddleware, async (req, res) => {
+  const db = loadDB();
+  const userId = req.user.id;
+  const { score } = req.body;
+
+  if (score === undefined || score < 70) {
+    return res.status(400).json({
+      success: false,
+      message: 'Skor minimal 70 diperlukan untuk mendapatkan redaman optik prima dan mengklaim voucher.'
+    });
+  }
+
+  // Cek apakah invoice belum lunas milik user ini sudah memiliki voucher
+  let targetInvoice = (db.invoices || []).find(
+    inv => inv.user_id === userId && inv.status === 'belum'
+  );
+
+  // Jika tidak ada invoice 'belum' (semua lunas), buatkan invoice berjalan agar bisa langsung didemokan
+  if (!targetInvoice) {
+    const user = (db.users || []).find(u => u.id === userId);
+    const pkg = (db.packages || []).find(p => p.id === (user?.paket_id || 2)) || db.packages[0];
+    const rate = STATIC_RATES.idrPerCurrency[user?.mata_uang || 'IDR'] || 1.0;
+    
+    targetInvoice = {
+      id: db.invoices.length ? Math.max(...db.invoices.map(i => i.id)) + 1 : 1,
+      user_id: userId,
+      periode: 'Desember 2026',
+      nominal_idr: pkg.harga_idr,
+      mata_uang: user?.mata_uang || 'IDR',
+      kurs_terkunci: rate,
+      jatuh_tempo: '2026-12-25T23:59:59.000Z',
+      status: 'belum',
+      diskon_idr: 0,
+      voucher_code: null
+    };
+    db.invoices.push(targetInvoice);
+  }
+
+  if (targetInvoice.diskon_idr && targetInvoice.diskon_idr > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Voucher diskon sudah pernah diaplikasikan ke tagihan periode ini.',
+      invoice: targetInvoice
+    });
+  }
+
+  const discountAmount = 25000;
+  targetInvoice.diskon_idr = discountAmount;
+  targetInvoice.voucher_code = 'FIBERHEMAT10';
+
+  // SINKRONKAN KE SUPABASE JIKA ONLINE
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        await sb.from('invoices').upsert({
+          id: targetInvoice.id,
+          diskon_idr: targetInvoice.diskon_idr,
+          voucher_code: targetInvoice.voucher_code
+        }, { onConflict: 'id' });
+        console.log(`[Supabase DB] Invoice #${targetInvoice.id} updated with game discount reward.`);
+      } catch (err) {
+        console.warn('[Supabase Sync Warning]:', err.message);
+      }
+    }
+  }
+
+  saveDB(db);
+
+  return res.json({
+    success: true,
+    message: '🎉 Selamat! Diskon Rp 25.000 berhasil dipotongkan langsung ke tagihan Anda.',
+    discount: discountAmount,
+    voucher_code: 'FIBERHEMAT10',
+    invoice: targetInvoice
   });
 });
 

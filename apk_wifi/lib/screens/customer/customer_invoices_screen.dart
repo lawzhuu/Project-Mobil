@@ -147,16 +147,53 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                         const SizedBox(height: 10),
                         const Divider(color: AppTheme.border, height: 1),
                         const SizedBox(height: 10),
+                        if (invoice.hasDiscount) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Tarif Normal Paket:', style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                              Text(
+                                invoice.formattedOriginalAmount,
+                                style: const TextStyle(
+                                  color: AppTheme.textMuted,
+                                  fontSize: 12,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.card_giftcard, size: 13, color: AppTheme.success),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Voucher ${invoice.voucherCode ?? 'FIBERHEMAT10'}:',
+                                    style: const TextStyle(color: AppTheme.success, fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                '-${invoice.formattedDiscountIdr}',
+                                style: const TextStyle(color: AppTheme.success, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                        ],
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Nominal Tagihan (${invoice.mataUang}):',
-                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                              'Total Ditransfer (${invoice.mataUang}):',
+                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                             Text(
                               invoice.formattedAmount,
-                              style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                              style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 17),
                             ),
                           ],
                         ),
@@ -605,14 +642,32 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                 spacing: 8,
                                 runSpacing: 4,
                                 children: [
-                                  Text(
-                                    inv.formattedAmount,
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w900,
-                                      color: isPaid ? AppTheme.success : AppTheme.primary,
-                                      letterSpacing: -0.5,
-                                    ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        inv.formattedAmount,
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w900,
+                                          color: isPaid ? AppTheme.success : AppTheme.primary,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                      if (inv.hasDiscount) ...[
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          inv.formattedOriginalAmount,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppTheme.textMuted,
+                                            decoration: TextDecoration.lineThrough,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                   if (inv.mataUang != 'IDR')
                                     Container(
@@ -629,6 +684,29 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                     ),
                                 ],
                               ),
+
+                              if (inv.hasDiscount) ...[
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.success.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: AppTheme.success.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.card_giftcard, size: 12, color: AppTheme.success),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'Diskon Fiber Game (${inv.voucherCode ?? 'FIBERHEMAT10'}): -${inv.formattedDiscountIdr}',
+                                        style: const TextStyle(fontSize: 11, color: AppTheme.success, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
 
                               if (inv.mataUang != 'IDR') ...[
                                 const SizedBox(height: 4),

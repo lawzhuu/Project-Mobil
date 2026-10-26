@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
-import '../../models/feedback_model.dart';
+import '../../models/task_model.dart';
 import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/glowing_button.dart';
 
@@ -13,43 +14,66 @@ class FeedbackScreen extends StatefulWidget {
 }
 
 class _FeedbackScreenState extends State<FeedbackScreen> {
-  final TextEditingController _saranController = TextEditingController();
-  final TextEditingController _kesanController = TextEditingController();
-  List<FeedbackModel> _feedbacks = [];
+  final List<String> _kategoriList = [
+    'Lampu LOS Merah / Kabel FO Putus',
+    'Internet Lambat / High Ping & RTO',
+    'Router / WiFi Terhubung Tanpa Internet',
+    'Modem / Adaptor Rusak atau Mati Total',
+    'Pindah Posisi Modem / Titik Kabel',
+    'Kendala Jaringan Lainnya',
+  ];
+
+  late String _selectedKategori;
+  final TextEditingController _deskripsiController = TextEditingController();
+  final TextEditingController _noKontakController = TextEditingController();
+
+  List<TaskModel> _tickets = [];
   bool _isLoading = true;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _loadFeedback();
+    _selectedKategori = _kategoriList.first;
+    final user = AuthService.instance.currentUser;
+    if (user != null && user.noHp.isNotEmpty) {
+      _noKontakController.text = user.noHp;
+    }
+    _loadTickets();
   }
 
   @override
   void dispose() {
-    _saranController.dispose();
-    _kesanController.dispose();
+    _deskripsiController.dispose();
+    _noKontakController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadFeedback() async {
-    final list = await ApiService.instance.getFeedback();
-    if (mounted) {
-      setState(() {
-        _feedbacks = list;
-        _isLoading = false;
-      });
+  Future<void> _loadTickets() async {
+    try {
+      final list = await ApiService.instance.getTasks();
+      if (mounted) {
+        setState(() {
+          // Tampilkan tiket milik pelanggan dengan urutan terbaru di atas
+          _tickets = list.reversed.toList();
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _handleSubmit() async {
-    final saran = _saranController.text.trim();
-    final kesan = _kesanController.text.trim();
+    final deskripsi = _deskripsiController.text.trim();
+    final noKontak = _noKontakController.text.trim();
 
-    if (saran.isEmpty && kesan.isEmpty) {
+    if (deskripsi.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Tolong isi saran atau kesan Anda terlebih dahulu!'),
+          content: Text('Harap jelaskan kendala atau gejala gangguan yang Anda alami!'),
           backgroundColor: AppTheme.warning,
         ),
       );
@@ -58,28 +82,57 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final ok = await ApiService.instance.submitFeedback(saran: saran, kesan: kesan);
+    final res = await ApiService.instance.reportTrouble(
+      kategori: _selectedKategori,
+      deskripsi: deskripsi,
+      noKontak: noKontak.isNotEmpty ? noKontak : null,
+    );
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
 
-    if (ok) {
-      _saranController.clear();
-      _kesanController.clear();
+    if (res['success'] == true) {
+      _deskripsiController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Terima kasih! Saran & kesan Anda berhasil dikirim.'),
+        SnackBar(
+          content: Text(res['message'] ?? 'Laporan gangguan berhasil dibuat! Tim teknisi akan segera menindaklanjuti.'),
           backgroundColor: AppTheme.success,
         ),
       );
-      _loadFeedback();
+      _loadTickets();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal mengirimkan masukan. Coba lagi.'),
+        SnackBar(
+          content: Text(res['message'] ?? 'Gagal membuat laporan gangguan. Coba lagi.'),
           backgroundColor: AppTheme.error,
         ),
       );
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'selesai':
+        return AppTheme.success;
+      case 'dikerjakan':
+        return AppTheme.primary;
+      case 'baru':
+      default:
+        return AppTheme.warning;
+    }
+  }
+
+  String _getStatusLabel(String status, String? teknisiNama) {
+    switch (status.toLowerCase()) {
+      case 'selesai':
+        return 'Selesai Ditangani';
+      case 'dikerjakan':
+        return teknisiNama != null && teknisiNama.isNotEmpty
+            ? 'Ditangani oleh $teknisiNama'
+            : 'Sedang Ditangani Teknisi';
+      case 'baru':
+      default:
+        return 'Menunggu Teknisi';
     }
   }
 
@@ -87,41 +140,41 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saran & Evaluasi SIMA.NET'),
+        title: const Text('Lapor Gangguan Jaringan'),
       ),
       body: RefreshIndicator(
-        onRefresh: _loadFeedback,
+        onRefresh: _loadTickets,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header Card
+              // Header Banner Card
               CustomCard(
                 gradient: LinearGradient(
                   colors: [
-                    AppTheme.primary.withOpacity(0.15),
-                    AppTheme.secondary.withOpacity(0.15),
+                    AppTheme.error.withValues(alpha: 0.18),
+                    AppTheme.primary.withValues(alpha: 0.12),
                   ],
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: const BoxDecoration(
-                        color: AppTheme.primaryGlow,
+                      decoration: BoxDecoration(
+                        color: AppTheme.error.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.rate_review, color: AppTheme.primary, size: 28),
+                      child: const Icon(Icons.build_circle_rounded, color: AppTheme.error, size: 30),
                     ),
                     const SizedBox(width: 14),
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
-                            'Formulir Evaluasi & Masukan',
+                            'Pusat Bantuan & Tiket Gangguan',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -130,8 +183,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Bantu kami meningkatkan kualitas layanan ISP fiber optic Sima.net.',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                            'Mengalami kendala koneksi? Kirim laporan di sini agar teknisi Sima.net segera diterjunkan ke lokasi.',
+                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, height: 1.3),
                           ),
                         ],
                       ),
@@ -142,42 +195,101 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
               const SizedBox(height: 18),
 
-              // Form Card
+              // Formulir Lapor Gangguan
               CustomCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Saran Perbaikan / Pengembangan',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _saranController,
-                      maxLines: 3,
-                      style: const TextStyle(color: AppTheme.textPrimary),
-                      decoration: const InputDecoration(
-                        hintText: 'Contoh: Tambahkan pembayaran via e-wallet atau rute FO baru...',
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Kesan Layanan Sima.net',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _kesanController,
-                      maxLines: 2,
-                      style: const TextStyle(color: AppTheme.textPrimary),
-                      decoration: const InputDecoration(
-                        hintText: 'Contoh: Internet sangat stabil, teknisi ramah dan tepat waktu...',
-                      ),
+                    const Row(
+                      children: [
+                        Icon(Icons.report_problem_outlined, color: AppTheme.primary, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Formulir Pengaduan Kendala',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
+
+                    // Dropdown Kategori
+                    const Text(
+                      'Jenis Kendala / Gejala Gangguan',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceElevated,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedKategori,
+                          isExpanded: true,
+                          dropdownColor: AppTheme.surfaceCard,
+                          icon: const Icon(Icons.arrow_drop_down, color: AppTheme.primary),
+                          items: _kategoriList.map((kat) {
+                            return DropdownMenuItem<String>(
+                              value: kat,
+                              child: Text(
+                                kat,
+                                style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedKategori = val);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // Field Nomor Kontak
+                    const Text(
+                      'Nomor WhatsApp Aktif / Darurat',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _noKontakController,
+                      keyboardType: TextInputType.phone,
+                      style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                      decoration: const InputDecoration(
+                        hintText: 'Contoh: 081234567890 (untuk dihubungi teknisi)',
+                        prefixIcon: Icon(Icons.phone_outlined, size: 20, color: AppTheme.textSecondary),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // Field Deskripsi Kendala
+                    const Text(
+                      'Deskripsi Gangguan',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _deskripsiController,
+                      maxLines: 3,
+                      style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                      decoration: const InputDecoration(
+                        hintText: 'Jelaskan kondisi lampu router, kapan mulai terjadi, atau detail kendala...',
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
                     GlowingButton(
-                      text: 'KIRIM SARAN & KESAN',
-                      icon: Icons.send,
+                      text: 'KIRIM LAPORAN GANGGUAN',
+                      icon: Icons.send_rounded,
+                      color: AppTheme.error,
                       isLoading: _isSubmitting,
                       width: double.infinity,
                       onPressed: _handleSubmit,
@@ -188,16 +300,16 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
               const SizedBox(height: 24),
 
-              // Feedback list section
+              // Riwayat Tiket Gangguan Pengguna
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Riwayat Saran & Kesan Pengguna',
+                    'Riwayat Tiket Gangguan Anda',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
                   ),
                   Text(
-                    '${_feedbacks.length} masukan',
+                    '${_tickets.length} tiket',
                     style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                   ),
                 ],
@@ -205,22 +317,41 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               const SizedBox(height: 12),
 
               if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else if (_feedbacks.isEmpty)
-                const CustomCard(
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (_tickets.isEmpty)
+                CustomCard(
                   child: Center(
                     child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text(
-                        'Belum ada saran & kesan. Jadilah yang pertama memberikan masukan!',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                        textAlign: TextAlign.center,
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: const [
+                          Icon(Icons.check_circle_outline, color: AppTheme.success, size: 36),
+                          SizedBox(height: 8),
+                          Text(
+                            'Tidak Ada Tiket Gangguan Aktif',
+                            style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Koneksi Anda saat ini berjalan normal. Jika mengalami kendala teknis, silakan buat laporan melalui formulir di atas.',
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 )
               else
-                ..._feedbacks.map((f) {
+                ..._tickets.map((t) {
+                  final statusColor = _getStatusColor(t.status);
+                  final statusLabel = _getStatusLabel(t.status, t.teknisiNama);
+
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: CustomCard(
@@ -232,56 +363,77 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                             children: [
                               Row(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor: AppTheme.primary.withOpacity(0.2),
-                                    child: Text(
-                                      f.userNama.isNotEmpty ? f.userNama[0].toUpperCase() : 'U',
-                                      style: const TextStyle(fontSize: 12, color: AppTheme.primary, fontWeight: FontWeight.bold),
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      t.jenis == 'instalasi' ? Icons.cable : Icons.build,
+                                      size: 16,
+                                      color: statusColor,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    f.userNama,
+                                    '#TKT-${t.id} • ${t.jenis.toUpperCase()}',
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                       color: AppTheme.textPrimary,
                                     ),
                                   ),
                                 ],
                               ),
-                              Text(
-                                f.formattedDate,
-                                style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: statusColor.withValues(alpha: 0.4)),
+                                ),
+                                child: Text(
+                                  statusLabel,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: statusColor,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                          if (f.saran.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('💡 ', style: TextStyle(fontSize: 13)),
-                                Expanded(
-                                  child: Text(
-                                    'Saran: ${f.saran}',
-                                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                          const Divider(height: 20, color: AppTheme.border),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.notes, size: 16, color: AppTheme.textMuted),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  t.catatan.isNotEmpty ? t.catatan : 'Laporan kendala jaringan',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary,
+                                    height: 1.3,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ],
-                          if (f.kesan.isNotEmpty) ...[
-                            const SizedBox(height: 6),
+                              ),
+                            ],
+                          ),
+                          if (t.teknisiNama != null && t.teknisiNama!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
                             Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('💬 ', style: TextStyle(fontSize: 13)),
-                                Expanded(
-                                  child: Text(
-                                    'Kesan: ${f.kesan}',
-                                    style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary),
+                                const Icon(Icons.person_pin, size: 16, color: AppTheme.primary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Teknisi Ditugaskan: ${t.teknisiNama}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.primary,
                                   ),
                                 ),
                               ],
@@ -291,7 +443,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                       ),
                     ),
                   );
-                }).toList(),
+                }),
             ],
           ),
         ),

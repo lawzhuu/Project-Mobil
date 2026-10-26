@@ -432,8 +432,11 @@ class AdminForecastTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        aiInsightResult?['insight_text'] ??
-                            'Tekan tombol "Mulai Analisis AI & Generate Insight" di atas. Sistem akan menghitung model regresi linier pemasukan dan meminta Groq LLM merangkum narasi proyeksi serta rekomendasi bisnis untuk Anda.',
+                        (aiInsightResult?['insight_text'] ??
+                                'Tekan tombol "Mulai Analisis AI & Generate Insight" di atas. Sistem akan menghitung model regresi linier pemasukan dan meminta Groq LLM merangkum narasi proyeksi serta rekomendasi bisnis untuk Anda.')
+                            .replaceAll('**', '')
+                            .replaceAll('###', '')
+                            .replaceAll('`', ''),
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.5,

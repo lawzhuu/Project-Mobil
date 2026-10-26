@@ -2,7 +2,7 @@
   "model_name": "RevenueForecastLinearRegression",
   "library": "ml-regression (npm)",
   "type": "Supervised Learning - Time Series Trend Regression",
-  "trained_at": "2026-10-24T15:13:37.975Z",
+  "trained_at": "2026-10-26T17:26:29.949Z",
   "training_samples_count": 6,
   "parameters": {
     "slope": 1265000,

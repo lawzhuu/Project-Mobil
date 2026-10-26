@@ -13,6 +13,8 @@ router.get('/tasks', authMiddleware, (req, res) => {
     if (req.query.my_tasks === 'true') {
       tasks = tasks.filter(t => t.teknisi_id === req.user.id);
     }
+  } else if (req.user.role === 'pelanggan') {
+    tasks = tasks.filter(t => t.pelanggan_id === req.user.id);
   }
 
   const enriched = tasks.map(t => {
@@ -101,6 +103,59 @@ router.patch('/tasks/:id', authMiddleware, (req, res) => {
 
   saveDB(db);
   return res.json({ success: true, message: 'Status tugas berhasil diperbarui', task });
+});
+
+// Pelanggan melaporkan gangguan jaringan (Trouble Ticket)
+router.post('/customer/report-trouble', authMiddleware, async (req, res) => {
+  const db = loadDB();
+  const userId = req.user.id;
+  const user = db.users.find(u => u.id === userId);
+  if (!user) return res.status(404).json({ success: false, message: 'Pelanggan tidak ditemukan' });
+
+  const { kategori, deskripsi, no_kontak } = req.body;
+  if (!deskripsi || deskripsi.trim().length === 0) {
+    return res.status(400).json({ success: false, message: 'Deskripsi kendala wajib diisi' });
+  }
+
+  const categoryLabel = kategori || 'Gangguan Koneksi';
+  const contact = no_kontak || user.no_hp || '-';
+  const fullNotes = `[${categoryLabel}] ${deskripsi.trim()} (Kontak: ${contact})`;
+
+  const maxId = db.tasks && db.tasks.length > 0 ? Math.max(...db.tasks.map(t => t.id || 0)) : 0;
+  const targetId = maxId + 1;
+
+  const newTask = {
+    id: targetId,
+    teknisi_id: null,
+    pelanggan_id: user.id,
+    jenis: 'perbaikan',
+    status: 'baru',
+    catatan: fullNotes
+  };
+
+  db.tasks.unshift(newTask);
+
+  // Sync to Supabase online if configured
+  try {
+    const { isSupabaseConfigured, getSupabaseClient } = require('../services/supabase_db.service');
+    if (isSupabaseConfigured()) {
+      const sb = getSupabaseClient();
+      if (sb) {
+        await sb.from('tasks').upsert(newTask, { onConflict: 'id' });
+        console.log(`[Supabase DB] Trouble report #${targetId} synced online.`);
+      }
+    }
+  } catch (err) {
+    console.warn('[Supabase DB Trouble Sync Note]:', err.message);
+  }
+
+  saveDB(db);
+
+  return res.status(201).json({
+    success: true,
+    message: 'Laporan gangguan Anda berhasil dibuat. Admin & teknisi Sima.net akan segera menindaklanjuti!',
+    task: newTask
+  });
 });
 
 module.exports = router;

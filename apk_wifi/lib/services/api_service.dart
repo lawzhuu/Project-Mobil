@@ -114,6 +114,14 @@ class ApiService {
         alasan: alasan,
       );
 
+  Future<Map<String, dynamic>> submitTerminationRequest({
+    required String alasan,
+    String catatan = '',
+  }) => billing.submitTerminationRequest(
+        alasan: alasan,
+        catatan: catatan,
+      );
+
   Future<PackageRequestModel?> getCustomerPendingPackageRequest() =>
       billing.getCustomerPendingPackageRequest();
 
@@ -203,6 +211,12 @@ class ApiService {
   Future<bool> updateTaskStatus(int taskId, String status, {int? teknisiId}) =>
       task.updateTaskStatus(taskId, status, teknisiId: teknisiId);
 
+  Future<Map<String, dynamic>> reportTrouble({
+    required String kategori,
+    required String deskripsi,
+    String? noKontak,
+  }) => task.reportTrouble(kategori: kategori, deskripsi: deskripsi, noKontak: noKontak);
+
   // --- UPSTREAM BILLS & REPORT SUMMARY ---
   Future<List<UpstreamBillModel>> getUpstreamBills() => billing.getUpstreamBills();
 
@@ -218,6 +232,13 @@ class ApiService {
       );
 
   Future<Map<String, dynamic>?> getReportSummary() => analytics.getReportSummary();
+
+  // --- GAMIFICATION REWARDS ---
+  Future<Map<String, dynamic>> claimGameReward({required int score}) =>
+      billing.claimGameReward(score: score);
+
+  Future<Map<String, dynamic>> getGameRewardStatus() =>
+      billing.getGameRewardStatus();
 
   // --- AI ANALYTICS & FORECAST ---
   Future<Map<String, dynamic>?> getForecast() => analytics.getForecast();
@@ -246,4 +267,10 @@ class ApiService {
     final res = await auth.submitFeedback(saran: saran, kesan: kesan);
     return res['success'] == true;
   }
+
+  // --- AI SMART BANDWIDTH ADVISOR ---
+  Future<Map<String, dynamic>> consultAiBandwidthAdvisor({
+    required Map<String, int> devices,
+    required List<String> activities,
+  }) => billing.consultAiBandwidthAdvisor(devices: devices, activities: activities);
 }

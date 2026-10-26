@@ -33,8 +33,8 @@
       "lat": 37.4219983,
       "lng": -122.084,
       "foto": "https://ysokrzhqtlpdwypauvjk.supabase.co/storage/v1/object/public/profile-photos/avatars/1792337447873-998618276.jpg",
-      "status": "active",
-      "paket_id": 1,
+      "status": "inactive",
+      "paket_id": null,
       "created_at": "2026-10-18T12:34:55.343691+00:00",
       "updated_at": "2026-10-18T12:34:55.343691+00:00"
     },
@@ -52,8 +52,8 @@
       "lat": -7.7735,
       "lng": 110.3921,
       "foto": "",
-      "status": "active",
-      "paket_id": 2,
+      "status": "inactive",
+      "paket_id": null,
       "created_at": "2026-10-18T12:34:55.343691+00:00",
       "updated_at": "2026-10-18T12:34:55.343691+00:00"
     },
@@ -199,7 +199,7 @@
       "kurs_terkunci": 15500,
       "jatuh_tempo": "2026-11-25T23:59:59+00:00",
       "status": "lunas",
-      "created_at": "2026-10-24T15:10:56.076Z"
+      "created_at": "2026-10-24T15:10:56.076+00:00"
     }
   ],
   "payments": [
@@ -210,17 +210,19 @@
       "bukti_path": "https://ysokrzhqtlpdwypauvjk.supabase.co/storage/v1/object/public/profile-photos/receipts/1792854787772-245249994.jpg",
       "nominal_idr": 275000,
       "status": "diverifikasi",
-      "verified_at": "2026-10-24T15:13:37.933Z"
+      "verified_at": "2026-10-24T15:13:37.933+00:00",
+      "created_at": "2026-10-24T15:13:09.415518+00:00"
     }
   ],
   "ledger_blocks": [
     {
       "idx": 1,
-      "waktu": "2026-10-24T15:13:37.933Z",
+      "waktu": "2026-10-24T15:13:37.933+00:00",
       "payment_id": 1,
       "nominal_idr": 275000,
       "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "hash": "27b305b393e291db5ac9b214aa9c96c89291df2f70585d54495b2d7b932259f8"
+      "hash": "27b305b393e291db5ac9b214aa9c96c89291df2f70585d54495b2d7b932259f8",
+      "created_at": "2026-10-24T15:13:38.970645+00:00"
     }
   ],
   "tasks": [
@@ -229,7 +231,7 @@
       "teknisi_id": 4,
       "pelanggan_id": 2,
       "jenis": "perbaikan",
-      "status": "baru",
+      "status": "dikerjakan",
       "catatan": "Pengecekan redaman kabel optik dan ganti drop core port 2.",
       "created_at": "2026-10-18T12:34:55.343691+00:00"
     },
@@ -247,7 +249,7 @@
       "teknisi_id": 4,
       "pelanggan_id": 2,
       "jenis": "instalasi",
-      "status": "baru",
+      "status": "dikerjakan",
       "catatan": "Pergantian/konfigurasi perangkat ONT untuk upgrade paket \"Paket Turbo Home 50\" (50 Mbps). Pelanggan: Budi Santoso (085678912345).",
       "created_at": null
     },
@@ -256,8 +258,33 @@
       "teknisi_id": 4,
       "pelanggan_id": 3,
       "jenis": "instalasi",
+      "status": "dikerjakan",
+      "catatan": "Pergantian/konfigurasi perangkat ONT untuk upgrade paket \"Paket Turbo Home 50\" (50 Mbps). Pelanggan: Sarah Jenkins (Diaspora) (+14155552671).",
+      "created_at": null
+    },
+    {
+      "id": 5,
+      "teknisi_id": 4,
+      "pelanggan_id": 2,
+      "jenis": "pencopotan",
+      "status": "dikerjakan",
+      "catatan": "Pencopotan perangkat modem/ONT & penarikan kabel dropcore pemutusan langganan: Budi Santoso (087860051285). Alamat: Amphitheatre Parkway, Mountain View, California. Alasan: Pindah Domisili / Alamat Baru - Catatan: Mengajukan pemutusan layanan internet"
+    },
+    {
+      "id": 6,
+      "teknisi_id": 4,
+      "pelanggan_id": 2,
+      "jenis": "pencopotan",
+      "status": "dikerjakan",
+      "catatan": ""
+    },
+    {
+      "id": 7,
+      "teknisi_id": 4,
+      "pelanggan_id": 3,
+      "jenis": "pencopotan",
       "status": "baru",
-      "catatan": "Pergantian/konfigurasi perangkat ONT untuk upgrade paket \"Paket Turbo Home 50\" (50 Mbps). Pelanggan: Sarah Jenkins (Diaspora) (+14155552671)."
+      "catatan": "Pencopotan perangkat modem/ONT & penarikan kabel dropcore pemutusan langganan: Sarah Jenkins (Diaspora) (+14155552671). Alamat: Rumah Keluarga: Jl. Gejayan No. 45, Yogyakarta. Alasan: Pindah Domisili / Tempat Tinggal"
     }
   ],
   "upstream_bills": [
@@ -281,6 +308,52 @@
   "feedback": [],
   "devices": [],
   "package_requests": [
+    {
+      "id": 3,
+      "user_id": 3,
+      "user_nama": "Sarah Jenkins (Diaspora)",
+      "user_email": "sarah@gmail.com",
+      "user_alamat": "Rumah Keluarga: Jl. Gejayan No. 45, Yogyakarta",
+      "user_no_hp": "+14155552671",
+      "paket_lama_id": 2,
+      "paket_lama_nama": "Paket Turbo Home 50",
+      "paket_lama_kecepatan": 50,
+      "paket_lama_harga": 275000,
+      "paket_baru_id": 0,
+      "paket_baru_nama": "Nonaktif (Putus Langganan)",
+      "paket_baru_kecepatan": 0,
+      "paket_baru_harga": 0,
+      "selisih_harga": -275000,
+      "tipe": "Berhenti Berlangganan",
+      "alasan": "Pindah Domisili / Tempat Tinggal",
+      "status": "approved",
+      "admin_catatan": "Pemutusan layanan disetujui. SPK penarikan perangkat telah diterbitkan ke teknisi.",
+      "created_at": "2026-10-26T17:25:55.841727+00:00",
+      "updated_at": "2026-10-26T17:26:24.617Z"
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "user_nama": "Budi Santoso",
+      "user_email": "budi@gmail.com",
+      "user_alamat": "Amphitheatre Parkway, Mountain View, California",
+      "user_no_hp": "087860051285",
+      "paket_lama_id": 1,
+      "paket_lama_nama": "Paket Hemat Fiber 20",
+      "paket_lama_kecepatan": 20,
+      "paket_lama_harga": 175000,
+      "paket_baru_id": 0,
+      "paket_baru_nama": "Nonaktif (Putus Langganan)",
+      "paket_baru_kecepatan": 0,
+      "paket_baru_harga": 0,
+      "selisih_harga": -175000,
+      "tipe": "Berhenti Berlangganan",
+      "alasan": "Pindah Domisili / Alamat Baru - Catatan: Mengajukan pemutusan layanan internet",
+      "status": "approved",
+      "admin_catatan": "Pemutusan layanan disetujui. SPK penarikan perangkat telah diterbitkan ke teknisi.",
+      "created_at": "2026-10-26T17:07:45.115+00:00",
+      "updated_at": "2026-10-26T17:16:43.835+00:00"
+    },
     {
       "id": 1,
       "user_id": 3,

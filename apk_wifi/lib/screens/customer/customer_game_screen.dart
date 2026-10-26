@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../../config/app_theme.dart';
+import '../../services/api_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/glowing_button.dart';
+import 'customer_invoices_screen.dart';
 
 class CustomerGameScreen extends StatefulWidget {
   const CustomerGameScreen({super.key});
@@ -36,6 +38,8 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
 
   bool _isPlaying = false;
   bool _isSuccess = false;
+  bool _isClaiming = false;
+  bool _isClaimed = false;
   int _score = 0;
   Timer? _gameLoop;
   String _statusMsg = 'Miringkan HP Anda untuk mengarahkan pulsa optik ke Port ODP!';
@@ -44,6 +48,11 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
   void initState() {
     super.initState();
     _startListeningSensors();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _showTutorialModal();
+      }
+    });
   }
 
   @override
@@ -137,11 +146,344 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
   }
 
 
+  Future<void> _claimVoucherReward() async {
+    if (_isClaiming || _isClaimed) return;
+
+    setState(() {
+      _isClaiming = true;
+    });
+
+    final res = await ApiService.instance.claimGameReward(score: _score);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isClaiming = false;
+    });
+
+    if (res['success'] == true) {
+      setState(() {
+        _isClaimed = true;
+      });
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppTheme.surfaceCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: const [
+              Icon(Icons.check_circle, color: AppTheme.success, size: 28),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Voucher Berhasil Diklaim!',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                '🎉 Selamat! Diskon Rp 25.000 telah otomatis memotong nominal tagihan internet aktif Anda.',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Kode Voucher: FIBERHEMAT10\nPotongan: Rp 25.000 (Langsung Mengurangi Total Bayar)',
+                style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Tutup', style: TextStyle(color: AppTheme.textMuted)),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.receipt_long, size: 16),
+              label: const Text('Lihat Tagihan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['message'] ?? 'Gagal mengklaim voucher'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
+    }
+  }
+
+  void _showTutorialModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Color(0xFF0F172A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black54,
+              blurRadius: 25,
+              offset: Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+
+            // Header Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.sports_esports, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Panduan & Aturan Diskon',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Mini Game Tilt Fiber & Voucher Tagihan',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: AppTheme.textMuted),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: Color(0xFF1E293B), height: 1),
+
+            // Scrollable Content
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                children: [
+                  // CARD 1: CARA BERMAIN TILT FIBER
+                  _buildTutorialSectionCard(
+                    icon: Icons.screen_rotation,
+                    iconColor: AppTheme.primary,
+                    title: '1. Cara Bermain (Sensor Accelerometer)',
+                    badge: 'KONTROL TILT',
+                    badgeColor: AppTheme.primary,
+                    items: [
+                      'Miringkan HP Anda ke segala arah (depan, belakang, kiri, kanan) untuk mengarahkan pulsa cahaya fiber optic.',
+                      'Arahkan pulsa cahaya masuk tepat ke dalam lingkaran target PORT ODP (berwarna hijau).',
+                      'Hindari Noise Packet (lingkaran merah berpetir). Tabrakan dengan noise akan memantulkan pulsa & memotong 15 Poin redaman!',
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // CARD 2: CARA KLAIM DISKON
+                  _buildTutorialSectionCard(
+                    icon: Icons.card_giftcard,
+                    iconColor: const Color(0xFFF59E0B),
+                    title: '2. Cara Klaim Diskon Rp 25.000',
+                    badge: 'HADIAH VOUCHER',
+                    badgeColor: const Color(0xFFF59E0B),
+                    items: [
+                      'Selesaikan sambungan kabel fiber ke target ODP dengan sisa skor minimal 60 Poin.',
+                      'Saat muncul popup "Koneksi Fiber Berhasil!", klik tombol "KLAIM DISKON KE TAGIHAN".',
+                      'Sistem secara otomatis mengaktifkan voucher FIBERHEMAT10 senilai Rp 25.000 ke akun tagihan Anda.',
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // CARD 3: ATURAN & SYARAT KLAIM
+                  _buildTutorialSectionCard(
+                    icon: Icons.rule_folder_outlined,
+                    iconColor: AppTheme.success,
+                    title: '3. Aturan & Syarat Klaim Diskon',
+                    badge: 'SYARAT & KETENTUAN',
+                    badgeColor: AppTheme.success,
+                    items: [
+                      'Hanya Tagihan Aktif: Diskon hanya berlaku untuk invoice bulanan yang berstatus Belum Bayar (unpaid).',
+                      'Maksimal 1 Voucher per Tagihan: Anda tidak dapat menumpuk lebih dari 1 voucher pada tagihan yang sama.',
+                      'Dukungan Valas Diaspora: Jika Anda membayar menggunakan mata uang asing (USD, EUR, MYR, SAR), diskon Rp 25.000 otomatis terkonversi setara kurs real-time.',
+                      'Langsung Mengurangi Total: Potongan langsung tampak pada ringkasan tagihan & nominal pembayaran transfer/QRIS.',
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+
+            // Bottom CTA
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: GlowingButton(
+                text: 'SAYA MENGERTI, AYO MAIN!',
+                icon: Icons.play_arrow,
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTutorialSectionCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String badge,
+    required Color badgeColor,
+    required List<String> items,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B).withOpacity(0.7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: badgeColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: badgeColor.withOpacity(0.4)),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    color: badgeColor,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...items.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 6),
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: iconColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFCBD5E1),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mini Game: Sambungkan Fiber'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Panduan & Aturan Diskon',
+            onPressed: _showTutorialModal,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -171,21 +513,52 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.primary),
-                    ),
-                    child: Text(
-                      'Poin: $_score',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primary,
+                  Row(
+                    children: [
+                      InkWell(
+                        onTap: _showTutorialModal,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryLight,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.help_outline, size: 14, color: AppTheme.primary),
+                              SizedBox(width: 4),
+                              Text(
+                                'Panduan',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.primary),
+                        ),
+                        child: Text(
+                          'Poin: $_score',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -339,73 +712,120 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
                                         icon: Icons.play_arrow,
                                         onPressed: _startGame,
                                       ),
+                                      const SizedBox(height: 10),
+                                      TextButton.icon(
+                                        icon: const Icon(Icons.help_outline, color: Colors.white70, size: 16),
+                                        label: const Text(
+                                          'Panduan Game & Aturan Diskon',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 12.5,
+                                            decoration: TextDecoration.underline,
+                                          ),
+                                        ),
+                                        onPressed: _showTutorialModal,
+                                      ),
                                     ],
                                   ),
                                 ),
                               ),
                             ),
 
-                          // Success Banner
+                          // Success Banner with Real Claim Voucher Logic
                           if (_isSuccess)
                             Positioned.fill(
                               child: Container(
-                                color: Colors.black.withOpacity(0.75),
+                                color: Colors.black.withOpacity(0.8),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
                                 child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.check_circle, size: 64, color: AppTheme.success),
-                                      const SizedBox(height: 12),
-                                      const Text(
-                                        'Koneksi Fiber Berhasil!',
-                                        style: TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.check_circle, size: 64, color: AppTheme.success),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          'Koneksi Fiber Berhasil!',
+                                          style: TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'Skor Akhir: $_score Poin\nInternet Rumah Anda Kini Aktif & Stabil!',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 24),
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF59E0B).withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: const Color(0xFFF59E0B)),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'Skor Akhir: $_score Poin\nRedaman Optik Prima: -18.2 dBm',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                                         ),
-                                        child: Column(
-                                          children: const [
-                                            Text(
-                                              '🎁 SELAMAT! DAPAT DISKON 10%',
-                                              style: TextStyle(
-                                                color: Color(0xFFF59E0B),
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
+                                        const SizedBox(height: 14),
+
+                                        // Voucher Reward Card
+                                        Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: (_isClaimed ? AppTheme.success : const Color(0xFFF59E0B)).withOpacity(0.15),
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(color: _isClaimed ? AppTheme.success : const Color(0xFFF59E0B)),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                _isClaimed ? '✅ VOUCHER DISKON TERPASANG' : '🎁 HADIAH REDAMAN PRIMA: DISKON Rp 25.000',
+                                                style: TextStyle(
+                                                  color: _isClaimed ? AppTheme.success : const Color(0xFFF59E0B),
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12.5,
+                                                ),
                                               ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              'Gunakan Kode: FIBERHEMAT10 saat bayar tagihan',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(color: Colors.white, fontSize: 11),
-                                            ),
-                                          ],
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                _isClaimed
+                                                    ? 'Potongan Rp 25.000 telah masuk ke tagihan aktif Anda.'
+                                                    : 'Voucher FIBERHEMAT10 siap memotong tagihan internet Anda!',
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(color: Colors.white, fontSize: 11),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 18),
-                                      GlowingButton(
-                                        text: 'MAIN LAGI',
-                                        icon: Icons.replay,
-                                        color: AppTheme.success,
-                                        onPressed: _startGame,
-                                      ),
-                                    ],
+                                        const SizedBox(height: 18),
+
+                                        if (!_isClaimed) ...[
+                                          GlowingButton(
+                                            text: _isClaiming ? 'MENGKLAIM VOUCHER...' : 'KLAIM DISKON KE TAGIHAN',
+                                            icon: Icons.card_giftcard,
+                                            color: const Color(0xFFF59E0B),
+                                            onPressed: _isClaiming ? () {} : _claimVoucherReward,
+                                          ),
+                                          const SizedBox(height: 10),
+                                          TextButton.icon(
+                                            icon: const Icon(Icons.replay, color: AppTheme.textMuted, size: 16),
+                                            label: const Text('Main Lagi Tanpa Klaim', style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                                            onPressed: _startGame,
+                                          ),
+                                        ] else ...[
+                                          GlowingButton(
+                                            text: 'LIHAT TAGIHAN SAYA',
+                                            icon: Icons.receipt_long,
+                                            color: AppTheme.primary,
+                                            onPressed: () {
+                                              Navigator.pushReplacement(
+                                                context,
+                                                MaterialPageRoute(builder: (_) => const CustomerInvoicesScreen()),
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(height: 10),
+                                          TextButton.icon(
+                                            icon: const Icon(Icons.replay, color: AppTheme.textMuted, size: 16),
+                                            label: const Text('Main Lagi', style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                                            onPressed: _startGame,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

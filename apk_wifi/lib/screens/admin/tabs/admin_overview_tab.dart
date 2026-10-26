@@ -38,6 +38,7 @@ class AdminOverviewTab extends StatelessWidget {
 
     final pendingActivations = customers.where((c) => c.status == 'pending').length;
     final pendingPackageReqs = packageRequests.where((r) => r.status == 'pending').length;
+    final pendingTerminations = packageRequests.where((r) => r.status == 'pending' && r.isTermination).length;
     final unpaidInvoices = invoices.where((i) => i.status == 'belum').length;
     final activeTasks = (summary?['active_tasks_count'] as num?)?.toInt() ?? 1;
 
@@ -149,7 +150,8 @@ class AdminOverviewTab extends StatelessWidget {
                     Expanded(
                       child: Text(
                         [
-                          if (pendingPackageReqs > 0) '$pendingPackageReqs pengajuan paket',
+                          if (pendingTerminations > 0) '$pendingTerminations pemutusan langganan'
+                          else if (pendingPackageReqs > 0) '$pendingPackageReqs pengajuan paket',
                           if (pendingActivations > 0) '$pendingActivations aktivasi baru',
                           if (unpaidInvoices > 0) '$unpaidInvoices tagihan belum lunas',
                         ].join(' • '),
@@ -219,9 +221,11 @@ class AdminOverviewTab extends StatelessWidget {
               onTap: () => onSelectSection(1),
             ),
             _buildAdminAccentListItem(
-              title: 'Pengajuan Ubah Paket',
-              subtitle: 'Permintaan upgrade / downgrade kecepatan',
-              accentColor: Colors.amber,
+              title: 'Persetujuan Paket & Berhenti Langganan',
+              subtitle: pendingTerminations > 0
+                  ? 'Ada $pendingTerminations permohonan berhenti langganan (siap tindak lanjut)'
+                  : 'Persetujuan permintaan ubah paket & pemutusan',
+              accentColor: pendingTerminations > 0 ? const Color(0xFFDC2626) : Colors.amber,
               badgeCount: pendingPackageReqs,
               onTap: () => onSelectSection(2),
             ),

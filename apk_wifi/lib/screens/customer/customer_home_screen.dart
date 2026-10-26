@@ -9,6 +9,7 @@ import '../../models/user_model.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../common/feedback_screen.dart';
+import 'ai_bandwidth_advisor_screen.dart';
 import 'customer_chatbot_screen.dart';
 import 'customer_game_screen.dart';
 import 'customer_invoices_screen.dart';
@@ -124,18 +125,31 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           paketId: null,
         );
 
-    final activePackage = _packages.firstWhere(
-      (p) => p.id == safeUser.paketId,
-      orElse: () => _packages.isNotEmpty
-          ? _packages.first
-          : PackageModel(
+    final bool isTerminatedOrNoPackage =
+        safeUser.status == 'inactive' || safeUser.paketId == null || safeUser.paketId! <= 0;
+
+    final activePackage = isTerminatedOrNoPackage
+        ? PackageModel(
+            id: 0,
+            nama: safeUser.status == 'inactive'
+                ? 'Layanan Berhenti (Nonaktif)'
+                : 'Belum Berlangganan Paket',
+            kecepatanMbps: 0,
+            hargaIdr: 0,
+            deskripsi: safeUser.status == 'inactive'
+                ? 'Layanan internet Anda telah diputus/dihentikan.'
+                : 'Pilih paket internet terbaik untuk mulai berlangganan.',
+          )
+        : _packages.firstWhere(
+            (p) => p.id == safeUser.paketId,
+            orElse: () => PackageModel(
               id: 0,
               nama: 'Belum Ada Paket Aktif',
               kecepatanMbps: 0,
               hargaIdr: 0,
               deskripsi: 'Pilih paket internet terbaik untuk mulai berlangganan.',
             ),
-    );
+          );
 
     final unpaid = _unpaidInvoice;
 
@@ -304,14 +318,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                   ),
 
-                  // Action Icons (Saran SIMA.NET, Search, Chatbot Headset, Notification Bell)
+                  // Action Icons (Lapor Gangguan, Search, Chatbot Headset, Notification Bell)
                   IconButton(
                     icon: const Icon(
-                      Icons.rate_review_outlined,
+                      Icons.report_problem_outlined,
                       color: Colors.white,
                       size: 22,
                     ),
-                    tooltip: 'Saran & Masukan Sima.net',
+                    tooltip: 'Lapor Gangguan Jaringan',
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -415,6 +429,33 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             ),
             child: Column(
               children: [
+                if (user.status == 'inactive') ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.power_settings_new_rounded, color: Color(0xFFDC2626), size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Status Langganan: Nonaktif / Berhenti. Perangkat modem siap ditarik oleh teknisi.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF991B1B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 // Top Row: Tagihan & Paket Aktif Links
                 Row(
                   children: [
@@ -515,12 +556,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                               Text(
                                 activePackage.id > 0
                                     ? '${activePackage.kecepatanMbps} Mbps Simetris (1:1)'
-                                    : 'Belum Berlangganan',
+                                    : (user.status == 'inactive'
+                                        ? 'Langganan Nonaktif'
+                                        : 'Belum Berlangganan'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: activePackage.id > 0
                                       ? const Color(0xFF059669)
-                                      : const Color(0xFFD97706),
+                                      : (user.status == 'inactive'
+                                          ? const Color(0xFFDC2626)
+                                          : const Color(0xFFD97706)),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -549,12 +594,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                     _buildCircularMetric(
                       title: 'Status Akun',
-                      value: user.status == 'active' ? 'Aktif' : 'Pending',
+                      value: user.status == 'active'
+                          ? 'Aktif'
+                          : (user.status == 'inactive' ? 'Nonaktif' : 'Pending'),
                       unit: 'Akun',
                       icon: Icons.verified_user_outlined,
                       iconColor: user.status == 'active'
                           ? const Color(0xFF059669)
-                          : const Color(0xFFD97706),
+                          : (user.status == 'inactive'
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFFD97706)),
                     ),
                     _buildCircularMetric(
                       title: 'Mata Uang',
@@ -1061,6 +1110,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           children: [
             Expanded(
               child: _buildMinimalServiceItem(
+                title: 'AI Advisor',
+                subtitle: 'Cek Mbps 💡',
+                icon: Icons.auto_awesome_rounded,
+                iconColor: const Color(0xFF7C3AED),
+                bgColor: const Color(0xFFF5F3FF),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AiBandwidthAdvisorScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildMinimalServiceItem(
                 title: 'Tagihan & Bayar',
                 subtitle: 'Upload Bukti',
                 icon: Icons.receipt_long_rounded,
@@ -1076,11 +1143,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 },
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: _buildMinimalServiceItem(
-                title: 'Tilt Fiber Game',
-                subtitle: 'Raih Diskon 🎁',
+                title: 'Tilt Fiber',
+                subtitle: 'Diskon 🎁',
                 icon: Icons.sports_esports_rounded,
                 iconColor: const Color(0xFFEA580C),
                 bgColor: const Color(0xFFFFF7ED),

@@ -6,6 +6,8 @@ import '../../models/package_request_model.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/currency_time_service.dart';
+import 'ai_bandwidth_advisor_screen.dart';
+import '../../widgets/termination_request_modal.dart';
 
 class CustomerPackagesScreen extends StatefulWidget {
   final String? initialCategory;
@@ -138,7 +140,9 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = AuthService.instance.currentUser;
-    final activePackageId = currentUser?.paketId ?? 2;
+    final activePackageId = (currentUser?.status == 'inactive' || currentUser?.paketId == null)
+        ? null
+        : currentUser?.paketId;
     final filtered = _getFilteredPackages();
 
     return Scaffold(
@@ -325,6 +329,111 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                     ],
                   ),
                 ),
+
+                const SizedBox(height: 10),
+
+                // AI Advisor Interactive Banner
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AiBandwidthAdvisorScreen(),
+                      ),
+                    ).then((_) => _loadPackages());
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5B21B6), Color(0xFF7C3AED)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x207C3AED),
+                          blurRadius: 10,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                'Bingung Pilih Kecepatan Mbps?',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Konsultasi gratis dengan AI Bandwidth Advisor 💡',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                if (currentUser?.status == 'inactive') ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.power_settings_new_rounded, color: Color(0xFFDC2626), size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Status Akun: Nonaktif (Berhenti Berlangganan). Pilih paket di bawah jika ingin mengaktifkan koneksi kembali.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF991B1B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -647,6 +756,48 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                 ),
               ],
             ),
+            if (isCurrent) ...[
+              const SizedBox(height: 10),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () {
+                  if (_pendingRequest != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Anda masih memiliki pengajuan pending yang sedang ditinjau admin.'),
+                        backgroundColor: AppTheme.warning,
+                      ),
+                    );
+                    return;
+                  }
+                  TerminationRequestModal.show(
+                    context,
+                    currentPackageName: pkg.nama,
+                    onSubmitted: _loadPackages,
+                  );
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.power_settings_new_rounded, size: 14, color: Color(0xFFDC2626)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Ajukan Berhenti Berlangganan',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFFDC2626),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -839,43 +990,57 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
   Widget _buildPendingRequestBanner() {
     if (_pendingRequest == null) return const SizedBox.shrink();
     final req = _pendingRequest!;
+    final isTerm = req.isTermination;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF3C7),
+        color: isTerm ? const Color(0xFFFEF2F2) : const Color(0xFFFEF3C7),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
+        border: Border.all(
+          color: isTerm
+              ? const Color(0xFFEF4444).withValues(alpha: 0.4)
+              : const Color(0xFFF59E0B).withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B),
+              color: isTerm ? const Color(0xFFDC2626) : const Color(0xFFF59E0B),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.hourglass_top, color: Colors.white, size: 18),
+            child: Icon(
+              isTerm ? Icons.power_settings_new_rounded : Icons.hourglass_top,
+              color: Colors.white,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Pengajuan Paket Sedang Ditinjau Admin',
+                Text(
+                  isTerm
+                      ? 'Pengajuan Pemutusan Layanan Sedang Ditinjau'
+                      : 'Pengajuan Paket Sedang Ditinjau Admin',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF92400E),
+                    color: isTerm ? const Color(0xFF991B1B) : const Color(0xFF92400E),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${req.tipe}: ${req.paketLamaNama} ➔ ${req.paketBaruNama} (${req.paketBaruKecepatan} Mbps)',
-                  style: const TextStyle(
+                  isTerm
+                      ? 'Paket: ${req.paketLamaNama} • Alasan: ${req.alasan}'
+                      : '${req.tipe}: ${req.paketLamaNama} ➔ ${req.paketBaruNama} (${req.paketBaruKecepatan} Mbps)',
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFFB45309),
+                    color: isTerm ? const Color(0xFFB91C1C) : const Color(0xFFB45309),
                   ),
                 ),
               ],
@@ -886,12 +1051,14 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFF59E0B)),
+              border: Border.all(
+                color: isTerm ? const Color(0xFFEF4444) : const Color(0xFFF59E0B),
+              ),
             ),
-            child: const Text(
+            child: Text(
               'Pending',
               style: TextStyle(
-                color: Color(0xFFB45309),
+                color: isTerm ? const Color(0xFFDC2626) : const Color(0xFFB45309),
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
               ),
@@ -901,6 +1068,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
       ),
     );
   }
+
+
 
   void _showChangeRequestSheet(PackageModel targetPkg) {
     final user = AuthService.instance.currentUser;
