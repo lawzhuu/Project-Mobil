@@ -8,7 +8,6 @@ import '../../models/package_request_model.dart';
 import '../../models/user_model.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
-import '../common/currency_time_screen.dart';
 import '../common/feedback_screen.dart';
 import 'customer_chatbot_screen.dart';
 import 'customer_game_screen.dart';
@@ -1077,7 +1076,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 },
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: _buildMinimalServiceItem(
                 title: 'Tilt Fiber Game',
@@ -1090,24 +1089,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const CustomerGameScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildMinimalServiceItem(
-                title: 'Kurs & Waktu',
-                subtitle: 'Valuta Global',
-                icon: Icons.public_rounded,
-                iconColor: const Color(0xFF0284C7),
-                bgColor: const Color(0xFFF0F9FF),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const CurrencyTimeScreen(),
                     ),
                   );
                 },

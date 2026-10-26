@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -5,6 +6,7 @@ import '../../config/app_theme.dart';
 import '../../models/invoice_model.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/currency_time_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/glowing_button.dart';
@@ -21,11 +23,24 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
   List<InvoiceModel> _invoices = [];
   bool _isLoading = true;
   final ImagePicker _picker = ImagePicker();
+  Timer? _clockTimer;
 
   @override
   void initState() {
     super.initState();
     _loadInvoices();
+    // Live ticking timer for real-time dual clocks & countdown
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadInvoices() async {
@@ -83,7 +98,7 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Bank transfer destination info
+                  // Bank transfer destination info & Cross-Border Remittance
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -94,13 +109,44 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Rekening Tujuan Transfer:', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Rekening Tujuan Transfer:', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                            if (invoice.mataUang != 'IDR')
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Cross-Border Remittance',
+                                  style: TextStyle(color: AppTheme.primary, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
                         const Text(
-                          'BCA: 8830-1928-332\na.n. Sima.net ISP Reseller',
+                          'BCA (Bank Central Asia): 8830-1928-332\na.n. Sima.net ISP Reseller',
                           style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
-                        const SizedBox(height: 8),
+                        if (invoice.mataUang != 'IDR') ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: const [
+                              Text('SWIFT Code: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                              Text('CENAIDJA', style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, fontSize: 11)),
+                              SizedBox(width: 12),
+                              Text('Wise/PayPal: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                              Text('pay@sima.net.id', style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, fontSize: 11)),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        const Divider(color: AppTheme.border, height: 1),
+                        const SizedBox(height: 10),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -110,14 +156,28 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                             ),
                             Text(
                               invoice.formattedAmount,
-                              style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+                              style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                           ],
                         ),
                         if (invoice.mataUang != 'IDR') ...[
                           const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Setara Rupiah (Kredit ISP):',
+                                style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                              ),
+                              Text(
+                                invoice.formattedAmountIdr,
+                                style: const TextStyle(fontSize: 12, color: AppTheme.success, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
                           Text(
-                            'Kurs Terkunci: 1 ${invoice.mataUang} = Rp ${invoice.kursTerkunci.toStringAsFixed(0)} (Dasar: ${invoice.formattedAmountIdr})',
+                            'Kurs Terkunci: 1 ${invoice.mataUang} = Rp ${invoice.kursTerkunci.toStringAsFixed(0)}',
                             style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
                           ),
                         ],
@@ -228,6 +288,219 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
     }
   }
 
+  String _getCountdownText(String jatuhTempo) {
+    if (jatuhTempo.isEmpty) return '-';
+    try {
+      final dueUtc = DateTime.parse(jatuhTempo).toUtc();
+      final nowUtc = DateTime.now().toUtc();
+      final difference = dueUtc.difference(nowUtc);
+
+      if (difference.isNegative) {
+        final absDiff = difference.abs();
+        if (absDiff.inDays > 0) {
+          return 'Terlewat ${absDiff.inDays}h ${absDiff.inHours % 24}j ${absDiff.inMinutes % 60}m';
+        }
+        return 'Terlewat ${absDiff.inHours.toString().padLeft(2, '0')}:${(absDiff.inMinutes % 60).toString().padLeft(2, '0')}:${(absDiff.inSeconds % 60).toString().padLeft(2, '0')}';
+      } else {
+        final days = difference.inDays;
+        final hours = (difference.inHours % 24).toString().padLeft(2, '0');
+        final minutes = (difference.inMinutes % 60).toString().padLeft(2, '0');
+        final seconds = (difference.inSeconds % 60).toString().padLeft(2, '0');
+        if (days > 0) {
+          return '$days hari $hours:$minutes:$seconds';
+        }
+        return '$hours:$minutes:$seconds';
+      }
+    } catch (_) {
+      return '-';
+    }
+  }
+
+  bool _isOverdue(String jatuhTempo) {
+    if (jatuhTempo.isEmpty) return false;
+    try {
+      return DateTime.parse(jatuhTempo).toUtc().isBefore(DateTime.now().toUtc());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Widget _buildDiasporaHeader({
+    required String userTimezone,
+    required String userCurrency,
+    String? userAlamat,
+  }) {
+    final serverTime = CurrencyTimeService.formatTimeForZone('WIB');
+    final localTime = CurrencyTimeService.formatTimeForZone(userTimezone);
+
+    String tzDifference = 'Zona Waktu Standar Server (WIB)';
+    if (userTimezone == 'London') {
+      tzDifference = '-6 Jam dari Server Yogyakarta';
+    } else if (userTimezone == 'WITA') {
+      tzDifference = '+1 Jam dari Server';
+    } else if (userTimezone == 'WIT') {
+      tzDifference = '+2 Jam dari Server';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primary.withOpacity(0.18),
+            AppTheme.secondary.withOpacity(0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primary.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.public, color: AppTheme.primary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cross-Border Sponsorship Billing',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Sinkronisasi jam server ISP & domisili sponsor diaspora',
+                      style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Dual Clocks Live
+          Row(
+            children: [
+              // Server Clock (WIB)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceElevated.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.dns_outlined, size: 12, color: AppTheme.textMuted),
+                          SizedBox(width: 4),
+                          Text('SERVER ISP (WIB)', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        serverTime,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.primary,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // Local Customer Clock
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceElevated.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.schedule, size: 12, color: AppTheme.accent),
+                          const SizedBox(width: 4),
+                          Text('WAKTU ANDA ($userTimezone)', style: const TextStyle(fontSize: 10, color: AppTheme.accent, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        localTime,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.accent,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.sync_alt, size: 13, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                'Selisih: $tzDifference',
+                style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          if (userAlamat != null && userAlamat.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.home_outlined, size: 13, color: AppTheme.textMuted),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Instalasi Keluarga: $userAlamat',
+                    style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthService.instance.currentUser;
@@ -260,22 +533,41 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
         onRefresh: _loadInvoices,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _invoices.isEmpty
-                ? const Center(
-                    child: Text('Belum ada tagihan untuk akun Anda.', style: TextStyle(color: AppTheme.textSecondary)),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(18),
-                    itemCount: _invoices.length,
-                    itemBuilder: (context, index) {
-                      final inv = _invoices[index];
+            : ListView(
+                padding: const EdgeInsets.all(18),
+                children: [
+                  // Diaspora Header Banner
+                  _buildDiasporaHeader(
+                    userTimezone: userTimezone,
+                    userCurrency: user?.mataUang ?? 'IDR',
+                    userAlamat: user?.alamat,
+                  ),
+
+                  if (_invoices.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: Text(
+                          'Belum ada tagihan untuk akun Anda.',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                      ),
+                    )
+                  else
+                    ..._invoices.map((inv) {
                       final isPaid = inv.isPaid;
                       final payment = inv.payment;
+                      final countdown = _getCountdownText(inv.jatuhTempo);
+                      final overdue = _isOverdue(inv.jatuhTempo);
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: CustomCard(
-                          borderColor: isPaid ? AppTheme.success.withOpacity(0.3) : AppTheme.warning.withOpacity(0.3),
+                          borderColor: isPaid
+                              ? AppTheme.success.withOpacity(0.3)
+                              : overdue
+                                  ? AppTheme.error.withOpacity(0.4)
+                                  : AppTheme.warning.withOpacity(0.3),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -306,7 +598,7 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                               ),
                               const SizedBox(height: 12),
 
-                              // Amount display
+                              // Amount display & Locked Rate
                               Wrap(
                                 alignment: WrapAlignment.spaceBetween,
                                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -328,32 +620,106 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                       decoration: BoxDecoration(
                                         color: AppTheme.surfaceElevated,
                                         borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: AppTheme.accent.withOpacity(0.4)),
                                       ),
                                       child: Text(
                                         '1 ${inv.mataUang} = Rp ${inv.kursTerkunci.toStringAsFixed(0)} (Terkunci)',
-                                        style: const TextStyle(fontSize: 10, color: AppTheme.accent),
+                                        style: const TextStyle(fontSize: 10, color: AppTheme.accent, fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                 ],
                               ),
 
+                              if (inv.mataUang != 'IDR') ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Setara: ${inv.formattedAmountIdr} (Kredit Tagihan Lokal)',
+                                  style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                                ),
+                              ],
+
                               const SizedBox(height: 10),
                               const Divider(color: AppTheme.border, height: 16),
 
-                              // Due Date in User Timezone
-                              Row(
+                              // Dual Timezone Due Dates
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.schedule, size: 14, color: AppTheme.textMuted),
-                                  const SizedBox(width: 6),
-                                  const Text('Jatuh Tempo: ', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-                                  Text(
-                                    inv.formattedDueDate(userTimezone),
-                                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.schedule, size: 14, color: AppTheme.accent),
+                                      const SizedBox(width: 6),
+                                      Text('Jatuh Tempo ($userTimezone): ', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                                      Expanded(
+                                        child: Text(
+                                          inv.formattedDueDate(userTimezone),
+                                          style: const TextStyle(fontSize: 12, color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                  if (userTimezone != 'WIB') ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.dns_outlined, size: 13, color: AppTheme.textMuted),
+                                        const SizedBox(width: 7),
+                                        const Text('Server Pusat (WIB): ', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                                        Expanded(
+                                          child: Text(
+                                            inv.formattedDueDate('WIB'),
+                                            style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
                               ),
 
-                              const SizedBox(height: 6),
+                              // Live Countdown Ticker if not paid
+                              if (!isPaid) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: (overdue ? AppTheme.error : AppTheme.warning).withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: (overdue ? AppTheme.error : AppTheme.warning).withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        overdue ? Icons.warning_amber_rounded : Icons.timer_outlined,
+                                        size: 15,
+                                        color: overdue ? AppTheme.error : AppTheme.warning,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        overdue ? 'Batas Waktu Terlewat: ' : 'Sisa Waktu Bayar: ',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: overdue ? AppTheme.error : AppTheme.warning,
+                                        ),
+                                      ),
+                                      Text(
+                                        countdown,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontFamily: 'monospace',
+                                          fontWeight: FontWeight.bold,
+                                          color: overdue ? AppTheme.error : AppTheme.warning,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              const SizedBox(height: 8),
                               Row(
                                 children: [
                                   const Icon(Icons.wifi, size: 14, color: AppTheme.textMuted),
@@ -419,8 +785,9 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                           ),
                         ),
                       );
-                    },
-                  ),
+                    }),
+                ],
+              ),
       ),
     );
   }

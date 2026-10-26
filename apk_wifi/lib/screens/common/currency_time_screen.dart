@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../services/currency_time_service.dart';
 import '../../widgets/custom_card.dart';
+import '../../widgets/glowing_button.dart';
+import '../customer/customer_invoices_screen.dart';
 
 class CurrencyTimeScreen extends StatefulWidget {
   const CurrencyTimeScreen({super.key});
@@ -62,13 +64,51 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kurs & Zona Waktu'),
+        title: const Text('Diaspora Hub & Valuta Global'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // DIASPORA SPONSORSHIP CONTEXT BANNER
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.public, color: AppTheme.primary, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Diaspora Cross-Border Sponsorship',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Kalkulator biaya paket WiFi keluarga di Indonesia dalam valuta asing (USD/EUR) dengan sinkronisasi jam penagihan resmi.',
+                          style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // CURRENCY CONVERTER CARD
             CustomCard(
               gradient: LinearGradient(
@@ -292,6 +332,23 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                 ),
               ],
             ),
+
+            const SizedBox(height: 24),
+
+            // DIRECT ACTION BUTTON TO INVOICES
+            GlowingButton(
+              text: 'LIHAT TAGIHAN & PEMBAYARAN SPONSOR',
+              icon: Icons.receipt_long,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CustomerInvoicesScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),

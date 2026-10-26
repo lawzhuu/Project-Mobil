@@ -168,33 +168,53 @@ const handlePackageChangeRequest = async (req, res) => {
 
   let newRequest = null;
 
+  // Dapatkan ID berikutnya yang terjamin unik (menghindari PostgreSQL sequence out-of-sync di Supabase)
+  const maxLocalId = (db.package_requests || []).length > 0 
+    ? Math.max(...db.package_requests.map(r => r.id || 0)) 
+    : 0;
+  let targetId = maxLocalId + 1;
+
   // Insert langsung ke Supabase jika terhubung online
   if (isSupabaseConfigured()) {
     const sb = getSupabaseClient();
     if (sb) {
       try {
+        // Cek ID tertinggi di Supabase remote
+        const { data: latestRows } = await sb
+          .from('package_requests')
+          .select('id')
+          .order('id', { ascending: false })
+          .limit(1);
+
+        if (latestRows && latestRows.length > 0 && latestRows[0].id >= targetId) {
+          targetId = latestRows[0].id + 1;
+        }
+
+        const requestPayload = {
+          id: targetId,
+          user_id: user.id,
+          user_nama: user.nama,
+          user_email: user.email,
+          user_alamat: user.alamat || '',
+          user_no_hp: user.no_hp || '',
+          paket_lama_id: oldPkg ? oldPkg.id : null,
+          paket_lama_nama: oldPkg ? oldPkg.nama : 'Belum Ada',
+          paket_lama_kecepatan: oldSpeed,
+          paket_lama_harga: oldPrice,
+          paket_baru_id: newPkg.id,
+          paket_baru_nama: newPkg.nama,
+          paket_baru_kecepatan: newPkg.kecepatan_mbps,
+          paket_baru_harga: newPkg.harga_idr,
+          selisih_harga: newPkg.harga_idr - oldPrice,
+          tipe: detectedType,
+          alasan: detectedReason,
+          status: 'pending',
+          admin_catatan: ''
+        };
+
         const { data: inserted, error: insertErr } = await sb
           .from('package_requests')
-          .insert({
-            user_id: user.id,
-            user_nama: user.nama,
-            user_email: user.email,
-            user_alamat: user.alamat || '',
-            user_no_hp: user.no_hp || '',
-            paket_lama_id: oldPkg ? oldPkg.id : null,
-            paket_lama_nama: oldPkg ? oldPkg.nama : 'Belum Ada',
-            paket_lama_kecepatan: oldSpeed,
-            paket_lama_harga: oldPrice,
-            paket_baru_id: newPkg.id,
-            paket_baru_nama: newPkg.nama,
-            paket_baru_kecepatan: newPkg.kecepatan_mbps,
-            paket_baru_harga: newPkg.harga_idr,
-            selisih_harga: newPkg.harga_idr - oldPrice,
-            tipe: detectedType,
-            alasan: detectedReason,
-            status: 'pending',
-            admin_catatan: ''
-          })
+          .upsert(requestPayload, { onConflict: 'id' })
           .select()
           .single();
 
@@ -213,7 +233,7 @@ const handlePackageChangeRequest = async (req, res) => {
   // Fallback offline bila Supabase tidak merespons
   if (!newRequest) {
     newRequest = {
-      id: db.package_requests.length ? Math.max(...db.package_requests.map(r => r.id)) + 1 : 1,
+      id: targetId,
       user_id: user.id,
       user_nama: user.nama,
       user_email: user.email,
