@@ -3,9 +3,13 @@ const path = require('path');
 const { UPLOAD_DIR } = require('../config');
 const { getSupabaseClient, isSupabaseConfigured, BUCKET_NAME } = require('../config/supabase');
 
-// Ensure local upload dir exists for fallback
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Ensure local upload dir exists for fallback (safe for read-only serverless environment)
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+} catch (err) {
+  // Read-only filesystem in serverless environments (Vercel)
 }
 
 let bucketChecked = false;
@@ -91,10 +95,15 @@ async function uploadFile(file, folder = 'avatars') {
   }
 
   // 2. Local Fallback
-  const localDiskPath = path.join(UPLOAD_DIR, fileName);
-  fs.writeFileSync(localDiskPath, file.buffer);
-  console.log(`[Storage] Saved file to local storage: /uploads/${fileName}`);
-  return `/uploads/${fileName}`;
+  try {
+    const localDiskPath = path.join(UPLOAD_DIR, fileName);
+    fs.writeFileSync(localDiskPath, file.buffer);
+    console.log(`[Storage] Saved file to local storage: /uploads/${fileName}`);
+    return `/uploads/${fileName}`;
+  } catch (err) {
+    console.warn('[Storage] Local storage write skipped (read-only filesystem):', err.message);
+    return '';
+  }
 }
 
 module.exports = {

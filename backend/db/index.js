@@ -296,7 +296,11 @@ async function initDB() {
       }
 
       inMemoryData = remoteData;
-      fs.writeFileSync(DB_FILE, JSON.stringify(remoteData, null, 2), 'utf8');
+      try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(remoteData, null, 2), 'utf8');
+      } catch (err) {
+        // Read-only filesystem in serverless environments (Vercel)
+      }
       console.log('[Database] Local cache successfully synced with Supabase PostgreSQL.');
       return inMemoryData;
     } else {

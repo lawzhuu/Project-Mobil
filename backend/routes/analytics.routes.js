@@ -10,8 +10,12 @@ const { sanitizeAiText } = require('../utils/ai_sanitizer');
 const router = express.Router();
 
 const MODELS_DIR = path.join(__dirname, '../models');
-if (!fs.existsSync(MODELS_DIR)) {
-  fs.mkdirSync(MODELS_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(MODELS_DIR)) {
+    fs.mkdirSync(MODELS_DIR, { recursive: true });
+  }
+} catch (err) {
+  // Read-only filesystem in serverless environments
 }
 
 // Helper: Komputasi Model Regresi Machine Learning untuk Tren Pemasukan
