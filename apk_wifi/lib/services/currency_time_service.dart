@@ -6,7 +6,7 @@ class CurrencyTimeService {
   static final CurrencyTimeService instance = CurrencyTimeService._internal();
   CurrencyTimeService._internal();
 
-  Map<String, double> _idrRates = {'IDR': 1.0, 'USD': 15500.0, 'EUR': 16800.0};
+  Map<String, double> _idrRates = {'IDR': 1.0, 'USD': 18138.0, 'EUR': 20263.0};
 
   Map<String, double> get rates => _idrRates;
 

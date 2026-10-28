@@ -49,6 +49,9 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
       _selectedCategory = widget.initialCategory!;
     }
     _loadPackages();
+    CurrencyTimeService.instance.fetchLatestRates().then((_) {
+      if (mounted) setState(() {});
+    });
 
     if (widget.autoFocusSearch) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,7 +72,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
       final pkgsFuture = ApiService.instance.getPackages();
       final pendingFuture = ApiService.instance
           .getCustomerPendingPackageRequest();
-      final res = await Future.wait([pkgsFuture, pendingFuture]);
+      final ratesFuture = CurrencyTimeService.instance.fetchLatestRates();
+      final res = await Future.wait([pkgsFuture, pendingFuture, ratesFuture]);
       if (mounted) {
         setState(() {
           _packages = res[0] as List<PackageModel>;
@@ -309,7 +313,11 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                       const SizedBox(width: 8),
                       for (final curr in ['IDR', 'USD', 'EUR']) ...[
                         InkWell(
-                          onTap: () => setState(() => _selectedCurrency = curr),
+                          onTap: () async {
+                            setState(() => _selectedCurrency = curr);
+                            await CurrencyTimeService.instance.fetchLatestRates();
+                            if (mounted) setState(() {});
+                          },
                           borderRadius: BorderRadius.circular(6),
                           child: Container(
                             margin: const EdgeInsets.only(right: 6),
@@ -324,8 +332,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: _selectedCurrency == curr
-                                    ? AppTheme.primary
-                                    : const Color(0xFFCBD5E1),
+                                  ? AppTheme.primary
+                                  : const Color(0xFFCBD5E1),
                               ),
                             ),
                             child: Text(
@@ -346,10 +354,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                       const Spacer(),
                       Text(
                         _selectedCurrency == 'USD'
-                            ? '1 USD = Rp 15.500'
+                            ? '1 USD = Rp ${_formatRupiah((CurrencyTimeService.instance.rates['USD'] ?? 18138).round())}'
                             : (_selectedCurrency == 'EUR'
-                                  ? '1 EUR = Rp 16.800'
-                                  : 'Kurs BI Live'),
+                                  ? '1 EUR = Rp ${_formatRupiah((CurrencyTimeService.instance.rates['EUR'] ?? 20263).round())}'
+                                  : 'Kurs Live ECB'),
                         style: const TextStyle(
                           fontSize: 9.5,
                           color: Color(0xFF64748B),

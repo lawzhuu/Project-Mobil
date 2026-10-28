@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
@@ -36,11 +34,11 @@ class AppConfig {
     return '$baseUrl/$cleaned';
   }
 
-  // Fallback exchange rates
+  // Fallback exchange rates (live baseline)
   static const Map<String, double> idrPerCurrency = {
     'IDR': 1.0,
-    'USD': 15500.0,
-    'EUR': 16800.0,
+    'USD': 18138.0,
+    'EUR': 20263.0,
   };
 
   // Supported countries and their mappings

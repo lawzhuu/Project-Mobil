@@ -25,6 +25,9 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
   void initState() {
     super.initState();
     _recalculate();
+    CurrencyTimeService.instance.fetchLatestRates().then((_) {
+      if (mounted) _recalculate();
+    });
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {});
@@ -245,10 +248,10 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Kurs Referensi: 1 USD ≈ Rp 15.500 | 1 EUR ≈ Rp 16.800',
+                        Text(
+                          'Kurs Live: 1 USD ≈ Rp ${CurrencyTimeService.instance.rates['USD']?.round() ?? 18138} | 1 EUR ≈ Rp ${CurrencyTimeService.instance.rates['EUR']?.round() ?? 20263}',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                          style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
                         ),
                       ],
                     ),
