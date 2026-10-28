@@ -1199,7 +1199,7 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
 
                   // Perbandingan Paket
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(14),
@@ -1208,50 +1208,74 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                     child: Column(
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
                               'Paket Saat Ini:',
                               style: TextStyle(
                                 fontSize: 12,
+                                fontWeight: FontWeight.w500,
                                 color: Color(0xFF64748B),
                               ),
                             ),
-                            Text(
-                              isFirstSubscription
-                                  ? 'Belum Berlangganan (0M)'
-                                  : '${currentPkg.nama} (${currentPkg.kecepatanMbps}M)',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isFirstSubscription
+                                    ? 'Belum Berlangganan (0M)'
+                                    : '${currentPkg.nama} (${currentPkg.kecepatanMbps}M)',
+                                textAlign: TextAlign.end,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1E293B),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const Divider(height: 14),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFE2E8F0),
+                          ),
+                        ),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
                               'Paket Tujuan:',
                               style: TextStyle(
                                 fontSize: 12,
+                                fontWeight: FontWeight.w500,
                                 color: Color(0xFF64748B),
                               ),
                             ),
-                            Text(
-                              '${targetPkg.nama} (${targetPkg.kecepatanMbps}M)',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primary,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${targetPkg.nama} (${targetPkg.kecepatanMbps}M)',
+                                textAlign: TextAlign.end,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primary,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const Divider(height: 14),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFE2E8F0),
+                          ),
+                        ),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               isFirstSubscription
@@ -1259,23 +1283,29 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                                   : 'Selisih Harga:',
                               style: const TextStyle(
                                 fontSize: 12,
+                                fontWeight: FontWeight.w500,
                                 color: Color(0xFF64748B),
                               ),
                             ),
-                            Text(
-                              isFirstSubscription
-                                  ? 'Rp ${_formatRupiah(targetPkg.hargaIdr)} / bln'
-                                  : (diffPrice >= 0
-                                        ? '+Rp ${_formatRupiah(diffPrice)} / bln'
-                                        : '-Rp ${_formatRupiah(-diffPrice)} / bln'),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: isFirstSubscription
-                                    ? AppTheme.primary
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isFirstSubscription
+                                    ? 'Rp ${_formatRupiah(targetPkg.hargaIdr)} / bln'
                                     : (diffPrice >= 0
-                                          ? const Color(0xFF059669)
-                                          : const Color(0xFF2563EB)),
+                                          ? '+Rp ${_formatRupiah(diffPrice)} / bln'
+                                          : '-Rp ${_formatRupiah(-diffPrice)} / bln'),
+                                textAlign: TextAlign.end,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: isFirstSubscription
+                                      ? AppTheme.primary
+                                      : (diffPrice >= 0
+                                            ? const Color(0xFF059669)
+                                            : const Color(0xFF2563EB)),
+                                ),
                               ),
                             ),
                           ],
@@ -1298,22 +1328,43 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: selectedTipe,
+                    isExpanded: true,
                     dropdownColor: Colors.white,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: Color(0xFF1E293B),
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 10,
                       ),
+                      fillColor: const Color(0xFFF8FAFC),
+                      filled: true,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                       ),
                     ),
                     items: isFirstSubscription
                         ? const [
                             DropdownMenuItem(
                               value: 'Langganan Baru',
-                              child: Text('🚀 Langganan Baru (Pasang Baru)'),
+                              child: Text(
+                                '🚀 Langganan Baru (Pasang Baru)',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
                             ),
                           ]
                         : const [
@@ -1321,18 +1372,24 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                               value: 'Upgrade Kecepatan',
                               child: Text(
                                 '🚀 Upgrade Kecepatan (Koneksi Lebih Cepat)',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                             DropdownMenuItem(
                               value: 'Hemat Biaya (Downgrade)',
                               child: Text(
                                 '💰 Hemat Biaya (Penyesuaian Budget)',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                             DropdownMenuItem(
                               value: 'Ganti Paket Khusus',
                               child: Text(
                                 '✨ Ganti Paket Khusus (Promo / Gamer)',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                           ],
