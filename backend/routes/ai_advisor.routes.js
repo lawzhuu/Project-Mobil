@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { SimpleLinearRegression } = require('ml-regression');
+const { SimpleLinearRegression } = require('../utils/simple_linear_regression');
 const Groq = require('groq-sdk');
 const { loadDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth.middleware');
