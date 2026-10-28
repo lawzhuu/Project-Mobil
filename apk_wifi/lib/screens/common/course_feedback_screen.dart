@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../config/app_theme.dart';
 import '../../widgets/custom_card.dart';
 
@@ -33,7 +34,7 @@ class CourseFeedbackScreen extends StatelessWidget {
             _buildSectionTitle(
               icon: Icons.chat_bubble_outline_rounded,
               title: 'Kesan Perkuliahan',
-              subtitle: 'Kesan & refleksi nyata dari masing-masing anggota tim',
+              subtitle: 'Kesan langsung dari masing-masing anggota tim',
             ),
             const SizedBox(height: 12),
             _buildMemberImpressionCards(),
@@ -44,17 +45,12 @@ class CourseFeedbackScreen extends StatelessWidget {
             _buildSectionTitle(
               icon: Icons.lightbulb_outline_rounded,
               title: 'Saran Perkuliahan',
-              subtitle: 'Masukan konstruktif untuk mata kuliah Pemrograman Mobile',
+              subtitle: 'Masukan untuk mata kuliah Pemrograman Mobile',
             ),
             const SizedBox(height: 12),
             _buildSuggestionCard(),
 
-            const SizedBox(height: 24),
-
-            // 5. APRESIASI TIM PENGEMBANG
-            _buildAppreciationCard(),
-
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
           ],
         ),
       ),
@@ -100,11 +96,16 @@ class CourseFeedbackScreen extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: const Text(
                   'Semester 5 • 2024/2025',
@@ -129,7 +130,7 @@ class CourseFeedbackScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Refleksi, pesan, dan masukan dari tim pengembang aplikasi SIMA.NET (Dimas Rhito, Guntur, & Zaky).',
+            'Refleksi dan masukan dari tim pengembang aplikasi SIMA.NET (Dimas Rhito, Guntur, & Zaky).',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 13,
@@ -283,33 +284,25 @@ class CourseFeedbackScreen extends StatelessWidget {
         'nama': 'Dimas Rhito',
         'role': 'Mobile Developer',
         'avatar': 'DR',
-        'color': const Color(0xFF2563EB), // Blue
+        'color': const Color(0xFF2563EB),
         'gradient': const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-        'icon': Icons.engineering_rounded,
         'kesan': 'Jadi tau kalau pengembangan aplikasi mobile tidak mudah.',
-        'highlight': 'Tantangan arsitektur, integrasi API, dan penyesuaian lifecycle mobile',
       },
       {
         'nama': 'Guntur',
         'role': 'Fullstack & Mobile Developer',
         'avatar': 'G',
-        'color': const Color(0xFF059669), // Emerald
+        'color': const Color(0xFF059669),
         'gradient': const [Color(0xFF059669), Color(0xFF047857)],
-        'icon': Icons.local_drink_rounded,
-        'kesan':
-            'Jadi tau kalau pengembangan aplikasi mobile itu terlalu mudah. Betul-betul segar seperti ES TEH.',
-        'highlight': 'Eksplorasi lancar dan memuaskan seperti es teh segar di siang hari 🧊🥤',
+        'kesan': 'Jadi tau kalau pengembangan aplikasi mobile terlalu mudah. Betul-betul segar seperti ES TEH.',
       },
       {
         'nama': 'Zaky',
         'role': 'Mobile & UI/UX Developer',
         'avatar': 'Z',
-        'color': const Color(0xFF7C3AED), // Violet
+        'color': const Color(0xFF7C3AED),
         'gradient': const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-        'icon': Icons.sentiment_very_satisfied_rounded,
-        'kesan':
-            'Jadi tau kalau pengembangan aplikasi mobile itu menyenangkan. Betul-betul matkul yang MEMUDAHKAN mahasiswa.',
-        'highlight': 'Pembelajaran yang seru, adaptif, dan memberi pengalaman nyata yang aplikatif',
+        'kesan': 'Jadi tau kalau pengembangan aplikasi mobile itu menyenangkan. Betul-betul matkul yang MEMUDAHKAN mahasiswa.',
       },
     ];
 
@@ -375,23 +368,13 @@ class CourseFeedbackScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  m['nama'] as String,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Icon(
-                                  m['icon'] as IconData,
-                                  size: 16,
-                                  color: color,
-                                ),
-                              ],
+                            Text(
+                              m['nama'] as String,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -406,11 +389,16 @@ class CourseFeedbackScreen extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: color.withValues(alpha: 0.2)),
+                          border: Border.all(
+                            color: color.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: Text(
                           'Kesan',
@@ -435,38 +423,24 @@ class CourseFeedbackScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: color.withValues(alpha: 0.12)),
                     ),
-                    child: Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.format_quote_rounded,
-                              size: 20,
-                              color: color.withValues(alpha: 0.7),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                '"${m['kesan']}"',
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1E293B),
-                                  height: 1.45,
-                                ),
-                              ),
-                            ),
-                          ],
+                        Icon(
+                          Icons.format_quote_rounded,
+                          size: 20,
+                          color: color.withValues(alpha: 0.7),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          m['highlight'] as String,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '"${m['kesan']}"',
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1E293B),
+                              height: 1.45,
+                            ),
                           ),
                         ),
                       ],
@@ -487,7 +461,9 @@ class CourseFeedbackScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+        ),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFFF59E0B).withValues(alpha: 0.07),
@@ -521,7 +497,7 @@ class CourseFeedbackScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Saran & Masukan Kuliah',
+                      'Saran & Masukan',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -529,11 +505,8 @@ class CourseFeedbackScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Rekomendasi untuk kurikulum & penugasan mendatang',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
-                      ),
+                      'Masukan untuk mata kuliah Pemrograman Mobile',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                     ),
                   ],
                 ),
@@ -543,7 +516,7 @@ class CourseFeedbackScreen extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Quote Utama Saran
+          // Quote Saran
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
@@ -563,7 +536,7 @@ class CourseFeedbackScreen extends StatelessWidget {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '"Deadline mungkin bisa diperpanjang. Fitur mungkin agak dibebaskan, tidak terlalu terikat ketentuan."',
+                    '"Deadline mungkin bisa diperpanjang. Fitur mungkin agak dibebaskan, tidak terlalu terikat ketentuan. Atau gapapa tapi untuk angkatan 25 saja"',
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
@@ -574,161 +547,6 @@ class CourseFeedbackScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-
-          const SizedBox(height: 14),
-
-          // Poin Penjabaran Saran
-          _buildSuggestionPoint(
-            icon: Icons.hourglass_top_rounded,
-            color: const Color(0xFFEA580C),
-            title: 'Fleksibilitas Deadline',
-            desc:
-                'Deadline pengerjaan proyek akhir mungkin bisa diperpanjang agar eksplorasi kode, arsitektur, dan pematangan fitur bisa lebih maksimal.',
-          ),
-          const SizedBox(height: 10),
-          _buildSuggestionPoint(
-            icon: Icons.auto_awesome_rounded,
-            color: const Color(0xFF2563EB),
-            title: 'Kebebasan Eksplorasi Fitur',
-            desc:
-                'Fitur mungkin agak dibebaskan dan tidak terlalu kaku pada ketentuan silabus, sehingga mahasiswa memiliki ruang lebih leluasa untuk berkreasi sesuai ide unik kelompok.',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuggestionPoint({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String desc,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  desc,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: Color(0xFF475569),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 5. APRESIASI / TESTIMONI TIM ---
-  Widget _buildAppreciationCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C0F172A),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              5,
-              (index) => const Icon(
-                Icons.star_rounded,
-                color: Color(0xFFFBBF24),
-                size: 26,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            '"Terima kasih banyak kepada Bapak/Ibu Dosen Pengampu atas bimbingan, arahan, dan kesempatan berharga dalam menyelesaikan proyek aplikasi mobile multi-role SIMA.NET ini!"',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              fontStyle: FontStyle.italic,
-              color: AppTheme.textPrimary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 14),
-          const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: AppTheme.primaryGradient,
-                ),
-                child: const Center(
-                  child: Icon(Icons.groups_rounded, color: Colors.white, size: 20),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Dimas Rhito • Guntur • Zaky',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Tim Pengembang SIMA.NET • Semester 5',
-                    style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
-                  ),
-                ],
-              ),
-            ],
           ),
         ],
       ),
