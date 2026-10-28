@@ -67,7 +67,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
   Future<void> _loadPackages() async {
     try {
       final pkgsFuture = ApiService.instance.getPackages();
-      final pendingFuture = ApiService.instance.getCustomerPendingPackageRequest();
+      final pendingFuture = ApiService.instance
+          .getCustomerPendingPackageRequest();
       final res = await Future.wait([pkgsFuture, pendingFuture]);
       if (mounted) {
         setState(() {
@@ -140,7 +141,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = AuthService.instance.currentUser;
-    final activePackageId = (currentUser?.status == 'inactive' || currentUser?.paketId == null)
+    final activePackageId =
+        (currentUser?.status == 'inactive' || currentUser?.paketId == null)
         ? null
         : currentUser?.paketId;
     final filtered = _getFilteredPackages();
@@ -279,7 +281,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
 
                 // Global Currency Switcher Strip (Diaspora & Multi-Currency)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(10),
@@ -287,11 +292,19 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.currency_exchange, size: 14, color: AppTheme.primary),
+                      const Icon(
+                        Icons.currency_exchange,
+                        size: 14,
+                        color: AppTheme.primary,
+                      ),
                       const SizedBox(width: 6),
                       const Text(
                         'Valuta:',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF475569),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       for (final curr in ['IDR', 'USD', 'EUR']) ...[
@@ -300,20 +313,31 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                           borderRadius: BorderRadius.circular(6),
                           child: Container(
                             margin: const EdgeInsets.only(right: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: _selectedCurrency == curr ? AppTheme.primary : Colors.white,
+                              color: _selectedCurrency == curr
+                                  ? AppTheme.primary
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: _selectedCurrency == curr ? AppTheme.primary : const Color(0xFFCBD5E1),
+                                color: _selectedCurrency == curr
+                                    ? AppTheme.primary
+                                    : const Color(0xFFCBD5E1),
                               ),
                             ),
                             child: Text(
-                              curr == 'IDR' ? '🇮🇩 IDR' : (curr == 'USD' ? '🇺🇸 USD' : '🇪🇺 EUR'),
+                              curr == 'IDR'
+                                  ? '🇮🇩 IDR'
+                                  : (curr == 'USD' ? '🇺🇸 USD' : '🇪🇺 EUR'),
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
-                                color: _selectedCurrency == curr ? Colors.white : const Color(0xFF334155),
+                                color: _selectedCurrency == curr
+                                    ? Colors.white
+                                    : const Color(0xFF334155),
                               ),
                             ),
                           ),
@@ -323,8 +347,14 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                       Text(
                         _selectedCurrency == 'USD'
                             ? '1 USD = Rp 15.500'
-                            : (_selectedCurrency == 'EUR' ? '1 EUR = Rp 16.800' : 'Kurs BI Live'),
-                        style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontStyle: FontStyle.italic),
+                            : (_selectedCurrency == 'EUR'
+                                  ? '1 EUR = Rp 16.800'
+                                  : 'Kurs BI Live'),
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          color: Color(0xFF64748B),
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ],
                   ),
@@ -344,7 +374,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   },
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF5B21B6), Color(0xFF7C3AED)],
@@ -406,34 +439,6 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                     ),
                   ),
                 ),
-
-                if (currentUser?.status == 'inactive') ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFECACA)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.power_settings_new_rounded, color: Color(0xFFDC2626), size: 18),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Status Akun: Nonaktif (Berhenti Berlangganan). Pilih paket di bawah jika ingin mengaktifkan koneksi kembali.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF991B1B),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -723,7 +728,10 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                       _selectedCurrency == 'IDR'
                           ? '/ bulan'
                           : '/ bln (Dasar: Rp ${_formatRupiah(pkg.hargaIdr)})',
-                      style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ],
                 ),
@@ -747,7 +755,11 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                     ),
                   ),
                   child: Text(
-                    isCurrent ? 'Detail Paket' : 'Pilih Paket',
+                    isCurrent
+                        ? 'Detail Paket'
+                        : (AuthService.instance.currentUser?.paketId == null
+                              ? 'Beli & Pasang'
+                              : 'Pilih Paket'),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -756,7 +768,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                 ),
               ],
             ),
-            if (isCurrent) ...[
+            if (isCurrent &&
+                AuthService.instance.currentUser?.paketId != null) ...[
               const SizedBox(height: 10),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
               const SizedBox(height: 8),
@@ -765,7 +778,9 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   if (_pendingRequest != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Anda masih memiliki pengajuan pending yang sedang ditinjau admin.'),
+                        content: Text(
+                          'Anda masih memiliki pengajuan pending yang sedang ditinjau admin.',
+                        ),
                         backgroundColor: AppTheme.warning,
                       ),
                     );
@@ -783,7 +798,11 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.power_settings_new_rounded, size: 14, color: Color(0xFFDC2626)),
+                      Icon(
+                        Icons.power_settings_new_rounded,
+                        size: 14,
+                        color: Color(0xFFDC2626),
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Ajukan Berhenti Berlangganan',
@@ -961,7 +980,9 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isCurrent
                       ? const Color(0xFF64748B)
-                      : (_pendingRequest != null ? const Color(0xFFF59E0B) : AppTheme.primary),
+                      : (_pendingRequest != null
+                            ? const Color(0xFFF59E0B)
+                            : AppTheme.primary),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -972,8 +993,16 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   isCurrent
                       ? 'Tutup'
                       : (_pendingRequest != null
-                          ? 'Pengajuan Sedang Ditinjau Admin'
-                          : 'Ajukan Perubahan Paket'),
+                            ? 'Pengajuan Sedang Ditinjau Admin'
+                            : ((AuthService.instance.currentUser?.status ==
+                                          'inactive' ||
+                                      AuthService
+                                              .instance
+                                              .currentUser
+                                              ?.paketId ==
+                                          null)
+                                  ? 'Beli & Pasang Paket Ini'
+                                  : 'Ajukan Perubahan Paket')),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -1030,7 +1059,9 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: isTerm ? const Color(0xFF991B1B) : const Color(0xFF92400E),
+                    color: isTerm
+                        ? const Color(0xFF991B1B)
+                        : const Color(0xFF92400E),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1040,7 +1071,9 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                       : '${req.tipe}: ${req.paketLamaNama} ➔ ${req.paketBaruNama} (${req.paketBaruKecepatan} Mbps)',
                   style: TextStyle(
                     fontSize: 11,
-                    color: isTerm ? const Color(0xFFB91C1C) : const Color(0xFFB45309),
+                    color: isTerm
+                        ? const Color(0xFFB91C1C)
+                        : const Color(0xFFB45309),
                   ),
                 ),
               ],
@@ -1052,13 +1085,17 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isTerm ? const Color(0xFFEF4444) : const Color(0xFFF59E0B),
+                color: isTerm
+                    ? const Color(0xFFEF4444)
+                    : const Color(0xFFF59E0B),
               ),
             ),
             child: Text(
               'Pending',
               style: TextStyle(
-                color: isTerm ? const Color(0xFFDC2626) : const Color(0xFFB45309),
+                color: isTerm
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFFB45309),
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
               ),
@@ -1069,24 +1106,34 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
     );
   }
 
-
-
   void _showChangeRequestSheet(PackageModel targetPkg) {
     final user = AuthService.instance.currentUser;
-    final currentPkgId = user?.paketId ?? 2;
+    final bool isFirstSubscription =
+        user?.status == 'inactive' ||
+        user?.paketId == null ||
+        user?.paketId == 0;
+    final currentPkgId = user?.paketId;
     final currentPkg = _packages.firstWhere(
       (p) => p.id == currentPkgId,
       orElse: () => _packages.isNotEmpty ? _packages.first : targetPkg,
     );
 
-    final isUpgrade = targetPkg.kecepatanMbps > currentPkg.kecepatanMbps;
-    String selectedTipe = isUpgrade ? 'Upgrade Kecepatan' : 'Hemat Biaya (Downgrade)';
+    final isUpgrade =
+        !isFirstSubscription &&
+        targetPkg.kecepatanMbps > currentPkg.kecepatanMbps;
+    String selectedTipe = isFirstSubscription
+        ? 'Langganan Baru'
+        : (isUpgrade ? 'Upgrade Kecepatan' : 'Hemat Biaya (Downgrade)');
     final reasonController = TextEditingController(
-      text: isUpgrade
-          ? 'Membutuhkan bandwidth lebih tinggi untuk streaming 4K dan gaming stabil.'
-          : 'Penyesuaian kebutuhan penggunaan internet keluarga.',
+      text: isFirstSubscription
+          ? 'Pemasangan baru koneksi internet fiber optik di alamat saya.'
+          : (isUpgrade
+                ? 'Membutuhkan bandwidth lebih tinggi untuk streaming 4K dan gaming stabil.'
+                : 'Penyesuaian kebutuhan penggunaan internet keluarga.'),
     );
-    final diffPrice = targetPkg.hargaIdr - currentPkg.hargaIdr;
+    final diffPrice = isFirstSubscription
+        ? targetPkg.hargaIdr
+        : (targetPkg.hargaIdr - currentPkg.hargaIdr);
 
     showModalBottomSheet(
       context: context,
@@ -1120,18 +1167,25 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Pengajuan Perubahan Paket (Approval Admin)',
-                    style: TextStyle(
+                  Text(
+                    isFirstSubscription
+                        ? 'Beli & Pasang Paket Baru'
+                        : 'Pengajuan Perubahan Paket (Approval Admin)',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Permintaan akan dikirimkan ke Admin Hub untuk ditinjau dan disetujui.',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  Text(
+                    isFirstSubscription
+                        ? 'Permintaan pasang baru akan dikirimkan ke Admin Hub untuk dijadwalkan teknisi.'
+                        : 'Permintaan akan dikirimkan ke Admin Hub untuk ditinjau dan disetujui.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -1148,29 +1202,72 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Paket Saat Ini:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                            Text('${currentPkg.nama} (${currentPkg.kecepatanMbps}M)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const Divider(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Paket Tujuan:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                            Text('${targetPkg.nama} (${targetPkg.kecepatanMbps}M)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary)),
-                          ],
-                        ),
-                        const Divider(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Selisih Harga:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                            const Text(
+                              'Paket Saat Ini:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
                             Text(
-                              diffPrice >= 0 ? '+Rp ${_formatRupiah(diffPrice)} / bln' : '-Rp ${_formatRupiah(-diffPrice)} / bln',
+                              isFirstSubscription
+                                  ? 'Belum Berlangganan (0M)'
+                                  : '${currentPkg.nama} (${currentPkg.kecepatanMbps}M)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Paket Tujuan:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                            Text(
+                              '${targetPkg.nama} (${targetPkg.kecepatanMbps}M)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              isFirstSubscription
+                                  ? 'Biaya Langganan:'
+                                  : 'Selisih Harga:',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                            Text(
+                              isFirstSubscription
+                                  ? 'Rp ${_formatRupiah(targetPkg.hargaIdr)} / bln'
+                                  : (diffPrice >= 0
+                                        ? '+Rp ${_formatRupiah(diffPrice)} / bln'
+                                        : '-Rp ${_formatRupiah(-diffPrice)} / bln'),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: diffPrice >= 0 ? const Color(0xFF059669) : const Color(0xFF2563EB),
+                                color: isFirstSubscription
+                                    ? AppTheme.primary
+                                    : (diffPrice >= 0
+                                          ? const Color(0xFF059669)
+                                          : const Color(0xFF2563EB)),
                               ),
                             ),
                           ],
@@ -1182,21 +1279,55 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   const SizedBox(height: 14),
 
                   // Tipe Pengajuan
-                  const Text('Tipe Pengajuan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const Text(
+                    'Tipe Pengajuan:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: selectedTipe,
                     dropdownColor: Colors.white,
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'Upgrade Kecepatan', child: Text('🚀 Upgrade Kecepatan (Koneksi Lebih Cepat)')),
-                      DropdownMenuItem(value: 'Hemat Biaya (Downgrade)', child: Text('💰 Hemat Biaya (Penyesuaian Budget)')),
-                      DropdownMenuItem(value: 'Ganti Paket Khusus', child: Text('✨ Ganti Paket Khusus (Promo / Gamer)')),
-                    ],
+                    items: isFirstSubscription
+                        ? const [
+                            DropdownMenuItem(
+                              value: 'Langganan Baru',
+                              child: Text('🚀 Langganan Baru (Pasang Baru)'),
+                            ),
+                          ]
+                        : const [
+                            DropdownMenuItem(
+                              value: 'Upgrade Kecepatan',
+                              child: Text(
+                                '🚀 Upgrade Kecepatan (Koneksi Lebih Cepat)',
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Hemat Biaya (Downgrade)',
+                              child: Text(
+                                '💰 Hemat Biaya (Penyesuaian Budget)',
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Ganti Paket Khusus',
+                              child: Text(
+                                '✨ Ganti Paket Khusus (Promo / Gamer)',
+                              ),
+                            ),
+                          ],
                     onChanged: (v) {
                       if (v != null) setModalState(() => selectedTipe = v);
                     },
@@ -1205,18 +1336,37 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   const SizedBox(height: 12),
 
                   // Alasan
-                  const Text('Alasan / Kebutuhan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  Text(
+                    isFirstSubscription
+                        ? 'Catatan / Alamat Tambahan:'
+                        : 'Alasan / Kebutuhan:',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   TextField(
                     controller: reasonController,
                     maxLines: 2,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF0F172A),
+                    ),
                     decoration: InputDecoration(
-                      hintText: 'Tuliskan alasan pengajuan perubahan paket...',
-                      hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                      hintText: isFirstSubscription
+                          ? 'Tuliskan catatan tambahan atau preferensi jadwal pasang...'
+                          : 'Tuliskan alasan pengajuan perubahan paket...',
+                      hintStyle: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF94A3B8),
+                      ),
                       isDense: true,
                       contentPadding: const EdgeInsets.all(12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
 
@@ -1233,11 +1383,12 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                         ),
                       );
 
-                      final res = await ApiService.instance.submitPackageChangeRequest(
-                        packageId: targetPkg.id,
-                        tipe: selectedTipe,
-                        alasan: reasonController.text.trim(),
-                      );
+                      final res = await ApiService.instance
+                          .submitPackageChangeRequest(
+                            packageId: targetPkg.id,
+                            tipe: selectedTipe,
+                            alasan: reasonController.text.trim(),
+                          );
 
                       if (!mounted) return;
 
@@ -1245,14 +1396,18 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                         await _loadPackages();
                         messenger.showSnackBar(
                           SnackBar(
-                            content: Text(res['message'] ?? 'Pengajuan berhasil dikirim!'),
+                            content: Text(
+                              res['message'] ?? 'Pengajuan berhasil dikirim!',
+                            ),
                             backgroundColor: AppTheme.success,
                           ),
                         );
                       } else {
                         messenger.showSnackBar(
                           SnackBar(
-                            content: Text(res['message'] ?? 'Gagal mengajukan perubahan paket'),
+                            content: Text(
+                              res['message'] ?? 'Gagal mengajukan paket',
+                            ),
                             backgroundColor: AppTheme.error,
                           ),
                         );
@@ -1266,9 +1421,14 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text(
-                      'Kirim Pengajuan ke Admin',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    child: Text(
+                      isFirstSubscription
+                          ? 'Kirim Pengajuan Pasang Baru'
+                          : 'Kirim Pengajuan ke Admin',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],

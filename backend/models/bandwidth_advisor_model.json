@@ -2,7 +2,7 @@
   "model_name": "SmartBandwidthAdvisorRegression",
   "library": "ml-regression (npm)",
   "type": "Supervised Learning - Network Concurrency Regression Model",
-  "trained_at": "2026-10-26T16:00:49.505Z",
+  "trained_at": "2026-10-27T16:00:14.441Z",
   "training_samples_count": 9,
   "parameters": {
     "slope": 0.9673001760300743,
@@ -10,10 +10,10 @@
     "r2_confidence_score": 0.9934533620676667
   },
   "current_prediction": {
-    "total_devices": 4,
-    "raw_demand_mbps": 43,
-    "concurrency_factor": 0.73,
-    "activity_demand_mbps": 25,
-    "calculated_peak_mbps": 67.7
+    "total_devices": 3,
+    "raw_demand_mbps": 29,
+    "concurrency_factor": 0.7,
+    "activity_demand_mbps": 15,
+    "calculated_peak_mbps": 42.4
   }
 }

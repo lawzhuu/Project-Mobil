@@ -109,6 +109,19 @@ class BillingApi {
     }
   }
 
+  Future<bool> verifyInvoiceManual(int invoiceId, {required bool approve}) async {
+    try {
+      final res = await _client.post(
+        '/invoices/$invoiceId/verify-manual',
+        body: {'status': approve ? 'diverifikasi' : 'ditolak'},
+      );
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('[BillingApi] verifyInvoiceManual error: $e');
+      return false;
+    }
+  }
+
   // --- PACKAGES & SUBSCRIPTION ---
   Future<List<PackageModel>> getPackages() async {
     const cacheKey = 'packages';

@@ -20,6 +20,7 @@ import '../../widgets/status_badge.dart';
 import '../../widgets/termination_request_modal.dart';
 import '../auth/login_screen.dart';
 import '../customer/customer_chatbot_screen.dart';
+import '../customer/customer_packages_screen.dart';
 import 'feedback_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -1253,17 +1254,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         subtitle: Text(
                           user.status == 'inactive'
                               ? 'Tidak ada paket internet aktif. Modem siap ditarik teknisi.'
-                              : 'Koneksi Fiber Optik Dedicated Sima.net',
+                              : (user.paketId != null && user.paketId! > 0
+                                  ? 'Koneksi Fiber Optik Dedicated Sima.net'
+                                  : 'Belum ada paket aktif. Pilih paket untuk mulai berlangganan.'),
                           style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                         ),
                       ),
-                      if (user.status == 'active') ...[
+                      if (user.status == 'active' && user.paketId != null && user.paketId! > 0) ...[
                         const Divider(color: AppTheme.border, height: 16),
                         InkWell(
                           onTap: () {
                             TerminationRequestModal.show(
                               context,
-                              currentPackageName: 'Paket #${user.paketId ?? 2}',
+                              currentPackageName: 'Paket #${user.paketId}',
                               onSubmitted: () {
                                 setState(() {});
                               },
@@ -1286,6 +1289,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 Spacer(),
                                 Icon(Icons.chevron_right, color: Color(0xFFDC2626), size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ] else if (user.paketId == null || user.paketId == 0) ...[
+                        const Divider(color: AppTheme.border, height: 16),
+                        InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CustomerPackagesScreen(),
+                              ),
+                            ).then((_) => setState(() {}));
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: const [
+                                Icon(Icons.add_shopping_cart_rounded, color: AppTheme.primary, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Pilih & Beli Paket Internet',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                                Spacer(),
+                                Icon(Icons.chevron_right, color: AppTheme.primary, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ] else if (user.status == 'inactive') ...[
+                        const Divider(color: AppTheme.border, height: 16),
+                        InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CustomerPackagesScreen(),
+                              ),
+                            ).then((_) => setState(() {}));
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: const [
+                                Icon(Icons.replay_rounded, color: AppTheme.primary, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Aktifkan Kembali Layanan Internet',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                                Spacer(),
+                                Icon(Icons.chevron_right, color: AppTheme.primary, size: 18),
                               ],
                             ),
                           ),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
+import '../../models/feedback_model.dart';
 import '../../models/invoice_model.dart';
 import '../../models/ledger_model.dart';
 import '../../models/package_request_model.dart';
+import '../../models/task_model.dart';
 import '../../models/upstream_bill_model.dart';
 import '../../models/user_model.dart';
 import '../../services/api_service.dart';
@@ -35,9 +37,12 @@ class _AdminHubScreenState extends State<AdminHubScreen>
   List<LedgerBlockModel> _ledgerBlocks = [];
   List<UpstreamBillModel> _upstreamBills = [];
   List<PackageRequestModel> _packageRequests = [];
+  List<TaskModel> _tasks = [];
+  List<UserModel> _technicians = [];
+  List<FeedbackModel> _feedbacks = [];
 
   bool _isLoading = true;
-  int? _selectedSection; // null = Executive Dashboard Hub, 0..5 = Modul detail
+  int? _selectedSection; // null = Executive Dashboard Hub, 0..7 = Modul detail
   VerificationResult? _blockchainVerification;
   bool _isVerifyingLedger = false;
   bool _isAnalyzingAi = false;
@@ -67,6 +72,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
       final ledgerFuture = ApiService.instance.getLedger();
       final upstreamFuture = ApiService.instance.getUpstreamBills();
       final pkgReqsFuture = ApiService.instance.getAdminPackageRequests();
+      final tasksFuture = ApiService.instance.getTasks();
+      final techsFuture = ApiService.instance.getTechnicians();
+      final feedbackFuture = ApiService.instance.getFeedback();
 
       final results = await Future.wait([
         summaryFuture,
@@ -76,6 +84,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         ledgerFuture,
         upstreamFuture,
         pkgReqsFuture,
+        tasksFuture,
+        techsFuture,
+        feedbackFuture,
       ]);
 
       if (mounted) {
@@ -87,6 +98,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           _ledgerBlocks = results[4] as List<LedgerBlockModel>;
           _upstreamBills = results[5] as List<UpstreamBillModel>;
           _packageRequests = results[6] as List<PackageRequestModel>;
+          _tasks = results[7] as List<TaskModel>;
+          _technicians = results[8] as List<UserModel>;
+          _feedbacks = results[9] as List<FeedbackModel>;
           _isLoading = false;
         });
       }
@@ -109,7 +123,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✨ Analisis AI & Groq LLM Insight berhasil digenerate!'),
+              content: Text(
+                '✨ Analisis AI & Groq LLM Insight berhasil digenerate!',
+              ),
               backgroundColor: AppTheme.success,
             ),
           );
@@ -133,112 +149,124 @@ class _AdminHubScreenState extends State<AdminHubScreen>
 
   // --- ACTIONS ---
   Future<void> _activateCustomerDialog(UserModel customer) async {
-    int selectedPackageId = customer.paketId ?? 1;
-
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.surfaceCard,
-          title: Text(
-            'Aktivasi Pelanggan #${customer.id}',
-            style: const TextStyle(color: AppTheme.textPrimary),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Nama: ${customer.nama}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              Text(
-                'Alamat: ${customer.alamat}',
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 13,
-                ),
-              ),
-              Text(
-                'Mata Uang: ${customer.mataUang} (${customer.zonaWaktu})',
-                style: const TextStyle(color: AppTheme.accent, fontSize: 12),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'Tetapkan Paket & Buat Tagihan Perdana:',
-                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                value: selectedPackageId,
-                dropdownColor: AppTheme.surfaceCard,
-                decoration: const InputDecoration(labelText: 'Paket Fiber'),
-                items: const [
-                  DropdownMenuItem(
-                    value: 1,
-                    child: Text('Hemat 20 Mbps (Rp 175.000)'),
-                  ),
-                  DropdownMenuItem(
-                    value: 2,
-                    child: Text('Turbo 50 Mbps (Rp 275.000)'),
-                  ),
-                  DropdownMenuItem(
-                    value: 3,
-                    child: Text('Ultimate 100 Mbps (Rp 450.000)'),
-                  ),
-                ],
-                onChanged: (v) {
-                  if (v != null) setDialogState(() => selectedPackageId = v);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'Batal',
-                style: TextStyle(color: AppTheme.textMuted),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceCard,
+        title: Text(
+          'Aktivasi Akun Pelanggan #${customer.id}',
+          style: const TextStyle(color: AppTheme.textPrimary),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Nama: ${customer.nama}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
               ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final ok = await ApiService.instance.activateCustomer(
-                  customer.id,
-                  paketId: selectedPackageId,
-                );
-                if (ok) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Akun ${customer.nama} berhasil DIAKTIFKAN dan tagihan perdana telah dibuat dengan kurs terkunci!',
-                      ),
-                      backgroundColor: AppTheme.success,
-                    ),
-                  );
-                  _loadAllAdminData();
-                }
-              },
-              child: const Text('Aktivasi Sekarang'),
+            const SizedBox(height: 4),
+            Text(
+              'Email / HP: ${customer.email} • ${customer.noHp}',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Alamat: ${customer.alamat}',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Negara: ${customer.negara} (${customer.mataUang} • ${customer.zonaWaktu})',
+              style: const TextStyle(color: AppTheme.accent, fontSize: 12),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
+              ),
+              child: const Text(
+                'Akun pelanggan akan diaktifkan sehingga dapat login dan menjelajahi katalog sebelum membeli paket internet.',
+                style: TextStyle(fontSize: 12, color: AppTheme.textPrimary),
+              ),
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppTheme.textMuted),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final ok = await ApiService.instance.activateCustomer(
+                customer.id,
+              );
+              if (ok) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Akun ${customer.nama} berhasil DIAKTIFKAN. Pelanggan dapat login dan memilih paket langganan!',
+                    ),
+                    backgroundColor: AppTheme.success,
+                  ),
+                );
+                _loadAllAdminData();
+              }
+            },
+            child: const Text('Aktifkan Akun'),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _verifyPaymentAction(InvoiceModel invoice, bool approve) async {
     final payment = invoice.payment;
-    if (payment == null) return;
 
-    final ok = await ApiService.instance.verifyPayment(
-      payment.id,
-      approve: approve,
-    );
+    bool ok = false;
+    if (payment != null) {
+      ok = await ApiService.instance.verifyPayment(
+        payment.id,
+        approve: approve,
+      );
+    } else {
+      if (!approve) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Tagihan ini belum memiliki bukti transfer digital untuk ditolak.'),
+              backgroundColor: AppTheme.warning,
+            ),
+          );
+        }
+        return;
+      }
+      ok = await ApiService.instance.verifyInvoiceManual(
+        invoice.id,
+        approve: true,
+      );
+    }
+
+    if (!mounted) return;
+
     if (ok) {
       if (approve) {
         NotificationService.instance.notifyPaymentVerified(
@@ -250,12 +278,19 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           content: Text(
             approve
                 ? '✅ Pembayaran diverifikasi! Block SHA-256 berhasil ditulis ke ledger blockchain.'
-                : '❌ Pembayaran ditolak.',
+                : '❌ Pembayaran ditolak. Status tagihan tetap Belum Lunas.',
           ),
           backgroundColor: approve ? AppTheme.success : AppTheme.error,
         ),
       );
       _loadAllAdminData();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memperbarui status pembayaran. Periksa koneksi ke server.'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
     }
   }
 
@@ -346,6 +381,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     final catatanCtrl = TextEditingController();
     String jenis = 'instalasi';
     int? selectedCustomerId;
+    int? selectedTechId; // null = antrean penugasan
 
     final customers = _customers;
 
@@ -355,60 +391,100 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppTheme.surfaceCard,
           title: const Text(
-            'Tugaskan Pekerjaan ke Teknisi (A5)',
+            'Buat Tugas Teknisi Lapangan (A5)',
             style: TextStyle(color: AppTheme.textPrimary),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                value: selectedCustomerId,
-                dropdownColor: AppTheme.surfaceCard,
-                decoration: const InputDecoration(labelText: 'Pilih Pelanggan'),
-                items: customers
-                    .map(
-                      (c) => DropdownMenuItem(
-                        value: c.id,
-                        child: Text(
-                          '${c.nama} [${c.status == 'inactive' ? 'Nonaktif' : 'Aktif'}]',
-                          overflow: TextOverflow.ellipsis,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<int>(
+                  value: selectedCustomerId,
+                  dropdownColor: AppTheme.surfaceCard,
+                  decoration: const InputDecoration(
+                    labelText: 'Pilih Pelanggan',
+                  ),
+                  items: customers
+                      .map(
+                        (c) => DropdownMenuItem(
+                          value: c.id,
+                          child: Text(
+                            '${c.nama} [${c.status == 'inactive' ? 'Nonaktif' : 'Aktif'}]',
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) => setDialogState(() => selectedCustomerId = v),
-              ),
-              const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                value: jenis,
-                dropdownColor: AppTheme.surfaceCard,
-                decoration: const InputDecoration(labelText: 'Jenis / Alasan Tugas'),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'instalasi',
-                    child: Text('Pasang Baru / Tarik FO'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'perbaikan',
-                    child: Text('Perbaikan Redaman / Putus Kabel'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'pencopotan',
-                    child: Text('Pencopotan Perangkat / Deaktivasi'),
-                  ),
-                ],
-                onChanged: (v) =>
-                    setDialogState(() => jenis = v ?? 'instalasi'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: catatanCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Catatan Lapangan',
-                  hintText: 'Misal: ODP-SLM-08 Port 4',
+                      )
+                      .toList(),
+                  onChanged: (v) =>
+                      setDialogState(() => selectedCustomerId = v),
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: jenis,
+                  dropdownColor: AppTheme.surfaceCard,
+                  decoration: const InputDecoration(
+                    labelText: 'Jenis / Alasan Tugas',
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'instalasi',
+                      child: Text('Pasang Baru / Tarik FO'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'perbaikan',
+                      child: Text('Perbaikan Redaman / Putus Kabel'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'pencopotan',
+                      child: Text('Pencopotan Perangkat / Deaktivasi'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'pemeliharaan',
+                      child: Text('Pemeliharaan / Cek Berkala'),
+                    ),
+                  ],
+                  onChanged: (v) =>
+                      setDialogState(() => jenis = v ?? 'instalasi'),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<int?>(
+                  value: selectedTechId,
+                  dropdownColor: AppTheme.surfaceCard,
+                  decoration: const InputDecoration(
+                    labelText: 'Teknisi Pelaksana',
+                    helperText: 'Bisa dikosongkan agar masuk antrean',
+                  ),
+                  items: [
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('Antrean (Pilih Teknisi Nanti)'),
+                    ),
+                    ...(_technicians.isNotEmpty
+                        ? _technicians.map(
+                            (t) => DropdownMenuItem<int?>(
+                              value: t.id,
+                              child: Text(t.nama),
+                            ),
+                          )
+                        : [
+                            const DropdownMenuItem<int?>(
+                              value: 4,
+                              child: Text('Rahmat Hidayat (Teknisi)'),
+                            ),
+                          ]),
+                  ],
+                  onChanged: (v) => setDialogState(() => selectedTechId = v),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: catatanCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Catatan Lapangan',
+                    hintText: 'Misal: ODP-SLM-08 Port 4 atau keluhan',
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -421,23 +497,29 @@ class _AdminHubScreenState extends State<AdminHubScreen>
             ElevatedButton(
               onPressed: () async {
                 if (selectedCustomerId == null) return;
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(ctx);
                 final ok = await ApiService.instance.createTask(
-                  teknisiId: 4, // Default technician Rahmat
+                  teknisiId: selectedTechId,
                   pelangganId: selectedCustomerId!,
                   jenis: jenis,
                   catatan: catatanCtrl.text.trim(),
                 );
                 if (ok) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tugas berhasil ditugaskan ke teknisi!'),
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        selectedTechId != null
+                            ? 'Tugas berhasil ditugaskan ke teknisi!'
+                            : 'Tugas masuk ke Antrean Penugasan Teknisi!',
+                      ),
                       backgroundColor: AppTheme.success,
                     ),
                   );
+                  if (mounted) _loadAllAdminData();
                 }
               },
-              child: const Text('Kirim Tugas'),
+              child: const Text('Simpan Tugas'),
             ),
           ],
         ),
@@ -461,6 +543,8 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         return 'Penugasan Teknisi';
       case 6:
         return 'Tagihan ISP Utama (Upstream)';
+      case 7:
+        return 'Saran & Kesan Pengguna';
       default:
         return 'Admin Operations Hub';
     }
@@ -491,6 +575,8 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         return _buildTaskDispatchTab();
       case 6:
         return _buildUpstreamBillsTab();
+      case 7:
+        return _buildFeedbackPanelTab();
       default:
         return AdminForecastTab(
           summary: _summary,
@@ -532,11 +618,12 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                         width: 24,
                         height: 24,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.admin_panel_settings,
-                          color: AppTheme.primary,
-                          size: 22,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.admin_panel_settings,
+                              color: AppTheme.primary,
+                              size: 22,
+                            ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -561,16 +648,19 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : (_selectedSection == null
-                ? AdminOverviewTab(
-                    summary: _summary,
-                    forecastData: _forecastData,
-                    customers: _customers,
-                    packageRequests: _packageRequests,
-                    invoices: _invoices,
-                    onRefresh: _loadAllAdminData,
-                    onSelectSection: (idx) => setState(() => _selectedSection = idx),
-                  )
-                : _buildSectionDetail(_selectedSection!)),
+                  ? AdminOverviewTab(
+                      summary: _summary,
+                      forecastData: _forecastData,
+                      customers: _customers,
+                      packageRequests: _packageRequests,
+                      invoices: _invoices,
+                      tasks: _tasks,
+                      feedbacks: _feedbacks,
+                      onRefresh: _loadAllAdminData,
+                      onSelectSection: (idx) =>
+                          setState(() => _selectedSection = idx),
+                    )
+                  : _buildSectionDetail(_selectedSection!)),
       ),
     );
   }
@@ -663,8 +753,8 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                       ),
                       const SizedBox(height: 12),
                       GlowingButton(
-                        text: 'Aktifkan Akun & Tetapkan Paket (A1)',
-                        icon: Icons.check,
+                        text: 'Aktifkan Akun Pelanggan',
+                        icon: Icons.check_circle_outline,
                         color: AppTheme.success,
                         width: double.infinity,
                         onPressed: () => _activateCustomerDialog(c),
@@ -731,8 +821,12 @@ class _AdminHubScreenState extends State<AdminHubScreen>
 
   // --- TAB 3: PACKAGE CHANGE REQUESTS (APPROVAL WORKFLOW - OPTION A) ---
   Widget _buildPackageRequestsTab() {
-    final pending = _packageRequests.where((r) => r.status == 'pending').toList();
-    final processed = _packageRequests.where((r) => r.status != 'pending').toList();
+    final pending = _packageRequests
+        .where((r) => r.status == 'pending')
+        .toList();
+    final processed = _packageRequests
+        .where((r) => r.status != 'pending')
+        .toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -812,13 +906,19 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: isTermination
-                                  ? const Color(0xFFDC2626).withValues(alpha: 0.2)
+                                  ? const Color(0xFFDC2626)
+                                        .withValues(alpha: 0.2)
                                   : (isUpgrade
-                                      ? const Color(0xFF059669).withValues(alpha: 0.2)
-                                      : const Color(0xFF2563EB).withValues(alpha: 0.2)),
+                                        ? const Color(0xFF059669)
+                                              .withValues(alpha: 0.2)
+                                        : const Color(0xFF2563EB)
+                                              .withValues(alpha: 0.2)),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -828,7 +928,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                                 fontWeight: FontWeight.bold,
                                 color: isTermination
                                     ? const Color(0xFFEF4444)
-                                    : (isUpgrade ? const Color(0xFF10B981) : const Color(0xFF38BDF8)),
+                                    : (isUpgrade
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFF38BDF8)),
                               ),
                             ),
                           ),
@@ -837,13 +939,19 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                       const SizedBox(height: 4),
                       Text(
                         '${req.userEmail} • ${req.userNoHp}',
-                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
                       if (req.userAlamat.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
                           'Alamat: ${req.userAlamat}',
-                          style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textMuted,
+                          ),
                         ),
                       ],
                       const SizedBox(height: 10),
@@ -870,26 +978,52 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Paket yang Diputus:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                        const Text(
+                                          'Paket yang Diputus:',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppTheme.textMuted,
+                                          ),
+                                        ),
                                         Text(
                                           '${req.paketLamaNama} (${req.paketLamaKecepatan}M)',
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textPrimary,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.arrow_forward, size: 16, color: Color(0xFFDC2626)),
+                                  const Icon(
+                                    Icons.arrow_forward,
+                                    size: 16,
+                                    color: Color(0xFFDC2626),
+                                  ),
                                   const SizedBox(width: 8),
                                   const Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Text('Status Baru:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                        Text(
+                                          'Status Baru:',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppTheme.textMuted,
+                                          ),
+                                        ),
                                         Text(
                                           'Nonaktif / Berhenti',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFFDC2626),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -899,12 +1033,20 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                               const Divider(color: AppTheme.border, height: 12),
                               const Row(
                                 children: [
-                                  Icon(Icons.assignment_outlined, size: 14, color: AppTheme.warning),
+                                  Icon(
+                                    Icons.assignment_outlined,
+                                    size: 14,
+                                    color: AppTheme.warning,
+                                  ),
                                   SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       'Dampak: Diterbitkan SPK penarikan modem/ONT ke teknisi.',
-                                      style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -914,26 +1056,51 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Paket Lama:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                        const Text(
+                                          'Paket Lama:',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppTheme.textMuted,
+                                          ),
+                                        ),
                                         Text(
                                           '${req.paketLamaNama} (${req.paketLamaKecepatan}M)',
-                                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppTheme.textSecondary,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.arrow_forward, size: 16, color: AppTheme.accent),
+                                  const Icon(
+                                    Icons.arrow_forward,
+                                    size: 16,
+                                    color: AppTheme.accent,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Paket Baru:', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                                        const Text(
+                                          'Paket Baru:',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppTheme.textMuted,
+                                          ),
+                                        ),
                                         Text(
                                           '${req.paketBaruNama} (${req.paketBaruKecepatan}M)',
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.primary,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -942,9 +1109,16 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                               ),
                               const Divider(color: AppTheme.border, height: 12),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text('Selisih Harga:', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                  const Text(
+                                    'Selisih Harga:',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
                                   Text(
                                     req.selisihHarga >= 0
                                         ? '+Rp ${_formatRupiah(req.selisihHarga)} / bln'
@@ -952,7 +1126,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                      color: req.selisihHarga >= 0 ? AppTheme.success : AppTheme.accent,
+                                      color: req.selisihHarga >= 0
+                                          ? AppTheme.success
+                                          : AppTheme.accent,
                                     ),
                                   ),
                                 ],
@@ -962,7 +1138,11 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                               const SizedBox(height: 6),
                               Text(
                                 'Alasan: "${req.alasan}"',
-                                style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppTheme.textMuted),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                  color: AppTheme.textMuted,
+                                ),
                               ),
                             ],
                           ],
@@ -979,11 +1159,18 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppTheme.error,
                                 side: const BorderSide(color: AppTheme.error),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                               ),
                               onPressed: () => _rejectPackageRequestDialog(req),
-                              child: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
+                              child: const Text(
+                                'Tolak',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -991,17 +1178,33 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                             flex: 2,
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isTermination ? const Color(0xFFDC2626) : AppTheme.success,
+                                backgroundColor: isTermination
+                                    ? const Color(0xFFDC2626)
+                                    : AppTheme.success,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                               ),
-                              icon: Icon(isTermination ? Icons.power_settings_new_rounded : Icons.check, size: 16),
+                              icon: Icon(
+                                isTermination
+                                    ? Icons.power_settings_new_rounded
+                                    : Icons.check,
+                                size: 16,
+                              ),
                               label: Text(
-                                isTermination ? 'Setujui Pemutusan' : 'Setujui (Approve)',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                isTermination
+                                    ? 'Setujui Pemutusan'
+                                    : 'Setujui (Approve)',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              onPressed: () => _approvePackageRequestDialog(req),
+                              onPressed: () =>
+                                  _approvePackageRequestDialog(req),
                             ),
                           ),
                         ],
@@ -1033,24 +1236,38 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                           children: [
                             Text(
                               req.userNama,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                             ),
                             Text(
                               '${req.paketLamaNama} ➔ ${req.paketBaruNama}',
-                              style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.textSecondary,
+                              ),
                             ),
                             if (req.adminCatatan.isNotEmpty)
                               Text(
                                 'Catatan: ${req.adminCatatan}',
-                                style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppTheme.textMuted,
+                                ),
                               ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: isApproved ? AppTheme.success.withOpacity(0.2) : AppTheme.error.withOpacity(0.2),
+                          color: isApproved
+                              ? AppTheme.success.withOpacity(0.2)
+                              : AppTheme.error.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -1058,7 +1275,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: isApproved ? AppTheme.success : AppTheme.error,
+                            color: isApproved
+                                ? AppTheme.success
+                                : AppTheme.error,
                           ),
                         ),
                       ),
@@ -1104,12 +1323,22 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Pelanggan: ${req.userNama}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+            Text(
+              'Pelanggan: ${req.userNama}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
             const SizedBox(height: 4),
             if (isTerm) ...[
               Text(
                 'Paket yang Dihentikan: ${req.paketLamaNama} (${req.paketLamaKecepatan}M)',
-                style: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  color: Color(0xFFDC2626),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 6),
               Container(
@@ -1127,17 +1356,34 @@ class _AdminHubScreenState extends State<AdminHubScreen>
             ] else ...[
               Text(
                 '${req.paketLamaNama} (${req.paketLamaKecepatan}M) ➔ ${req.paketBaruNama} (${req.paketBaruKecepatan}M)',
-                style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 6),
-              Text('Selisih Harga: Rp ${_formatRupiah(req.selisihHarga)} / bulan', style: const TextStyle(color: AppTheme.accent, fontSize: 12)),
+              Text(
+                'Selisih Harga: Rp ${_formatRupiah(req.selisihHarga)} / bulan',
+                style: const TextStyle(color: AppTheme.accent, fontSize: 12),
+              ),
             ],
             if (req.alasan.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text('Alasan: "${req.alasan}"', style: const TextStyle(fontSize: 11.5, fontStyle: FontStyle.italic, color: AppTheme.textMuted)),
+              Text(
+                'Alasan: "${req.alasan}"',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontStyle: FontStyle.italic,
+                  color: AppTheme.textMuted,
+                ),
+              ),
             ],
             const SizedBox(height: 12),
-            const Text('Catatan Persetujuan Admin:', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            const Text(
+              'Catatan Persetujuan Admin:',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: noteController,
@@ -1152,16 +1398,24 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppTheme.textMuted),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: isTerm ? const Color(0xFFDC2626) : AppTheme.success,
+              backgroundColor: isTerm
+                  ? const Color(0xFFDC2626)
+                  : AppTheme.success,
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               isTerm ? 'Ya, Putus Layanan' : 'Ya, Setujui',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -1169,24 +1423,35 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     );
 
     if (confirm == true) {
-      final res = await ApiService.instance.approvePackageRequest(req.id, adminCatatan: noteController.text.trim());
+      final res = await ApiService.instance.approvePackageRequest(
+        req.id,
+        adminCatatan: noteController.text.trim(),
+      );
       if (res['success'] == true) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res['message'] ?? 'Pengajuan disetujui!'), backgroundColor: AppTheme.success),
+          SnackBar(
+            content: Text(res['message'] ?? 'Pengajuan disetujui!'),
+            backgroundColor: AppTheme.success,
+          ),
         );
         _loadAllAdminData();
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res['message'] ?? 'Gagal menyetujui pengajuan'), backgroundColor: AppTheme.error),
+          SnackBar(
+            content: Text(res['message'] ?? 'Gagal menyetujui pengajuan'),
+            backgroundColor: AppTheme.error,
+          ),
         );
       }
     }
   }
 
   Future<void> _rejectPackageRequestDialog(PackageRequestModel req) async {
-    final noteController = TextEditingController(text: 'Kapasitas ODP wilayah saat ini belum memadai untuk paket ini.');
+    final noteController = TextEditingController(
+      text: 'Kapasitas ODP wilayah saat ini belum memadai untuk paket ini.',
+    );
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1206,9 +1471,18 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Pelanggan: ${req.userNama}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+            Text(
+              'Pelanggan: ${req.userNama}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
             const SizedBox(height: 6),
-            const Text('Alasan Penolakan:', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            const Text(
+              'Alasan Penolakan:',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: noteController,
@@ -1223,35 +1497,48 @@ class _AdminHubScreenState extends State<AdminHubScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppTheme.textMuted),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Tolak Pengajuan', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Tolak Pengajuan',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
 
     if (confirm == true) {
-      final res = await ApiService.instance.rejectPackageRequest(req.id, adminCatatan: noteController.text.trim());
+      final res = await ApiService.instance.rejectPackageRequest(
+        req.id,
+        adminCatatan: noteController.text.trim(),
+      );
       if (res['success'] == true) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res['message'] ?? 'Pengajuan ditolak.'), backgroundColor: AppTheme.warning),
+          SnackBar(
+            content: Text(res['message'] ?? 'Pengajuan ditolak.'),
+            backgroundColor: AppTheme.warning,
+          ),
         );
         _loadAllAdminData();
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res['message'] ?? 'Gagal menolak pengajuan'), backgroundColor: AppTheme.error),
+          SnackBar(
+            content: Text(res['message'] ?? 'Gagal menolak pengajuan'),
+            backgroundColor: AppTheme.error,
+          ),
         );
       }
     }
   }
-
-
 
   // --- TAB 4: BLOCKCHAIN LEDGER EXPLORER (A7) ---
   Widget _buildBlockchainLedgerTab() {
@@ -1510,60 +1797,1357 @@ class _AdminHubScreenState extends State<AdminHubScreen>
     );
   }
 
-  // --- TAB 6: TASK DISPATCH (A5) ---
+  // --- MODAL: PILIH & TUGASKAN TEKNISI ---
+  void _showAssignTechnicianModal(TaskModel task) {
+    int? selectedTechId = _technicians.isNotEmpty ? _technicians.first.id : 4;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            decoration: const BoxDecoration(
+              color: AppTheme.surfaceCard,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color:
+                            (task.isPencopotan
+                                    ? const Color(0xFFEF4444)
+                                    : (task.jenis == 'perbaikan'
+                                          ? const Color(0xFFF59E0B)
+                                          : AppTheme.primary))
+                                .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        task.isPencopotan
+                            ? Icons.power_settings_new_rounded
+                            : (task.jenis == 'perbaikan'
+                                  ? Icons.build_circle_rounded
+                                  : Icons.engineering_rounded),
+                        color: task.isPencopotan
+                            ? const Color(0xFFEF4444)
+                            : (task.jenis == 'perbaikan'
+                                  ? const Color(0xFFF59E0B)
+                                  : AppTheme.primary),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Pilih Teknisi Pelaksana',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'Tiket #${task.id}: ${task.displayJenis}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppTheme.textMuted),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.background,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.person_pin_circle_rounded,
+                            size: 16,
+                            color: AppTheme.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Pelanggan: ${task.pelangganNama}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (task.pelangganNoHp.isNotEmpty)
+                            Text(
+                              task.pelangganNoHp,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (task.pelangganAlamat.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          task.pelangganAlamat,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceCard,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppTheme.border.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Text(
+                          task.catatan.isNotEmpty
+                              ? task.catatan
+                              : 'Tidak ada catatan tambahan',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Pilih Teknisi untuk Ditugaskan:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: selectedTechId,
+                  dropdownColor: AppTheme.surfaceCard,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppTheme.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.engineering,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                  items: _technicians.isNotEmpty
+                      ? _technicians
+                            .map(
+                              (t) => DropdownMenuItem(
+                                value: t.id,
+                                child: Text(
+                                  '${t.nama} (${t.noHp.isNotEmpty ? t.noHp : "ID: ${t.id}"})',
+                                ),
+                              ),
+                            )
+                            .toList()
+                      : [
+                          const DropdownMenuItem(
+                            value: 4,
+                            child: Text(
+                              'Rahmat Hidayat (Teknisi - 081987654321)',
+                            ),
+                          ),
+                        ],
+                  onChanged: (val) {
+                    if (val != null) setSheetState(() => selectedTechId = val);
+                  },
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.send_rounded, size: 18),
+                  label: const Text('Tugaskan ke Teknisi Sekarang'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    Navigator.pop(ctx);
+                    final techId = selectedTechId ?? 4;
+                    final success = await ApiService.instance
+                        .assignTaskTechnician(task.id, techId);
+                    if (success) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Tugas #${task.id} berhasil ditugaskan ke teknisi!',
+                          ),
+                          backgroundColor: AppTheme.success,
+                        ),
+                      );
+                      if (mounted) _loadAllAdminData();
+                    } else {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Gagal menugaskan teknisi. Silakan coba lagi.',
+                          ),
+                          backgroundColor: AppTheme.error,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- TAB 5: TASK DISPATCH (A5) ---
   Widget _buildTaskDispatchTab() {
+    final unassignedTasks = _tasks
+        .where(
+          (t) =>
+              t.isAvailable ||
+              (t.status == 'baru' &&
+                  (t.teknisiNama == null || t.teknisiNama == 'Belum Diambil')),
+        )
+        .toList();
+    final inProgressTasks = _tasks
+        .where((t) => !unassignedTasks.contains(t) && t.status == 'dikerjakan')
+        .toList();
+    final finishedTasks = _tasks
+        .where((t) => !unassignedTasks.contains(t) && t.status == 'selesai')
+        .toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header Tab
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Expanded(
                 child: Text(
-                  'Penugasan Teknisi Lapangan (A5)',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  'Penugasan Teknisi Lapangan',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
               ElevatedButton.icon(
                 icon: const Icon(Icons.add_task, size: 16),
                 label: const Text('Buat Tugas'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.secondary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
                 onPressed: _showAssignTaskDialog,
               ),
             ],
           ),
           const SizedBox(height: 14),
+
+          // Ringkasan Kartu Metrik Antrean & Pengerjaan
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: unassignedTasks.isNotEmpty
+                        ? const Color(0xFFEF4444).withValues(alpha: 0.1)
+                        : AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: unassignedTasks.isNotEmpty
+                          ? const Color(0xFFEF4444).withValues(alpha: 0.4)
+                          : AppTheme.border,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.pending_actions_rounded,
+                            size: 16,
+                            color: unassignedTasks.isNotEmpty
+                                ? const Color(0xFFEF4444)
+                                : AppTheme.textMuted,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Antrean',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${unassignedTasks.length}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: unassignedTasks.isNotEmpty
+                              ? const Color(0xFFEF4444)
+                              : AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        unassignedTasks.isNotEmpty
+                            ? 'Perlu Teknisi'
+                            : 'Semua Beres',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: unassignedTasks.isNotEmpty
+                              ? const Color(0xFFEF4444)
+                              : AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(
+                            Icons.engineering_rounded,
+                            size: 16,
+                            color: Colors.lightBlueAccent,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Dikerjakan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${inProgressTasks.length}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const Text(
+                        'Sedang Proses',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(
+                            Icons.check_circle_outline_rounded,
+                            size: 16,
+                            color: AppTheme.success,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Selesai',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${finishedTasks.length}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const Text(
+                        'Tuntas',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // SECTION 1: ANTREAN MENUNGGU PENUGASAN TEKNISI
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Tugas Menunggu Penugasan Teknisi',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  if (unassignedTasks.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${unassignedTasks.length}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          if (unassignedTasks.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.border.withValues(alpha: 0.6),
+                ),
+              ),
+              child: Row(
+                children: const [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: AppTheme.success,
+                    size: 28,
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Semua Tugas Sudah Terdisposisi',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Tidak ada tiket laporan gangguan atau pencopotan yang tertunda.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...unassignedTasks.map((t) {
+              final isPencopotan = t.isPencopotan;
+              final isTrouble = t.jenis == 'perbaikan';
+
+              final Color accentColor = isPencopotan
+                  ? const Color(0xFFEF4444)
+                  : (isTrouble
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF3B82F6));
+
+              final IconData icon = isPencopotan
+                  ? Icons.power_settings_new_rounded
+                  : (isTrouble
+                        ? Icons.build_circle_rounded
+                        : Icons.cable_rounded);
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceCard,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: accentColor.withValues(alpha: 0.35),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header Kartu
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(icon, color: accentColor, size: 20),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      t.displayJenis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: accentColor,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '#${t.id}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Pelanggan: ${t.pelangganNama}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444)
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Belum Ada Teknisi',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFEF4444),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      if (t.pelangganAlamat.isNotEmpty ||
+                          t.pelangganNoHp.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            if (t.pelangganNoHp.isNotEmpty) ...[
+                              const Icon(
+                                Icons.phone_rounded,
+                                size: 13,
+                                color: AppTheme.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                t.pelangganNoHp,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                            ],
+                            if (t.pelangganAlamat.isNotEmpty) ...[
+                              const Icon(
+                                Icons.location_on_rounded,
+                                size: 13,
+                                color: AppTheme.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  t.pelangganAlamat,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+
+                      // Catatan / Deskripsi Keluhan
+                      if (t.catatan.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.background,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppTheme.border.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: Text(
+                            t.catatan,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 12),
+
+                      // Tombol Penugasan Teknisi
+                      ElevatedButton.icon(
+                        icon: const Icon(
+                          Icons.person_add_alt_1_rounded,
+                          size: 16,
+                        ),
+                        label: const Text('Pilih & Tugaskan Teknisi'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () => _showAssignTechnicianModal(t),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+
+          const SizedBox(height: 18),
+
+          // SECTION 2: TUGAS SEDANG DIKERJAKAN
+          if (inProgressTasks.isNotEmpty) ...[
+            const Text(
+              'Tugas Sedang Dikerjakan Teknisi',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...inProgressTasks.map((t) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.lightBlueAccent.withValues(
+                        alpha: 0.15,
+                      ),
+                      child: const Icon(
+                        Icons.engineering,
+                        color: Colors.lightBlueAccent,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                t.displayJenis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '#${t.id}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Pelanggan: ${t.pelangganNama} • Teknisi: ${t.teknisiNama ?? "Rahmat Hidayat"}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _showAssignTechnicianModal(t),
+                      child: const Text(
+                        'Ganti Teknisi',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 14),
+          ],
+
+          // SECTION 3: DAFTAR TEKNISI AKTIF
+          const Text(
+            'Daftar Teknisi Lapangan Terdaftar:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
           CustomCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Daftar Teknisi Aktif:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                SizedBox(height: 8),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(child: Icon(Icons.engineering)),
-                  title: Text('Rahmat Hidayat (ID: 4)'),
-                  subtitle: Text('Basecamp Sleman • WhatsApp: 081987654321'),
-                  trailing: Icon(
-                    Icons.check_circle,
-                    color: AppTheme.success,
-                    size: 20,
+              children: [
+                if (_technicians.isNotEmpty)
+                  ..._technicians.map((tech) {
+                    final assignedCount = _tasks
+                        .where(
+                          (t) =>
+                              t.teknisiId == tech.id &&
+                              t.status == 'dikerjakan',
+                        )
+                        .length;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: AppTheme.primary.withValues(
+                          alpha: 0.15,
+                        ),
+                        child: const Icon(
+                          Icons.engineering,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                      title: Text('${tech.nama} (ID: ${tech.id})'),
+                      subtitle: Text(
+                        '${tech.alamat.isNotEmpty ? tech.alamat : "Basecamp Sleman"} • Kontak: ${tech.noHp.isNotEmpty ? tech.noHp : "-"}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: assignedCount > 0
+                              ? Colors.blue.withValues(alpha: 0.15)
+                              : AppTheme.success.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          assignedCount > 0
+                              ? '$assignedCount Tugas Aktif'
+                              : 'Tersedia',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: assignedCount > 0
+                                ? Colors.blue
+                                : AppTheme.success,
+                          ),
+                        ),
+                      ),
+                    );
+                  })
+                else
+                  const ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(child: Icon(Icons.engineering)),
+                    title: Text('Rahmat Hidayat (ID: 4)'),
+                    subtitle: Text('Basecamp Sleman • WhatsApp: 081987654321'),
+                    trailing: Icon(
+                      Icons.check_circle,
+                      color: AppTheme.success,
+                      size: 20,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // --- TAB 7: PANEL FEEDBACK PENGGUNA (SARAN & KESAN) ---
+  Widget _buildFeedbackPanelTab() {
+    final hasSaranCount = _feedbacks
+        .where((f) => f.saran.trim().isNotEmpty)
+        .length;
+    final hasKesanCount = _feedbacks
+        .where((f) => f.kesan.trim().isNotEmpty)
+        .length;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header Panel
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Saran & Kesan Pengguna',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Segarkan Feedback',
+                onPressed: _loadAllAdminData,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Evaluasi pengalaman pelanggan, kritik saran, dan pesan kepuasan layanan Sima.net.',
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 16),
+
+          // Metrik Ringkasan Feedback
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(
+                            Icons.mark_chat_unread_rounded,
+                            size: 16,
+                            color: Colors.amberAccent,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Total Masukan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_feedbacks.length}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const Text(
+                        'Komentar masuk',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(
+                            Icons.lightbulb_rounded,
+                            size: 16,
+                            color: Colors.orangeAccent,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Saran Ide',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$hasSaranCount',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orangeAccent,
+                        ),
+                      ),
+                      const Text(
+                        'Rekomendasi fitur',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(
+                            Icons.chat_bubble_rounded,
+                            size: 16,
+                            color: Colors.lightBlueAccent,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Kesan Pengguna',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$hasKesanCount',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.lightBlueAccent,
+                        ),
+                      ),
+                      const Text(
+                        'Ulasan pengalaman',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Daftar Kartu Feedback
+          if (_feedbacks.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceCard,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppTheme.border.withValues(alpha: 0.6),
+                ),
+              ),
+              child: Column(
+                children: const [
+                  Icon(
+                    Icons.rate_review_outlined,
+                    size: 48,
+                    color: AppTheme.textMuted,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Belum Ada Masukan Pengguna',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Pengguna dapat mengirimkan saran & kesan melalui menu Masukan di aplikasi pelanggan.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ..._feedbacks.map((item) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceCard,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppTheme.border.withValues(alpha: 0.7),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header Pengirim
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: AppTheme.primary.withValues(
+                            alpha: 0.15,
+                          ),
+                          child: Text(
+                            item.userNama.isNotEmpty
+                                ? item.userNama[0].toUpperCase()
+                                : 'P',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.userNama,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              if (item.formattedDate.isNotEmpty)
+                                Text(
+                                  item.formattedDate,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    color: AppTheme.textMuted,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppTheme.border),
+                          ),
+                          child: Text(
+                            '#FB-${item.id}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppTheme.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Kotak Saran
+                    if (item.saran.trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B)
+                              .withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B)
+                                .withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(
+                                  Icons.lightbulb_rounded,
+                                  size: 14,
+                                  color: Color(0xFFF59E0B),
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Saran Peningkatan:',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFF59E0B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.saran.trim(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Kotak Kesan
+                    if (item.kesan.trim().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.lightBlueAccent.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.lightBlueAccent.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(
+                                  Icons.chat_bubble_rounded,
+                                  size: 14,
+                                  color: Colors.lightBlueAccent,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Kesan & Evaluasi:',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.lightBlueAccent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.kesan.trim(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );

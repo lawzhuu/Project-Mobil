@@ -113,6 +113,44 @@
       "paket_id": 3,
       "created_at": "2026-10-18T15:45:55.107433+00:00",
       "updated_at": "2026-10-18T15:45:55.107433+00:00"
+    },
+    {
+      "id": 7,
+      "nama": "Andhika Guntur Ramadan",
+      "email": "robinskywalker52@gmail.com",
+      "no_hp": "0812",
+      "password_hash": "$2a$10$SG/ArhD3s6DSZk4gdbwzoeJsnw1yx2bNipa5L1dC6zlKE0q3GpYAW",
+      "role": "pelanggan",
+      "negara": "Indonesia",
+      "mata_uang": "IDR",
+      "zona_waktu": "WIB",
+      "alamat": "babarsari",
+      "lat": -7.7802786013061,
+      "lng": 110.416381380711,
+      "foto": "",
+      "status": "active",
+      "paket_id": 1,
+      "created_at": "2026-10-27T15:24:21.689717+00:00",
+      "updated_at": "2026-10-27T15:24:21.689717+00:00"
+    },
+    {
+      "id": 8,
+      "nama": "Igidabado",
+      "email": "a@a.com",
+      "no_hp": "123123",
+      "password_hash": "$2a$10$zR9LbF36uYM4zyH1JGDW3uGLQNQtWl6kjltoFWVTLgpnSljgJZggu",
+      "role": "pelanggan",
+      "negara": "Indonesia",
+      "mata_uang": "IDR",
+      "zona_waktu": "WIB",
+      "alamat": "s",
+      "lat": -7.78037456035696,
+      "lng": 110.416387195071,
+      "foto": "",
+      "status": "active",
+      "paket_id": null,
+      "created_at": "2026-10-27T15:39:18.846462+00:00",
+      "updated_at": "2026-10-27T15:39:18.846462+00:00"
     }
   ],
   "packages": [
@@ -200,6 +238,39 @@
       "jatuh_tempo": "2026-11-25T23:59:59+00:00",
       "status": "lunas",
       "created_at": "2026-10-24T15:10:56.076+00:00"
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "periode": "November 2026",
+      "nominal_idr": 175000,
+      "mata_uang": "IDR",
+      "kurs_terkunci": 1,
+      "jatuh_tempo": "2026-11-25T23:59:59+00:00",
+      "status": "lunas",
+      "created_at": "2026-10-27T15:03:11.073+00:00"
+    },
+    {
+      "id": 3,
+      "user_id": 7,
+      "periode": "Oktober 2026",
+      "nominal_idr": 275000,
+      "mata_uang": "IDR",
+      "kurs_terkunci": 1,
+      "jatuh_tempo": "2026-10-25T23:59:59+00:00",
+      "status": "lunas",
+      "created_at": null
+    },
+    {
+      "id": 4,
+      "user_id": 2,
+      "periode": "Oktober 2026",
+      "nominal_idr": 175000,
+      "mata_uang": "IDR",
+      "kurs_terkunci": 1,
+      "jatuh_tempo": "2026-10-25T23:59:59+00:00",
+      "status": "lunas",
+      "created_at": null
     }
   ],
   "payments": [
@@ -212,6 +283,34 @@
       "status": "diverifikasi",
       "verified_at": "2026-10-24T15:13:37.933+00:00",
       "created_at": "2026-10-24T15:13:09.415518+00:00"
+    },
+    {
+      "id": 2,
+      "invoice_id": 2,
+      "user_id": 2,
+      "bukti_path": "https://ysokrzhqtlpdwypauvjk.supabase.co/storage/v1/object/public/profile-photos/receipts/1793119140954-892797677.png",
+      "nominal_idr": 175000,
+      "status": "diverifikasi",
+      "verified_at": "2026-10-27T16:39:21.8+00:00",
+      "created_at": null
+    },
+    {
+      "id": 3,
+      "invoice_id": 3,
+      "user_id": 7,
+      "bukti_path": "https://ysokrzhqtlpdwypauvjk.supabase.co/storage/v1/object/public/profile-photos/receipts/1793119894742-764090833.png",
+      "nominal_idr": 275000,
+      "status": "diverifikasi",
+      "verified_at": "2026-10-27T16:52:01.403Z"
+    },
+    {
+      "id": 4,
+      "invoice_id": 4,
+      "user_id": 2,
+      "bukti_path": "MANUAL_VERIFIKASI_ADMIN",
+      "nominal_idr": 175000,
+      "status": "diverifikasi",
+      "verified_at": "2026-10-27T16:53:52.135Z"
     }
   ],
   "ledger_blocks": [
@@ -223,9 +322,42 @@
       "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
       "hash": "27b305b393e291db5ac9b214aa9c96c89291df2f70585d54495b2d7b932259f8",
       "created_at": "2026-10-24T15:13:38.970645+00:00"
+    },
+    {
+      "idx": 2,
+      "waktu": "2026-10-27T16:39:21.8+00:00",
+      "payment_id": 2,
+      "nominal_idr": 175000,
+      "prev_hash": "27b305b393e291db5ac9b214aa9c96c89291df2f70585d54495b2d7b932259f8",
+      "hash": "44f7543929001dc1dcbe4f35434c9cac24516d2437a59a693935477592cc6fde",
+      "created_at": null
+    },
+    {
+      "idx": 3,
+      "waktu": "2026-10-27T16:52:01.825Z",
+      "payment_id": 3,
+      "nominal_idr": 275000,
+      "prev_hash": "44f7543929001dc1dcbe4f35434c9cac24516d2437a59a693935477592cc6fde",
+      "hash": "45549d7e992e8e844be1a98f86c4cdf91014346ad22d8ab352dea3fa9c4c815b"
+    },
+    {
+      "idx": 4,
+      "waktu": "2026-10-27T16:53:52.552Z",
+      "payment_id": 4,
+      "nominal_idr": 175000,
+      "prev_hash": "45549d7e992e8e844be1a98f86c4cdf91014346ad22d8ab352dea3fa9c4c815b",
+      "hash": "af9cde710f9e5c0a07a1af1983c7926e7f3c782c7429e0cc359c53283dd34827"
     }
   ],
   "tasks": [
+    {
+      "id": 6,
+      "teknisi_id": 4,
+      "pelanggan_id": 2,
+      "jenis": "perbaikan",
+      "status": "dikerjakan",
+      "catatan": "[Internet Lambat / High Ping & RTO] p (Kontak: 087860051285)"
+    },
     {
       "id": 1,
       "teknisi_id": 4,
@@ -266,25 +398,18 @@
       "id": 5,
       "teknisi_id": 4,
       "pelanggan_id": 2,
-      "jenis": "pencopotan",
+      "jenis": "instalasi",
       "status": "dikerjakan",
-      "catatan": "Pencopotan perangkat modem/ONT & penarikan kabel dropcore pemutusan langganan: Budi Santoso (087860051285). Alamat: Amphitheatre Parkway, Mountain View, California. Alasan: Pindah Domisili / Alamat Baru - Catatan: Mengajukan pemutusan layanan internet"
-    },
-    {
-      "id": 6,
-      "teknisi_id": 4,
-      "pelanggan_id": 2,
-      "jenis": "pencopotan",
-      "status": "dikerjakan",
-      "catatan": ""
+      "catatan": "Pergantian/konfigurasi perangkat ONT untuk upgrade paket \"Paket Hemat Fiber 20\" (20 Mbps). Pelanggan: Budi Santoso (087860051285).",
+      "created_at": null
     },
     {
       "id": 7,
       "teknisi_id": 4,
-      "pelanggan_id": 3,
-      "jenis": "pencopotan",
-      "status": "baru",
-      "catatan": "Pencopotan perangkat modem/ONT & penarikan kabel dropcore pemutusan langganan: Sarah Jenkins (Diaspora) (+14155552671). Alamat: Rumah Keluarga: Jl. Gejayan No. 45, Yogyakarta. Alasan: Pindah Domisili / Tempat Tinggal"
+      "pelanggan_id": 2,
+      "jenis": "pemeliharaan",
+      "status": "selesai",
+      "catatan": "[Pencopotan Perangkat] Penarikan modem/ONT & kabel dropcore pemutusan langganan: Budi Santoso (087860051285). Alamat: Amphitheatre Parkway, Mountain View, California. Alasan: Pindah Domisili / Tempat Tinggal"
     }
   ],
   "upstream_bills": [
@@ -303,11 +428,88 @@
       "provider_name": "Indibizz Dedicated 500M",
       "status": "belum",
       "created_at": "2026-10-18T12:34:55.343691+00:00"
+    },
+    {
+      "id": 3,
+      "periode": "November 2026",
+      "nominal_idr": 4500000,
+      "provider_name": "Indibizz Dedicated 500M",
+      "status": "belum",
+      "created_at": null
     }
   ],
   "feedback": [],
   "devices": [],
   "package_requests": [
+    {
+      "id": 6,
+      "user_id": 2,
+      "user_nama": "Budi Santoso",
+      "user_email": "budi@gmail.com",
+      "user_alamat": "Amphitheatre Parkway, Mountain View, California",
+      "user_no_hp": "087860051285",
+      "paket_lama_id": 1,
+      "paket_lama_nama": "Paket Hemat Fiber 20",
+      "paket_lama_kecepatan": 20,
+      "paket_lama_harga": 175000,
+      "paket_baru_id": 0,
+      "paket_baru_nama": "Nonaktif (Putus Langganan)",
+      "paket_baru_kecepatan": 0,
+      "paket_baru_harga": 0,
+      "selisih_harga": -175000,
+      "tipe": "Berhenti Berlangganan",
+      "alasan": "Pindah Domisili / Tempat Tinggal",
+      "status": "approved",
+      "admin_catatan": "Pemutusan layanan disetujui. SPK penarikan perangkat telah diterbitkan ke teknisi.",
+      "created_at": "2026-10-27T16:56:31.057595+00:00",
+      "updated_at": "2026-10-27T16:57:05.903+00:00"
+    },
+    {
+      "id": 5,
+      "user_id": 8,
+      "user_nama": "Igidabado",
+      "user_email": "a@a.com",
+      "user_alamat": "s",
+      "user_no_hp": "123123",
+      "paket_lama_id": null,
+      "paket_lama_nama": "Paket Aktif",
+      "paket_lama_kecepatan": 0,
+      "paket_lama_harga": 0,
+      "paket_baru_id": 0,
+      "paket_baru_nama": "Nonaktif (Putus Langganan)",
+      "paket_baru_kecepatan": 0,
+      "paket_baru_harga": 0,
+      "selisih_harga": 0,
+      "tipe": "Berhenti Berlangganan",
+      "alasan": "Pindah Domisili / Tempat Tinggal",
+      "status": "rejected",
+      "admin_catatan": "Kapasitas ODP wilayah saat ini belum memadai untuk paket ini.",
+      "created_at": "2026-10-27T15:39:45.52752+00:00",
+      "updated_at": "2026-10-27T15:40:16.058+00:00"
+    },
+    {
+      "id": 4,
+      "user_id": 2,
+      "user_nama": "Budi Santoso",
+      "user_email": "budi@gmail.com",
+      "user_alamat": "Amphitheatre Parkway, Mountain View, California",
+      "user_no_hp": "087860051285",
+      "paket_lama_id": null,
+      "paket_lama_nama": "Belum Ada",
+      "paket_lama_kecepatan": 0,
+      "paket_lama_harga": 0,
+      "paket_baru_id": 1,
+      "paket_baru_nama": "Paket Hemat Fiber 20",
+      "paket_baru_kecepatan": 20,
+      "paket_baru_harga": 175000,
+      "selisih_harga": 175000,
+      "tipe": "Upgrade Kecepatan",
+      "alasan": "Penyesuaian kebutuhan penggunaan internet keluarga.",
+      "status": "approved",
+      "admin_catatan": "Disetujui. Perangkat & konfigurasi siap disesuaikan.",
+      "created_at": "2026-10-27T15:02:39.772692+00:00",
+      "updated_at": "2026-10-27T15:03:11.073+00:00"
+    },
     {
       "id": 3,
       "user_id": 3,
@@ -329,7 +531,7 @@
       "status": "approved",
       "admin_catatan": "Pemutusan layanan disetujui. SPK penarikan perangkat telah diterbitkan ke teknisi.",
       "created_at": "2026-10-26T17:25:55.841727+00:00",
-      "updated_at": "2026-10-26T17:26:24.617Z"
+      "updated_at": "2026-10-26T17:26:24.617+00:00"
     },
     {
       "id": 2,

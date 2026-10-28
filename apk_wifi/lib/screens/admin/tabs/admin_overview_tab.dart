@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../config/app_theme.dart';
+import '../../../models/feedback_model.dart';
 import '../../../models/invoice_model.dart';
 import '../../../models/package_request_model.dart';
+import '../../../models/task_model.dart';
 import '../../../models/user_model.dart';
 import '../../../widgets/stat_metric_card.dart';
 
@@ -11,6 +13,8 @@ class AdminOverviewTab extends StatelessWidget {
   final List<UserModel> customers;
   final List<PackageRequestModel> packageRequests;
   final List<InvoiceModel> invoices;
+  final List<TaskModel> tasks;
+  final List<FeedbackModel> feedbacks;
   final Future<void> Function() onRefresh;
   final ValueChanged<int> onSelectSection;
 
@@ -21,6 +25,8 @@ class AdminOverviewTab extends StatelessWidget {
     required this.customers,
     required this.packageRequests,
     required this.invoices,
+    this.tasks = const [],
+    this.feedbacks = const [],
     required this.onRefresh,
     required this.onSelectSection,
   });
@@ -40,7 +46,7 @@ class AdminOverviewTab extends StatelessWidget {
     final pendingPackageReqs = packageRequests.where((r) => r.status == 'pending').length;
     final pendingTerminations = packageRequests.where((r) => r.status == 'pending' && r.isTermination).length;
     final unpaidInvoices = invoices.where((i) => i.status == 'belum').length;
-    final activeTasks = (summary?['active_tasks_count'] as num?)?.toInt() ?? 1;
+    final unassignedTasks = tasks.where((t) => t.isAvailable || (t.status == 'baru' && (t.teknisiNama == null || t.teknisiNama == 'Belum Diambil'))).length;
 
     return RefreshIndicator(
       onRefresh: onRefresh,
@@ -134,7 +140,7 @@ class AdminOverviewTab extends StatelessWidget {
             const SizedBox(height: 14),
 
             // 2. Strip Minimalis Tindakan Diperlukan (Notifikasi Merah Seragam)
-            if (pendingActivations > 0 || pendingPackageReqs > 0 || unpaidInvoices > 0)
+            if (pendingActivations > 0 || pendingPackageReqs > 0 || unpaidInvoices > 0 || unassignedTasks > 0)
               Container(
                 margin: const EdgeInsets.only(bottom: 14),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -150,6 +156,7 @@ class AdminOverviewTab extends StatelessWidget {
                     Expanded(
                       child: Text(
                         [
+                          if (unassignedTasks > 0) '$unassignedTasks tiket butuh teknisi',
                           if (pendingTerminations > 0) '$pendingTerminations pemutusan langganan'
                           else if (pendingPackageReqs > 0) '$pendingPackageReqs pengajuan paket',
                           if (pendingActivations > 0) '$pendingActivations aktivasi baru',
@@ -164,7 +171,9 @@ class AdminOverviewTab extends StatelessWidget {
                     ),
                     InkWell(
                       onTap: () {
-                        if (pendingPackageReqs > 0) {
+                        if (unassignedTasks > 0) {
+                          onSelectSection(5);
+                        } else if (pendingPackageReqs > 0) {
                           onSelectSection(2);
                         } else if (pendingActivations > 0) {
                           onSelectSection(1);
@@ -230,6 +239,15 @@ class AdminOverviewTab extends StatelessWidget {
               onTap: () => onSelectSection(2),
             ),
             _buildAdminAccentListItem(
+              title: 'Penugasan Teknisi',
+              subtitle: unassignedTasks > 0
+                  ? 'Ada $unassignedTasks tugas menunggu penugasan teknisi'
+                  : 'Disposisi tiket gangguan, instalasi, & pencopotan',
+              accentColor: unassignedTasks > 0 ? const Color(0xFFF59E0B) : Colors.lightBlueAccent,
+              badgeCount: unassignedTasks,
+              onTap: () => onSelectSection(5),
+            ),
+            _buildAdminAccentListItem(
               title: 'Verifikasi Pembayaran',
               subtitle: 'Pengecekan bukti transfer & status invoice',
               accentColor: AppTheme.accent,
@@ -237,11 +255,11 @@ class AdminOverviewTab extends StatelessWidget {
               onTap: () => onSelectSection(3),
             ),
             _buildAdminAccentListItem(
-              title: 'Penugasan Teknisi',
-              subtitle: 'Disposisi tiket gangguan & pekerjaan instalasi',
-              accentColor: Colors.lightBlueAccent,
-              badgeCount: activeTasks,
-              onTap: () => onSelectSection(5),
+              title: 'Saran & Kesan Pengguna',
+              subtitle: 'Evaluasi pengalaman pengguna & masukan perbaikan',
+              accentColor: Colors.amberAccent,
+              badgeCount: feedbacks.length,
+              onTap: () => onSelectSection(7),
             ),
             _buildAdminAccentListItem(
               title: 'Blockchain Ledger',

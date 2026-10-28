@@ -29,6 +29,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   UserModel? _currentUser;
   bool _isLoading = true;
   String _selectedCategory = 'Semua';
+  Timer? _refreshTimer;
 
   List<String> get _categories {
     final set = <String>{'Semua'};
@@ -57,6 +58,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+    // Background auto-sync customer profile & active package status every 5 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -462,13 +473,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     // Left: Tagihan Info
                     Expanded(
                       child: InkWell(
-                        onTap: () {
-                          Navigator.push(
+                        onTap: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => const CustomerInvoicesScreen(),
                             ),
                           );
+                          _loadData();
                         },
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -593,17 +605,23 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       iconColor: AppTheme.primary,
                     ),
                     _buildCircularMetric(
-                      title: 'Status Akun',
-                      value: user.status == 'active'
-                          ? 'Aktif'
-                          : (user.status == 'inactive' ? 'Nonaktif' : 'Pending'),
-                      unit: 'Akun',
-                      icon: Icons.verified_user_outlined,
-                      iconColor: user.status == 'active'
-                          ? const Color(0xFF059669)
-                          : (user.status == 'inactive'
-                              ? const Color(0xFFDC2626)
-                              : const Color(0xFFD97706)),
+                      title: 'Status Layanan',
+                      value: user.paketId == null || user.paketId! <= 0
+                          ? 'Belum Pasang'
+                          : (user.status == 'active'
+                              ? 'Aktif'
+                              : (user.status == 'inactive' ? 'Nonaktif' : 'Pending')),
+                      unit: user.paketId == null || user.paketId! <= 0 ? 'Layanan' : 'Internet',
+                      icon: user.paketId == null || user.paketId! <= 0
+                          ? Icons.cable_rounded
+                          : Icons.verified_user_outlined,
+                      iconColor: user.paketId == null || user.paketId! <= 0
+                          ? const Color(0xFF64748B)
+                          : (user.status == 'active'
+                              ? const Color(0xFF059669)
+                              : (user.status == 'inactive'
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFFD97706))),
                     ),
                     _buildCircularMetric(
                       title: 'Mata Uang',
@@ -629,13 +647,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => const CustomerInvoicesScreen(),
                             ),
                           );
+                          _loadData();
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.primary,
@@ -660,13 +679,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => const CustomerInvoicesScreen(),
                             ),
                           );
+                          _loadData();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primary,

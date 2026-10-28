@@ -35,6 +35,15 @@ router.get('/tasks', authMiddleware, (req, res) => {
   return res.json({ success: true, tasks: enriched });
 });
 
+// Admin get list of technicians
+router.get('/technicians', authMiddleware, (req, res) => {
+  const db = loadDB();
+  const technicians = (db.users || [])
+    .filter(u => u.role === 'teknisi')
+    .map(({ password_hash: _, ...safe }) => safe);
+  return res.json({ success: true, technicians });
+});
+
 // Admin assign task to technician
 router.post('/tasks', authMiddleware, roleMiddleware(['admin']), (req, res) => {
   const db = loadDB();
@@ -101,6 +110,24 @@ router.patch('/tasks/:id', authMiddleware, (req, res) => {
   if (catatan) task.catatan = catatan;
   if (teknisi_id !== undefined) task.teknisi_id = teknisi_id ? parseInt(teknisi_id) : null;
 
+  try {
+    const { isSupabaseConfigured, getSupabaseClient } = require('../config/supabase');
+    if (isSupabaseConfigured()) {
+      const sb = getSupabaseClient();
+      if (sb) {
+        sb.from('tasks').update({
+          status: task.status,
+          catatan: task.catatan,
+          teknisi_id: task.teknisi_id
+        }).eq('id', id).then(({ error }) => {
+          if (error) console.warn('[Supabase DB Task Update Error]:', error.message);
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[Supabase DB Task Update Note]:', err.message);
+  }
+
   saveDB(db);
   return res.json({ success: true, message: 'Status tugas berhasil diperbarui', task });
 });
@@ -137,7 +164,7 @@ router.post('/customer/report-trouble', authMiddleware, async (req, res) => {
 
   // Sync to Supabase online if configured
   try {
-    const { isSupabaseConfigured, getSupabaseClient } = require('../services/supabase_db.service');
+    const { isSupabaseConfigured, getSupabaseClient } = require('../config/supabase');
     if (isSupabaseConfigured()) {
       const sb = getSupabaseClient();
       if (sb) {

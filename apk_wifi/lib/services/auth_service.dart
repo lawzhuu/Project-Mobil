@@ -71,7 +71,7 @@ class AuthService {
     required String alamat,
     required double lat,
     required double lng,
-    required int paketId,
+    int? paketId,
   }) async {
     final result = await ApiService.instance.register(
       nama: nama,

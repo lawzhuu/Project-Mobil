@@ -29,10 +29,14 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
   void initState() {
     super.initState();
     _loadInvoices();
-    // Live ticking timer for real-time dual clocks & countdown
+    // Live ticking timer for real-time dual clocks, countdown & background sync
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {});
+        // Auto refresh invoices status from server every 5 seconds
+        if (timer.tick % 5 == 0) {
+          _loadInvoices(silent: true);
+        }
       }
     });
   }
@@ -43,7 +47,10 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
     super.dispose();
   }
 
-  Future<void> _loadInvoices() async {
+  Future<void> _loadInvoices({bool silent = false}) async {
+    if (!silent && mounted && _invoices.isEmpty) {
+      setState(() => _isLoading = true);
+    }
     final list = await ApiService.instance.getInvoices();
     if (mounted) {
       setState(() {
@@ -630,7 +637,22 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                       ),
                                     ],
                                   ),
-                                  StatusBadge(status: inv.status),
+                                  StatusBadge(
+                                    status: isPaid
+                                        ? 'lunas'
+                                        : ((payment != null && payment.isRejected)
+                                            ? 'ditolak'
+                                            : ((payment != null && payment.isPending)
+                                                ? 'menunggu'
+                                                : inv.status)),
+                                    customLabel: isPaid
+                                        ? 'LUNAS'
+                                        : ((payment != null && payment.isRejected)
+                                            ? 'BUKTI DITOLAK'
+                                            : ((payment != null && payment.isPending)
+                                                ? 'MENUNGGU VERIFIKASI'
+                                                : 'BELUM DIBAYAR')),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -813,19 +835,20 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                               const SizedBox(height: 16),
                               if (isPaid) ...[
                                 Container(
-                                  padding: const EdgeInsets.all(10),
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: AppTheme.success.withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppTheme.success.withOpacity(0.3)),
                                   ),
                                   child: Row(
                                     children: const [
-                                      Icon(Icons.verified, color: AppTheme.success, size: 16),
+                                      Icon(Icons.verified, color: AppTheme.success, size: 18),
                                       SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
                                           'Pembayaran telah diverifikasi & dicatat permanen pada SHA-256 Ledger Blockchain.',
-                                          style: TextStyle(fontSize: 11, color: AppTheme.success),
+                                          style: TextStyle(fontSize: 11, color: AppTheme.success, fontWeight: FontWeight.bold),
                                         ),
                                       ),
                                     ],
@@ -833,20 +856,74 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                 ),
                               ] else if (payment != null && payment.isPending) ...[
                                 Container(
-                                  padding: const EdgeInsets.all(10),
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: AppTheme.warning.withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppTheme.warning.withOpacity(0.35)),
                                   ),
                                   child: Row(
-                                    children: const [
-                                      Icon(Icons.hourglass_top, color: AppTheme.warning, size: 16),
-                                      SizedBox(width: 8),
+                                    children: [
+                                      const Icon(Icons.hourglass_top, color: AppTheme.warning, size: 20),
+                                      const SizedBox(width: 10),
                                       Expanded(
-                                        child: Text(
-                                          'Bukti bayar sedang dalam antrean verifikasi admin.',
-                                          style: TextStyle(fontSize: 11, color: AppTheme.warning),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: const [
+                                            Text(
+                                              'Bukti Transfer Sedang Diverifikasi',
+                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.warning),
+                                            ),
+                                            SizedBox(height: 2),
+                                            Text(
+                                              'Struk pembayaran Anda sedang ditinjau oleh tim admin untuk dicatat ke Blockchain Ledger.',
+                                              style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                                            ),
+                                          ],
                                         ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ] else if (payment != null && payment.isRejected) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.error.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: AppTheme.error.withOpacity(0.4)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: const [
+                                          Icon(Icons.cancel, color: AppTheme.error, size: 22),
+                                          SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Bukti Pembayaran Ditolak Admin',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppTheme.error,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      const Text(
+                                        'Bukti transfer sebelumnya tidak dapat divalidasi oleh admin (rekening tujuan atau nominal tidak sesuai). Silakan periksa kembali mutasi bank dan unggah ulang bukti transfer yang benar.',
+                                        style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      GlowingButton(
+                                        text: 'UNGGAH ULANG BUKTI TRANSFER',
+                                        icon: Icons.refresh,
+                                        color: AppTheme.error,
+                                        width: double.infinity,
+                                        onPressed: () => _showPaymentModal(inv),
                                       ),
                                     ],
                                   ),

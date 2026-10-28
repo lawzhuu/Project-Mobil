@@ -4,8 +4,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
-import '../../models/package_model.dart';
-import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/glowing_button.dart';
@@ -28,20 +26,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _alamatController = TextEditingController();
 
   String _selectedCountry = 'Indonesia';
-  int _selectedPackageId = 1;
-  List<PackageModel> _packages = [];
 
   LatLng _selectedLocation = const LatLng(-7.7956, 110.3695); // Yogyakarta default
   final MapController _mapController = MapController();
 
   bool _isLoading = false;
-  bool _isLoadingPackages = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPackages();
-  }
 
   @override
   void dispose() {
@@ -51,17 +40,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _alamatController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadPackages() async {
-    final pkgs = await ApiService.instance.getPackages();
-    if (mounted) {
-      setState(() {
-        _packages = pkgs;
-        if (pkgs.isNotEmpty) _selectedPackageId = pkgs.first.id;
-        _isLoadingPackages = false;
-      });
-    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -104,7 +82,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       alamat: _alamatController.text.trim(),
       lat: _selectedLocation.latitude,
       lng: _selectedLocation.longitude,
-      paketId: _selectedPackageId,
     );
 
     if (!mounted) return;
@@ -128,13 +105,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Akun Anda telah berhasil didaftarkan dengan status PENDING.',
-                style: TextStyle(color: AppTheme.textPrimary),
+                'Akun Anda telah berhasil dibuat.',
+                style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Tim teknisi & admin Sima.net akan segera memverifikasi lokasi pemasangan fiber optic Anda di ${_alamatController.text.trim()}.',
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+              const Text(
+                'Selamat datang di Sima.net! Anda dapat langsung menjelajahi aplikasi, membandingkan paket internet, dan memilih paket yang paling cocok untuk Anda kapan saja.',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
               ),
             ],
           ),
@@ -146,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   MaterialPageRoute(builder: (_) => const MainShellScreen()),
                 );
               },
-              child: const Text('Buka Dashboard Pelanggan'),
+              child: const Text('Mulai Jelajahi Aplikasi'),
             ),
           ],
         ),
@@ -167,15 +144,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Lookup country config
-    final countryConfig = AppConfig.supportedCountries.firstWhere(
-      (c) => c['name'] == _selectedCountry,
-      orElse: () => AppConfig.supportedCountries.first,
-    );
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registrasi Pasang Baru'),
+        title: const Text('Daftar Akun Baru'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -374,75 +345,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
 
-              const SizedBox(height: 16),
-
-              // Package selection
-              CustomCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Pilihan Paket Internet Fiber',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_isLoadingPackages)
-                      const Center(child: CircularProgressIndicator())
-                    else
-                      Column(
-                        children: _packages.map((pkg) {
-                          final isSelected = _selectedPackageId == pkg.id;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppTheme.primary.withOpacity(0.12) : AppTheme.surfaceElevated.withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected ? AppTheme.primary : AppTheme.border,
-                                width: isSelected ? 1.5 : 1,
-                              ),
-                            ),
-                            child: RadioListTile<int>(
-                              value: pkg.id,
-                              groupValue: _selectedPackageId,
-                              activeColor: AppTheme.primary,
-                              title: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    pkg.nama,
-                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                                  ),
-                                  Text(
-                                    '${pkg.kecepatanMbps} Mbps',
-                                    style: const TextStyle(
-                                      color: AppTheme.accent,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: Text(
-                                'Rp ${pkg.hargaIdr} / bulan • ${pkg.deskripsi}',
-                                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                              ),
-                              onChanged: (val) {
-                                if (val != null) setState(() => _selectedPackageId = val);
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                  ],
-                ),
-              ),
-
               const SizedBox(height: 24),
 
               GlowingButton(
-                text: 'KIRIM PENDAFTARAN PASANG BARU',
-                icon: Icons.send,
+                text: 'DAFTAR AKUN SEKARANG',
+                icon: Icons.person_add_alt_1,
                 isLoading: _isLoading,
                 onPressed: _handleRegister,
               ),

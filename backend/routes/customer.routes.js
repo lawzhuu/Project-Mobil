@@ -163,8 +163,9 @@ const handlePackageChangeRequest = async (req, res) => {
   const oldPrice = oldPkg ? oldPkg.harga_idr : 0;
   const oldSpeed = oldPkg ? oldPkg.kecepatan_mbps : 0;
 
-  const detectedType = tipe || (newPkg.kecepatan_mbps > oldSpeed ? 'Upgrade Kecepatan' : 'Hemat Biaya (Downgrade)');
-  const detectedReason = alasan || (detectedType === 'Upgrade Kecepatan' ? 'Ingin koneksi lebih cepat dan stabil' : 'Penyesuaian kebutuhan keluarga');
+  const isFirstSubscription = !user.paket_id || user.paket_id === 0 || user.status === 'inactive';
+  const detectedType = tipe || (isFirstSubscription ? 'Langganan Baru' : (newPkg.kecepatan_mbps > oldSpeed ? 'Upgrade Kecepatan' : 'Hemat Biaya (Downgrade)'));
+  const detectedReason = alasan || (isFirstSubscription ? 'Pemasangan baru & berlangganan paket pertama' : (detectedType === 'Upgrade Kecepatan' ? 'Ingin koneksi lebih cepat dan stabil' : 'Penyesuaian kebutuhan keluarga'));
 
   let newRequest = null;
 
@@ -274,6 +275,21 @@ const handleTerminationRequest = async (req, res) => {
   const userId = req.user.id;
   const user = db.users.find(u => u.id === userId);
   if (!user) return res.status(404).json({ success: false, message: 'Pelanggan tidak ditemukan' });
+
+  // Validasi: Pengguna harus memiliki paket aktif untuk dapat mengajukan pemutusan
+  if (!user.paket_id || user.paket_id === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Anda belum memiliki paket internet aktif yang dapat diputus.'
+    });
+  }
+
+  if (user.status === 'inactive') {
+    return res.status(400).json({
+      success: false,
+      message: 'Layanan internet Anda sudah dalam status nonaktif/diputus.'
+    });
+  }
 
   // Cek apakah ada request pending sebelumnya di Supabase / lokal
   let existingPending = null;
@@ -521,15 +537,14 @@ router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddlewar
     user.status = 'inactive';
     user.paket_id = null;
 
-    // Buat SPK Tugas Teknisi untuk penarikan modem/ONT & kabel
-    const tech = db.users.find(u => u.role === 'teknisi') || { id: 1 };
+    // Buat SPK Tugas Teknisi untuk penarikan modem/ONT & kabel (Belum di-assign, admin yang pilih teknisi)
     const terminationTask = {
       id: db.tasks.length ? Math.max(...db.tasks.map(t => t.id)) + 1 : 1,
-      teknisi_id: tech.id,
+      teknisi_id: null,
       pelanggan_id: user.id,
-      jenis: 'pencopotan',
+      jenis: 'pemeliharaan',
       status: 'baru',
-      catatan: `Pencopotan perangkat modem/ONT & penarikan kabel dropcore pemutusan langganan: ${user.nama} (${user.no_hp}). Alamat: ${user.alamat || '-'}. Alasan: ${request.alasan || '-'}`
+      catatan: `[Pencopotan Perangkat] Penarikan modem/ONT & kabel dropcore pemutusan langganan: ${user.nama} (${user.no_hp}). Alamat: ${user.alamat || '-'}. Alasan: ${request.alasan || '-'}`
     };
     db.tasks.push(terminationTask);
 
@@ -560,7 +575,7 @@ router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddlewar
 
     return res.json({
       success: true,
-      message: `Pemutusan langganan ${request.user_nama} berhasil disetujui. Status akun dinonaktifkan dan SPK penarikan perangkat telah dikirimkan ke teknisi.`,
+      message: `Pemutusan langganan ${request.user_nama} berhasil disetujui. Status akun dinonaktifkan dan tiket pencopotan perangkat masuk ke antrean Penugasan Teknisi.`,
       request,
       user
     });
@@ -591,17 +606,19 @@ router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddlewar
     db.invoices.push(newInvoice);
   }
 
-  // Jika upgrade kecepatan, otomatis buat tugas teknisi (penggantian/penyesuaian perangkat)
+  // Jika langganan baru atau upgrade kecepatan, otomatis buat tugas teknisi (admin yang pilih teknisi)
   let newTask = null;
-  if (request.paket_baru_kecepatan > request.paket_lama_kecepatan) {
-    const tech = db.users.find(u => u.role === 'teknisi') || { id: 1 };
+  const isFirstSubscription = !request.paket_lama_id || request.tipe === 'Langganan Baru';
+  if (isFirstSubscription || request.paket_baru_kecepatan > request.paket_lama_kecepatan) {
     newTask = {
       id: db.tasks.length ? Math.max(...db.tasks.map(t => t.id)) + 1 : 1,
-      teknisi_id: tech.id,
+      teknisi_id: null,
       pelanggan_id: user.id,
       jenis: 'instalasi',
       status: 'baru',
-      catatan: `Pergantian/konfigurasi perangkat ONT untuk upgrade paket "${request.paket_baru_nama}" (${request.paket_baru_kecepatan} Mbps). Pelanggan: ${user.nama} (${user.no_hp}).`
+      catatan: isFirstSubscription
+        ? `[Pemasangan Baru] Penarikan kabel FO & instalasi modem ONT paket "${request.paket_baru_nama}" (${request.paket_baru_kecepatan} Mbps). Pelanggan: ${user.nama} (${user.no_hp}). Alamat: ${user.alamat || '-'}.`
+        : `Pergantian/konfigurasi perangkat ONT untuk upgrade paket "${request.paket_baru_nama}" (${request.paket_baru_kecepatan} Mbps). Pelanggan: ${user.nama} (${user.no_hp}).`
     };
     db.tasks.push(newTask);
   }

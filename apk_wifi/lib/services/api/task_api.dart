@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../models/task_model.dart';
+import '../../models/user_model.dart';
 import '../local_db_service.dart';
 import 'http_client.dart';
 
@@ -34,6 +35,23 @@ class TaskApi {
     return [];
   }
 
+  Future<List<UserModel>> getTechnicians() async {
+    try {
+      final res = await _client.get('/technicians', timeout: const Duration(seconds: 6));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true && data['technicians'] is List) {
+          return (data['technicians'] as List)
+              .map((u) => UserModel.fromJson(u))
+              .toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[TaskApi] getTechnicians error: $e');
+    }
+    return [];
+  }
+
   Future<bool> claimTask(int taskId) async {
     try {
       final res = await _client.post('/tasks/$taskId/claim', timeout: const Duration(seconds: 6));
@@ -45,14 +63,14 @@ class TaskApi {
   }
 
   Future<bool> createTask({
-    required int teknisiId,
+    int? teknisiId,
     required int pelangganId,
     required String jenis,
     required String catatan,
   }) async {
     try {
       final res = await _client.post('/tasks', body: {
-        'teknisi_id': teknisiId,
+        if (teknisiId != null) 'teknisi_id': teknisiId,
         'pelanggan_id': pelangganId,
         'jenis': jenis,
         'catatan': catatan,
@@ -62,6 +80,10 @@ class TaskApi {
       debugPrint('[TaskApi] createTask error: $e');
       return false;
     }
+  }
+
+  Future<bool> assignTaskTechnician(int taskId, int teknisiId) async {
+    return updateTaskStatus(taskId, 'dikerjakan', teknisiId: teknisiId);
   }
 
   Future<bool> updateTaskStatus(int taskId, String status, {int? teknisiId}) async {

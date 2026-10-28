@@ -78,4 +78,12 @@ class TaskModel {
   bool get isDone => status == 'selesai';
   bool get isAvailable => teknisiId == null || teknisiId == 0;
   bool get isTakenByOther => !isAvailable && !isMyTask;
+  bool get isPencopotan => jenis == 'pencopotan' || catatan.toLowerCase().contains('pencopotan');
+
+  String get displayJenis {
+    if (isPencopotan) return 'Pencopotan Perangkat';
+    if (jenis == 'instalasi') return 'Instalasi & Pasang Baru';
+    if (jenis == 'perbaikan') return 'Perbaikan Gangguan';
+    return 'Pemeliharaan Jaringan';
+  }
 }

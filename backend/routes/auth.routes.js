@@ -51,12 +51,42 @@ router.post('/auth/register', (req, res) => {
     lat: lat ? parseFloat(lat) : -7.7956,
     lng: lng ? parseFloat(lng) : 110.3695,
     foto: foto || '',
-    status: 'pending', // Account is pending until activated by admin per PRD
-    paket_id: paket_id ? parseInt(paket_id) : 1
+    status: 'active', // Akun aktif agar pengguna baru dapat menjelajahi aplikasi dan memilih paket
+    paket_id: paket_id ? parseInt(paket_id) : null
   };
 
   db.users.push(newUser);
   saveDB(db);
+
+  try {
+    const { isSupabaseConfigured, getSupabaseClient } = require('../config/supabase');
+    if (isSupabaseConfigured()) {
+      const sb = getSupabaseClient();
+      if (sb) {
+        sb.from('users').upsert({
+          id: newUser.id,
+          nama: newUser.nama,
+          email: newUser.email,
+          no_hp: newUser.no_hp,
+          password_hash: newUser.password_hash,
+          role: newUser.role,
+          negara: newUser.negara,
+          mata_uang: newUser.mata_uang,
+          zona_waktu: newUser.zona_waktu,
+          alamat: newUser.alamat,
+          lat: newUser.lat,
+          lng: newUser.lng,
+          foto: newUser.foto,
+          status: newUser.status,
+          paket_id: newUser.paket_id
+        }, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.warn('[Supabase DB Register Sync Note]:', error.message);
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[Supabase DB Register Exception]:', err.message);
+  }
 
   const token = jwt.sign(
     { id: newUser.id, email: newUser.email, role: newUser.role, nama: newUser.nama },
@@ -67,7 +97,7 @@ router.post('/auth/register', (req, res) => {
   const { password_hash: _, ...safeUser } = newUser;
   return res.status(201).json({
     success: true,
-    message: 'Pendaftaran berhasil. Akun Anda sedang menunggu aktivasi oleh admin.',
+    message: 'Pendaftaran akun berhasil. Selamat datang di Sima.net!',
     token,
     user: safeUser
   });

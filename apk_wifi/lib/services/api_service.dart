@@ -45,7 +45,7 @@ class ApiService {
     required String alamat,
     required double lat,
     required double lng,
-    required int paketId,
+    int? paketId,
   }) => auth.register(
         nama: nama,
         email: email,
@@ -186,6 +186,9 @@ class ApiService {
   Future<bool> verifyPayment(int paymentId, {required bool approve}) =>
       billing.verifyPayment(paymentId, approve: approve);
 
+  Future<bool> verifyInvoiceManual(int invoiceId, {required bool approve}) =>
+      billing.verifyInvoiceManual(invoiceId, approve: approve);
+
   // --- BLOCKCHAIN LEDGER ---
   Future<List<LedgerBlockModel>> getLedger() => billing.getLedger();
   Future<Map<String, dynamic>> verifyLedger() => billing.verifyLedger();
@@ -196,8 +199,10 @@ class ApiService {
 
   Future<bool> claimTask(int taskId) => task.claimTask(taskId);
 
+  Future<List<UserModel>> getTechnicians() => task.getTechnicians();
+
   Future<bool> createTask({
-    required int teknisiId,
+    int? teknisiId,
     required int pelangganId,
     required String jenis,
     required String catatan,
@@ -207,6 +212,9 @@ class ApiService {
         jenis: jenis,
         catatan: catatan,
       );
+
+  Future<bool> assignTaskTechnician(int taskId, int teknisiId) =>
+      task.assignTaskTechnician(taskId, teknisiId);
 
   Future<bool> updateTaskStatus(int taskId, String status, {int? teknisiId}) =>
       task.updateTaskStatus(taskId, status, teknisiId: teknisiId);

@@ -361,17 +361,17 @@ class _TechnicianMyTasksScreenState extends State<TechnicianMyTasksScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: (task.jenis == 'pencopotan'
+                                      color: (task.isPencopotan
                                               ? const Color(0xFFDC2626)
                                               : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning))
                                           .withValues(alpha: 0.18),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
-                                      task.jenis == 'pencopotan'
+                                      task.isPencopotan
                                           ? Icons.power_settings_new_rounded
                                           : (task.jenis == 'perbaikan' ? Icons.build : Icons.cable),
-                                      color: task.jenis == 'pencopotan'
+                                      color: task.isPencopotan
                                           ? const Color(0xFFDC2626)
                                           : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
                                       size: 16,
@@ -379,11 +379,11 @@ class _TechnicianMyTasksScreenState extends State<TechnicianMyTasksScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    '#TGS-${task.id} • ${task.jenis.toUpperCase()}',
+                                    '#TGS-${task.id} • ${task.displayJenis.toUpperCase()}',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                      color: task.jenis == 'pencopotan'
+                                      color: task.isPencopotan
                                           ? const Color(0xFFDC2626)
                                           : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
                                       letterSpacing: 0.5,

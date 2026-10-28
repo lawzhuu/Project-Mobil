@@ -3,11 +3,53 @@ const { loadDB, saveDB } = require('../db');
 const { STATIC_RATES } = require('../config');
 const { calculateBlockHash } = require('../utils/hash');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
+const { getSupabaseClient, isSupabaseConfigured } = require('../config/supabase');
 const upload = require('../middleware/upload.middleware');
 
 const { uploadFile } = require('../services/storage.service');
 
 const router = express.Router();
+
+async function activateCustomerOnPaymentVerified(db, invoice) {
+  if (!invoice) return;
+  const user = db.users.find(u => u.id === invoice.user_id);
+  if (!user) return;
+
+  // 1. Ubah status user menjadi aktif (layanan kembali berjalan)
+  user.status = 'active';
+
+  // 2. Pastikan paket_id terisi paket yang sesuai dengan invoice
+  if (!user.paket_id || user.paket_id <= 0) {
+    const matchingPkg = db.packages.find(p => p.harga_idr === invoice.nominal_idr) || db.packages[0];
+    user.paket_id = matchingPkg ? matchingPkg.id : 1;
+  }
+
+  // 3. Selesaikan jika ada package_requests pending untuk user ini
+  const pendingReq = (db.package_requests || []).find(r => r.user_id === user.id && r.status === 'pending');
+  if (pendingReq) {
+    pendingReq.status = 'approved';
+    pendingReq.updated_at = new Date().toISOString();
+  }
+
+  // 4. Sinkronkan online ke Supabase PostgreSQL
+  if (isSupabaseConfigured()) {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        await Promise.all([
+          sb.from('users').update({ status: 'active', paket_id: user.paket_id }).eq('id', user.id),
+          sb.from('invoices').update({ status: 'lunas' }).eq('id', invoice.id),
+          pendingReq
+            ? sb.from('package_requests').update({ status: 'approved', updated_at: pendingReq.updated_at }).eq('id', pendingReq.id)
+            : Promise.resolve()
+        ]);
+        console.log(`[Invoice] Pelanggan #${user.id} (${user.nama}) status aktif & paket #${user.paket_id} terverifikasi lunas.`);
+      } catch (err) {
+        console.warn('[Invoice] Supabase sync note on payment verify:', err.message);
+      }
+    }
+  }
+}
 
 // Get invoices (Customer views own; Admin views all)
 router.get('/invoices', authMiddleware, (req, res) => {
@@ -23,7 +65,7 @@ router.get('/invoices', authMiddleware, (req, res) => {
   const enriched = invoices.map(inv => {
     const user = db.users.find(u => u.id === inv.user_id) || {};
     const pkg = db.packages.find(p => p.id === user.paket_id) || {};
-    const payment = db.payments.find(p => p.invoice_id === inv.id);
+    const payment = [...(db.payments || [])].reverse().find(p => p.invoice_id === inv.id);
     return {
       ...inv,
       pelanggan_nama: user.nama || 'Pelanggan',
@@ -108,7 +150,7 @@ router.post('/payments', authMiddleware, upload.single('bukti'), async (req, res
 });
 
 // Admin verify payment -> automatically creates block in blockchain ledger & sends notification
-router.patch('/payments/:id/verify', authMiddleware, roleMiddleware(['admin']), (req, res) => {
+router.patch('/payments/:id/verify', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
   const id = parseInt(req.params.id);
   const status = req.body.status || 'diverifikasi'; // 'diverifikasi' or 'ditolak'
@@ -121,7 +163,10 @@ router.patch('/payments/:id/verify', authMiddleware, roleMiddleware(['admin']), 
 
   const invoice = db.invoices.find(inv => inv.id === payment.invoice_id);
   if (status === 'diverifikasi') {
-    if (invoice) invoice.status = 'lunas';
+    if (invoice) {
+      invoice.status = 'lunas';
+      await activateCustomerOnPaymentVerified(db, invoice);
+    }
 
     // Append block to blockchain ledger
     const lastBlock = db.ledger_blocks[db.ledger_blocks.length - 1];
@@ -149,6 +194,66 @@ router.patch('/payments/:id/verify', authMiddleware, roleMiddleware(['admin']), 
     success: true,
     message: status === 'diverifikasi' ? 'Pembayaran diverifikasi dan dicatat ke blockchain ledger!' : 'Pembayaran ditolak',
     payment
+  });
+});
+
+// Admin manual verify invoice (e.g. cash or direct transfer verification)
+router.post('/invoices/:id/verify-manual', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
+  const db = loadDB();
+  const id = parseInt(req.params.id);
+  const status = req.body.status || 'diverifikasi'; // 'diverifikasi' or 'ditolak'
+
+  const invoice = db.invoices.find(inv => inv.id === id);
+  if (!invoice) return res.status(404).json({ success: false, message: 'Tagihan tidak ditemukan' });
+
+  let payment = [...(db.payments || [])].reverse().find(p => p.invoice_id === id);
+  if (!payment) {
+    payment = {
+      id: db.payments.length ? Math.max(...db.payments.map(p => p.id)) + 1 : 1,
+      invoice_id: id,
+      user_id: invoice.user_id,
+      bukti_path: req.body.bukti_path || 'MANUAL_VERIFIKASI_ADMIN',
+      nominal_idr: invoice.nominal_idr,
+      status: status,
+      verified_at: new Date().toISOString()
+    };
+    db.payments.push(payment);
+  } else {
+    payment.status = status;
+    payment.verified_at = new Date().toISOString();
+  }
+
+  if (status === 'diverifikasi') {
+    invoice.status = 'lunas';
+    await activateCustomerOnPaymentVerified(db, invoice);
+
+    // Append block to blockchain ledger
+    const lastBlock = db.ledger_blocks[db.ledger_blocks.length - 1];
+    const newIdx = lastBlock ? lastBlock.idx + 1 : 1;
+    const prevHash = lastBlock ? lastBlock.hash : '0000000000000000000000000000000000000000000000000000000000000000';
+    const nowIso = new Date().toISOString();
+    const newHash = calculateBlockHash(newIdx, nowIso, payment.id, payment.nominal_idr, prevHash);
+
+    const newBlock = {
+      idx: newIdx,
+      waktu: nowIso,
+      payment_id: payment.id,
+      nominal_idr: payment.nominal_idr,
+      prev_hash: prevHash,
+      hash: newHash
+    };
+
+    db.ledger_blocks.push(newBlock);
+  } else {
+    invoice.status = 'belum';
+  }
+
+  saveDB(db);
+  return res.json({
+    success: true,
+    message: status === 'diverifikasi' ? 'Pembayaran berhasil diverifikasi manual dan dicatat ke blockchain ledger!' : 'Pembayaran ditolak',
+    payment,
+    invoice
   });
 });
 

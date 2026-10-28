@@ -38,7 +38,7 @@ class AuthApi {
     required String alamat,
     required double lat,
     required double lng,
-    required int paketId,
+    int? paketId,
   }) async {
     try {
       final res = await _client.post('/auth/register', body: {
@@ -50,7 +50,7 @@ class AuthApi {
         'alamat': alamat,
         'lat': lat,
         'lng': lng,
-        'paket_id': paketId,
+        if (paketId != null) 'paket_id': paketId,
       });
       return jsonDecode(res.body);
     } catch (e) {
