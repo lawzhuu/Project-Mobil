@@ -354,50 +354,60 @@ class _TechnicianMyTasksScreenState extends State<TechnicianMyTasksScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: (task.isPencopotan
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: (task.isPencopotan
+                                                ? const Color(0xFFDC2626)
+                                                : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning))
+                                            .withValues(alpha: 0.18),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        task.isPencopotan
+                                            ? Icons.power_settings_new_rounded
+                                            : (task.jenis == 'perbaikan' ? Icons.build : Icons.cable),
+                                        color: task.isPencopotan
+                                            ? const Color(0xFFDC2626)
+                                            : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
+                                        size: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        '#TGS-${task.id} • ${task.displayJenis.toUpperCase()}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: task.isPencopotan
                                               ? const Color(0xFFDC2626)
-                                              : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning))
-                                          .withValues(alpha: 0.18),
-                                      borderRadius: BorderRadius.circular(8),
+                                              : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
+                                          letterSpacing: 0.5,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
                                     ),
-                                    child: Icon(
-                                      task.isPencopotan
-                                          ? Icons.power_settings_new_rounded
-                                          : (task.jenis == 'perbaikan' ? Icons.build : Icons.cable),
-                                      color: task.isPencopotan
-                                          ? const Color(0xFFDC2626)
-                                          : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
-                                      size: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '#TGS-${task.id} • ${task.displayJenis.toUpperCase()}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: task.isPencopotan
-                                          ? const Color(0xFFDC2626)
-                                          : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                              StatusBadge(status: task.status),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: StatusBadge(status: task.status),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Text(
                             task.pelangganNama,
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                           const SizedBox(height: 4),
                           Row(
@@ -420,9 +430,13 @@ class _TechnicianMyTasksScreenState extends State<TechnicianMyTasksScreen> {
                               children: [
                                 const Icon(Icons.phone, size: 13, color: AppTheme.textMuted),
                                 const SizedBox(width: 4),
-                                Text(
-                                  task.pelangganNoHp,
-                                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                                Expanded(
+                                  child: Text(
+                                    task.pelangganNoHp,
+                                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
                                 ),
                               ],
                             ),

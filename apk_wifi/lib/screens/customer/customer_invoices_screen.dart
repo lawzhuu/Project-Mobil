@@ -617,41 +617,49 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                             children: [
                               // Top Bar
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        isPaid ? Icons.check_circle : Icons.receipt_long,
-                                        color: isPaid ? AppTheme.success : AppTheme.warning,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        inv.periode,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppTheme.textPrimary,
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          isPaid ? Icons.check_circle : Icons.receipt_long,
+                                          color: isPaid ? AppTheme.success : AppTheme.warning,
+                                          size: 20,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            inv.periode,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppTheme.textPrimary,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  StatusBadge(
-                                    status: isPaid
-                                        ? 'lunas'
-                                        : ((payment != null && payment.isRejected)
-                                            ? 'ditolak'
-                                            : ((payment != null && payment.isPending)
-                                                ? 'menunggu'
-                                                : inv.status)),
-                                    customLabel: isPaid
-                                        ? 'LUNAS'
-                                        : ((payment != null && payment.isRejected)
-                                            ? 'BUKTI DITOLAK'
-                                            : ((payment != null && payment.isPending)
-                                                ? 'MENUNGGU VERIFIKASI'
-                                                : 'BELUM DIBAYAR')),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: StatusBadge(
+                                      status: isPaid
+                                          ? 'lunas'
+                                          : ((payment != null && payment.isRejected)
+                                              ? 'ditolak'
+                                              : ((payment != null && payment.isPending)
+                                                  ? 'menunggu'
+                                                  : inv.status)),
+                                      customLabel: isPaid
+                                          ? 'LUNAS'
+                                          : ((payment != null && payment.isRejected)
+                                              ? 'BUKTI DITOLAK'
+                                              : ((payment != null && payment.isPending)
+                                                  ? 'MENUNGGU VERIFIKASI'
+                                                  : 'BELUM DIBAYAR')),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -710,20 +718,23 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                               if (inv.hasDiscount) ...[
                                 const SizedBox(height: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: AppTheme.success.withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(color: AppTheme.success.withOpacity(0.3)),
                                   ),
                                   child: Row(
-                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.card_giftcard, size: 12, color: AppTheme.success),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Diskon Fiber Game (${inv.voucherCode ?? 'FIBERHEMAT10'}): -${inv.formattedDiscountIdr}',
-                                        style: const TextStyle(fontSize: 11, color: AppTheme.success, fontWeight: FontWeight.bold),
+                                      const Icon(Icons.card_giftcard, size: 14, color: AppTheme.success),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Diskon Fiber Game (${inv.voucherCode ?? 'FIBERHEMAT10'}): -${inv.formattedDiscountIdr}',
+                                          style: const TextStyle(fontSize: 11, color: AppTheme.success, fontWeight: FontWeight.bold),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -824,9 +835,13 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                 children: [
                                   const Icon(Icons.wifi, size: 14, color: AppTheme.textMuted),
                                   const SizedBox(width: 6),
-                                  Text(
-                                    inv.paketNama ?? 'Layanan Fiber Internet',
-                                    style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                                  Expanded(
+                                    child: Text(
+                                      inv.paketNama ?? 'Layanan Fiber Internet',
+                                      style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
                                   ),
                                 ],
                               ),

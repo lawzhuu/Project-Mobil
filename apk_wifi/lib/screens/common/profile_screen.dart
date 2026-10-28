@@ -33,11 +33,74 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
   Uint8List? _localImageBytes;
+  bool _isBiometricEnabled = false;
+  bool _isLoadingBiometric = true;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadBiometricSettings();
+  }
+
+  Future<void> _loadBiometricSettings() async {
+    final enabled = await AuthService.instance.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        _isBiometricEnabled = enabled;
+        _isLoadingBiometric = false;
+      });
+    }
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    if (value) {
+      final canUse = await AuthService.instance.canUseBiometrics();
+      if (!canUse) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Perangkat tidak mendukung sensor biometrik atau belum ada sidik jari/wajah yang terdaftar di pengaturan HP Anda.',
+            ),
+            backgroundColor: AppTheme.warning,
+          ),
+        );
+        return;
+      }
+
+      final authenticated = await AuthService.instance.authenticateForToggle();
+      if (!mounted) return;
+
+      if (authenticated) {
+        await AuthService.instance.setBiometricEnabled(true);
+        setState(() => _isBiometricEnabled = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Login Sidik Jari (Biometrik) berhasil diaktifkan!'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verifikasi biometrik dibatalkan. Pengaturan tidak diubah.'),
+            backgroundColor: AppTheme.warning,
+          ),
+        );
+      }
+    } else {
+      await AuthService.instance.setBiometricEnabled(false);
+      if (mounted) {
+        setState(() => _isBiometricEnabled = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login Sidik Jari (Biometrik) dinonaktifkan.'),
+            backgroundColor: AppTheme.textSecondary,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -1410,31 +1473,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ListTile(
+                    SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(
-                        Icons.fingerprint,
-                        color: AppTheme.primary,
+                      secondary: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: (_isBiometricEnabled ? AppTheme.primary : AppTheme.textMuted).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.fingerprint,
+                          color: _isBiometricEnabled ? AppTheme.primary : AppTheme.textMuted,
+                          size: 24,
+                        ),
                       ),
                       title: const Text(
                         'Login Sidik Jari (Biometrik)',
                         style: TextStyle(
                           color: AppTheme.textPrimary,
                           fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      subtitle: const Text(
-                        'Pintasan login cepat tanpa memasukkan password',
+                      subtitle: Text(
+                        _isBiometricEnabled
+                            ? 'Aktif • Masuk cepat dengan sensor sidik jari perangkat'
+                            : 'Nonaktif • Masuk memerlukan input email dan kata sandi',
                         style: TextStyle(
-                          color: AppTheme.textMuted,
+                          color: _isBiometricEnabled ? AppTheme.success : AppTheme.textMuted,
                           fontSize: 12,
                         ),
                       ),
-                      trailing: const Icon(
-                        Icons.check_circle,
-                        color: AppTheme.success,
-                        size: 20,
-                      ),
+                      value: _isBiometricEnabled,
+                      activeThumbColor: AppTheme.primary,
+                      onChanged: _isLoadingBiometric ? null : _toggleBiometric,
                     ),
 
                   ],

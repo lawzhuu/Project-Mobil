@@ -255,25 +255,11 @@ class AdminOverviewTab extends StatelessWidget {
               onTap: () => onSelectSection(3),
             ),
             _buildAdminAccentListItem(
-              title: 'Saran & Kesan Pengguna',
-              subtitle: 'Evaluasi pengalaman pengguna & masukan perbaikan',
-              accentColor: Colors.amberAccent,
-              badgeCount: feedbacks.length,
-              onTap: () => onSelectSection(7),
-            ),
-            _buildAdminAccentListItem(
               title: 'Blockchain Ledger',
               subtitle: 'Audit jejak pembayaran anti-tamper SHA-256',
               accentColor: Colors.tealAccent,
               badgeCount: 0,
               onTap: () => onSelectSection(4),
-            ),
-            _buildAdminAccentListItem(
-              title: 'Tagihan ISP Utama (Upstream)',
-              subtitle: 'Rekap biaya internet induk & bandwidth grosir',
-              accentColor: Colors.deepPurpleAccent,
-              badgeCount: 0,
-              onTap: () => onSelectSection(6),
             ),
 
             const SizedBox(height: 24),

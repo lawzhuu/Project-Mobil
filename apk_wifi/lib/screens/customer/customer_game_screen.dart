@@ -491,74 +491,78 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
           children: [
             // Instructions & Score Header
             CustomCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Sensor: Accelerometer (Tilt)',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _isSuccess ? 'STATUS: TERSAMBUNG 🚀' : (_isPlaying ? 'MEMBAWA PULSA OPTIK...' : 'SIAP MAIN'),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: _isSuccess ? AppTheme.success : AppTheme.primary,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Sensor: Accelerometer (Tilt)',
+                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: _showTutorialModal,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryLight,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.help_outline, size: 14, color: AppTheme.primary),
-                              SizedBox(width: 4),
-                              Text(
-                                'Panduan',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primary.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.primary),
-                        ),
-                        child: Text(
-                          'Poin: $_score',
-                          style: const TextStyle(
-                            fontSize: 14,
+                        const SizedBox(height: 2),
+                        Text(
+                          _isSuccess ? 'STATUS: TERSAMBUNG 🚀' : (_isPlaying ? 'MEMBAWA PULSA OPTIK...' : 'SIAP MAIN'),
+                          style: TextStyle(
+                            fontSize: 12.5,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
+                            color: _isSuccess ? AppTheme.success : AppTheme.primary,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: _showTutorialModal,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryLight,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                       ),
-                    ],
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.help_outline, size: 13, color: AppTheme.primary),
+                          SizedBox(width: 3),
+                          Text(
+                            'Panduan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.primary),
+                    ),
+                    child: Text(
+                      'Poin: $_score',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primary,
+                      ),
+                    ),
                   ),
                 ],
               ),

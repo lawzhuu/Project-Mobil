@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../services/api_service.dart';
-import '../../widgets/custom_card.dart';
 
 class CustomerChatbotScreen extends StatefulWidget {
   const CustomerChatbotScreen({super.key});
@@ -160,7 +159,7 @@ class _CustomerChatbotScreenState extends State<CustomerChatbotScreen> {
                         Text(
                           msg['text'],
                           style: TextStyle(
-                            color: isUser ? const Color(0xFF04121F) : AppTheme.textPrimary,
+                            color: isUser ? Colors.white : AppTheme.textPrimary,
                             fontSize: 14,
                             height: 1.4,
                             fontWeight: isUser ? FontWeight.w600 : FontWeight.normal,
@@ -171,7 +170,7 @@ class _CustomerChatbotScreenState extends State<CustomerChatbotScreen> {
                           msg['time'],
                           style: TextStyle(
                             fontSize: 10,
-                            color: isUser ? Colors.black54 : AppTheme.textMuted,
+                            color: isUser ? Colors.white70 : AppTheme.textMuted,
                           ),
                         ),
                       ],
@@ -234,7 +233,7 @@ class _CustomerChatbotScreenState extends State<CustomerChatbotScreen> {
                     backgroundColor: AppTheme.primary,
                     radius: 22,
                     child: IconButton(
-                      icon: const Icon(Icons.send, color: Color(0xFF04121F), size: 20),
+                      icon: const Icon(Icons.send, color: Colors.white, size: 20),
                       onPressed: () => _sendMessage(_msgController.text),
                     ),
                   ),

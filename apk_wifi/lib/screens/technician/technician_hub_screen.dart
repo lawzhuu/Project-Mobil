@@ -306,44 +306,51 @@ class _TechnicianHubScreenState extends State<TechnicianHubScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: (task.jenis == 'pencopotan'
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: (task.jenis == 'pencopotan'
+                                                ? const Color(0xFFDC2626)
+                                                : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning))
+                                            .withValues(alpha: 0.18),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        task.jenis == 'pencopotan'
+                                            ? Icons.power_settings_new_rounded
+                                            : (task.jenis == 'perbaikan' ? Icons.build : Icons.cable),
+                                        color: task.jenis == 'pencopotan'
+                                            ? const Color(0xFFDC2626)
+                                            : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
+                                        size: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        '#TGS-${task.id} • ${task.jenis.toUpperCase()}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: task.jenis == 'pencopotan'
                                               ? const Color(0xFFDC2626)
-                                              : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning))
-                                          .withValues(alpha: 0.18),
-                                      borderRadius: BorderRadius.circular(8),
+                                              : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
+                                          letterSpacing: 0.5,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
                                     ),
-                                    child: Icon(
-                                      task.jenis == 'pencopotan'
-                                          ? Icons.power_settings_new_rounded
-                                          : (task.jenis == 'perbaikan' ? Icons.build : Icons.cable),
-                                      color: task.jenis == 'pencopotan'
-                                          ? const Color(0xFFDC2626)
-                                          : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
-                                      size: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '#TGS-${task.id} • ${task.jenis.toUpperCase()}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: task.jenis == 'pencopotan'
-                                          ? const Color(0xFFDC2626)
-                                          : (task.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning),
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 6),
                               Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (task.isAvailable)
                                     Container(
@@ -384,11 +391,14 @@ class _TechnicianHubScreenState extends State<TechnicianHubScreen> {
                                           Text(
                                             task.teknisiNama ?? 'Diambil',
                                             style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       ),
                                     ),
-                                  StatusBadge(status: task.status),
+                                  Flexible(
+                                    child: StatusBadge(status: task.status),
+                                  ),
                                 ],
                               ),
                             ],
@@ -397,6 +407,8 @@ class _TechnicianHubScreenState extends State<TechnicianHubScreen> {
                           Text(
                             task.pelangganNama,
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                           const SizedBox(height: 4),
                           Row(

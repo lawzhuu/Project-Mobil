@@ -394,96 +394,133 @@ class _AdminHubScreenState extends State<AdminHubScreen>
             'Buat Tugas Teknisi Lapangan (A5)',
             style: TextStyle(color: AppTheme.textPrimary),
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<int>(
-                  value: selectedCustomerId,
-                  dropdownColor: AppTheme.surfaceCard,
-                  decoration: const InputDecoration(
-                    labelText: 'Pilih Pelanggan',
-                  ),
-                  items: customers
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c.id,
-                          child: Text(
-                            '${c.nama} [${c.status == 'inactive' ? 'Nonaktif' : 'Aktif'}]',
-                            overflow: TextOverflow.ellipsis,
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  DropdownButtonFormField<int>(
+                    value: selectedCustomerId,
+                    isExpanded: true,
+                    dropdownColor: AppTheme.surfaceCard,
+                    decoration: const InputDecoration(
+                      labelText: 'Pilih Pelanggan',
+                    ),
+                    items: customers
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(
+                              '${c.nama} [${c.status == 'inactive' ? 'Nonaktif' : 'Aktif'}]',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
+                        )
+                        .toList(),
+                    onChanged: (v) =>
+                        setDialogState(() => selectedCustomerId = v),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: jenis,
+                    isExpanded: true,
+                    dropdownColor: AppTheme.surfaceCard,
+                    decoration: const InputDecoration(
+                      labelText: 'Jenis / Alasan Tugas',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'instalasi',
+                        child: Text(
+                          'Pasang Baru / Tarik FO',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                      )
-                      .toList(),
-                  onChanged: (v) =>
-                      setDialogState(() => selectedCustomerId = v),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: jenis,
-                  dropdownColor: AppTheme.surfaceCard,
-                  decoration: const InputDecoration(
-                    labelText: 'Jenis / Alasan Tugas',
+                      ),
+                      DropdownMenuItem(
+                        value: 'perbaikan',
+                        child: Text(
+                          'Perbaikan Redaman / Putus Kabel',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'pencopotan',
+                        child: Text(
+                          'Pencopotan Perangkat / Deaktivasi',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'pemeliharaan',
+                        child: Text(
+                          'Pemeliharaan / Cek Berkala',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setDialogState(() => jenis = v ?? 'instalasi'),
                   ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'instalasi',
-                      child: Text('Pasang Baru / Tarik FO'),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<int?>(
+                    value: selectedTechId,
+                    isExpanded: true,
+                    dropdownColor: AppTheme.surfaceCard,
+                    decoration: const InputDecoration(
+                      labelText: 'Teknisi Pelaksana',
+                      helperText: 'Bisa dikosongkan agar masuk antrean',
                     ),
-                    DropdownMenuItem(
-                      value: 'perbaikan',
-                      child: Text('Perbaikan Redaman / Putus Kabel'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'pencopotan',
-                      child: Text('Pencopotan Perangkat / Deaktivasi'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'pemeliharaan',
-                      child: Text('Pemeliharaan / Cek Berkala'),
-                    ),
-                  ],
-                  onChanged: (v) =>
-                      setDialogState(() => jenis = v ?? 'instalasi'),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<int?>(
-                  value: selectedTechId,
-                  dropdownColor: AppTheme.surfaceCard,
-                  decoration: const InputDecoration(
-                    labelText: 'Teknisi Pelaksana',
-                    helperText: 'Bisa dikosongkan agar masuk antrean',
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text(
+                          'Antrean (Pilih Teknisi Nanti)',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      ...(_technicians.isNotEmpty
+                          ? _technicians.map(
+                              (t) => DropdownMenuItem<int?>(
+                                value: t.id,
+                                child: Text(
+                                  '${t.nama}${t.noHp.isNotEmpty ? " (${t.noHp})" : ""}',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            )
+                          : [
+                              const DropdownMenuItem<int?>(
+                                value: 4,
+                                child: Text(
+                                  'Rahmat Hidayat (Teknisi)',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ]),
+                    ],
+                    onChanged: (v) => setDialogState(() => selectedTechId = v),
                   ),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('Antrean (Pilih Teknisi Nanti)'),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: catatanCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Catatan Lapangan',
+                      hintText: 'Misal: ODP-SLM-08 Port 4 atau keluhan',
                     ),
-                    ...(_technicians.isNotEmpty
-                        ? _technicians.map(
-                            (t) => DropdownMenuItem<int?>(
-                              value: t.id,
-                              child: Text(t.nama),
-                            ),
-                          )
-                        : [
-                            const DropdownMenuItem<int?>(
-                              value: 4,
-                              child: Text('Rahmat Hidayat (Teknisi)'),
-                            ),
-                          ]),
-                  ],
-                  onChanged: (v) => setDialogState(() => selectedTechId = v),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: catatanCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Catatan Lapangan',
-                    hintText: 'Misal: ODP-SLM-08 Port 4 atau keluhan',
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           actions: [
@@ -1547,38 +1584,100 @@ class _AdminHubScreenState extends State<AdminHubScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CustomCard(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF162544), Color(0xFF1E1F38)],
+          // Sleek High-Tech Header Card
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: const Color(0xFF0EA5E9).withValues(alpha: 0.35),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0EA5E9).withValues(alpha: 0.12),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Cryptographic SHA-256 Ledger (A7)',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0EA5E9).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF0EA5E9).withValues(alpha: 0.3),
                         ),
-                        Text(
-                          'Hash-Chain Pembayaran Terverifikasi',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
+                      ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        color: Color(0xFF38BDF8),
+                        size: 24,
+                      ),
                     ),
-                    const Icon(Icons.link, color: AppTheme.accent, size: 28),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cryptographic SHA-256 Ledger (A7)',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Hash-Chain Pembayaran Terverifikasi & Anti-Tamper',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Text(
+                        'IMMUTABLE',
+                        style: TextStyle(
+                          color: Color(0xFF34D399),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 GlowingButton(
                   text: 'JALANKAN VERIFIKASI INTEGRITAS RANTAI',
                   icon: Icons.check_circle_outline,
@@ -1592,24 +1691,26 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: _blockchainVerification!.isValid
-                          ? AppTheme.success.withOpacity(0.15)
-                          : AppTheme.error.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
+                          ? const Color(0xFF065F46).withValues(alpha: 0.4)
+                          : const Color(0xFF991B1B).withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _blockchainVerification!.isValid
-                            ? AppTheme.success
-                            : AppTheme.error,
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
+                        width: 1,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           _blockchainVerification!.isValid
-                              ? Icons.shield
-                              : Icons.error,
+                              ? Icons.verified_user_rounded
+                              : Icons.error_outline_rounded,
                           color: _blockchainVerification!.isValid
-                              ? AppTheme.success
-                              : AppTheme.error,
+                              ? const Color(0xFF34D399)
+                              : const Color(0xFFF87171),
+                          size: 20,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -1617,10 +1718,10 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                             _blockchainVerification!.message,
                             style: TextStyle(
                               color: _blockchainVerification!.isValid
-                                  ? AppTheme.success
-                                  : AppTheme.error,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                                  ? const Color(0xFF6EE7B7)
+                                  : const Color(0xFFFCA5A5),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -1635,84 +1736,164 @@ class _AdminHubScreenState extends State<AdminHubScreen>
           const SizedBox(height: 20),
           const Text(
             'Daftar Block Pembayaran Terdesentralisasi:',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: 10),
 
           ..._ledgerBlocks.map((block) {
+            final formattedNominal = block.nominalIdr.toString().replaceAllMapped(
+              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+              (Match m) => '${m[1]}.',
+            );
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
-              child: CustomCard(
-                borderColor: AppTheme.secondary.withOpacity(0.4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppTheme.border.withValues(alpha: 0.7),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppTheme.primary.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Text(
                           'BLOCK #${block.idx}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontSize: 12.5,
                             color: AppTheme.primary,
                           ),
                         ),
-                        Text(
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
                           'Payment ID: ${block.paymentId}',
+                          textAlign: TextAlign.end,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppTheme.textMuted,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Rp $formattedNominal',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF059669),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        block.waktu,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Divider(color: AppTheme.border, height: 1),
+                  const SizedBox(height: 10),
+
+                  const Text(
+                    'Previous Hash:',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textMuted,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Nominal: Rp ${block.nominalIdr}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.success,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.background,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppTheme.border.withValues(alpha: 0.6),
                       ),
                     ),
-                    Text(
-                      'Waktu: ${block.waktu}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(color: AppTheme.border, height: 10),
-                    const Text(
-                      'Prev Hash:',
-                      style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
-                    ),
-                    Text(
+                    child: Text(
                       block.prevHash,
                       style: const TextStyle(
-                        fontSize: 9,
+                        fontSize: 9.5,
                         fontFamily: 'monospace',
                         color: AppTheme.textSecondary,
                       ),
+                      softWrap: true,
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Block Hash (SHA-256):',
-                      style: TextStyle(fontSize: 10, color: AppTheme.primary),
+                  ),
+                  const SizedBox(height: 8),
+
+                  const Text(
+                    'Block Hash (SHA-256):',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0284C7),
                     ),
-                    Text(
-                      block.hash,
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontFamily: 'monospace',
-                        color: AppTheme.accent,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFF0284C7).withValues(alpha: 0.3),
                       ),
                     ),
-                  ],
-                ),
+                    child: Text(
+                      block.hash,
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0369A1),
+                      ),
+                      softWrap: true,
+                    ),
+                  ),
+                ],
               ),
             );
           }).toList(),
@@ -1808,240 +1989,270 @@ class _AdminHubScreenState extends State<AdminHubScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
           return Container(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 20,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
             ),
             decoration: const BoxDecoration(
               color: AppTheme.surfaceCard,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color:
-                            (task.isPencopotan
-                                    ? const Color(0xFFEF4444)
-                                    : (task.jenis == 'perbaikan'
-                                          ? const Color(0xFFF59E0B)
-                                          : AppTheme.primary))
-                                .withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        task.isPencopotan
-                            ? Icons.power_settings_new_rounded
-                            : (task.jenis == 'perbaikan'
-                                  ? Icons.build_circle_rounded
-                                  : Icons.engineering_rounded),
-                        color: task.isPencopotan
-                            ? const Color(0xFFEF4444)
-                            : (task.jenis == 'perbaikan'
-                                  ? const Color(0xFFF59E0B)
-                                  : AppTheme.primary),
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Pilih Teknisi Pelaksana',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            'Tiket #${task.id}: ${task.displayJenis}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: AppTheme.textMuted),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.background,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.person_pin_circle_rounded,
-                            size: 16,
-                            color: AppTheme.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Pelanggan: ${task.pelangganNama}',
-                              style: const TextStyle(
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color:
+                              (task.isPencopotan
+                                      ? const Color(0xFFEF4444)
+                                      : (task.jenis == 'perbaikan'
+                                            ? const Color(0xFFF59E0B)
+                                            : AppTheme.primary))
+                                  .withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          task.isPencopotan
+                              ? Icons.power_settings_new_rounded
+                              : (task.jenis == 'perbaikan'
+                                    ? Icons.build_circle_rounded
+                                    : Icons.engineering_rounded),
+                          color: task.isPencopotan
+                              ? const Color(0xFFEF4444)
+                              : (task.jenis == 'perbaikan'
+                                    ? const Color(0xFFF59E0B)
+                                    : AppTheme.primary),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Pilih Teknisi Pelaksana',
+                              style: TextStyle(
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
                                 color: AppTheme.textPrimary,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          if (task.pelangganNoHp.isNotEmpty)
                             Text(
-                              task.pelangganNoHp,
+                              'Tiket #${task.id}: ${task.displayJenis}',
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 color: AppTheme.textSecondary,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                      if (task.pelangganAlamat.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          task.pelangganAlamat,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceCard,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppTheme.border.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Text(
-                          task.catatan.isNotEmpty
-                              ? task.catatan
-                              : 'Tidak ada catatan tambahan',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: AppTheme.textMuted),
+                        onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Pilih Teknisi untuk Ditugaskan:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: selectedTechId,
-                  dropdownColor: AppTheme.surfaceCard,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppTheme.background,
-                    border: OutlineInputBorder(
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.background,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.border),
                     ),
-                    prefixIcon: const Icon(
-                      Icons.engineering,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                  items: _technicians.isNotEmpty
-                      ? _technicians
-                            .map(
-                              (t) => DropdownMenuItem(
-                                value: t.id,
-                                child: Text(
-                                  '${t.nama} (${t.noHp.isNotEmpty ? t.noHp : "ID: ${t.id}"})',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.person_pin_circle_rounded,
+                              size: 16,
+                              color: AppTheme.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Pelanggan: ${task.pelangganNama}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppTheme.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (task.pelangganNoHp.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                task.pelangganNoHp,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
                                 ),
                               ),
-                            )
-                            .toList()
-                      : [
-                          const DropdownMenuItem(
-                            value: 4,
-                            child: Text(
-                              'Rahmat Hidayat (Teknisi - 081987654321)',
-                            ),
+                            ],
+                          ],
+                        ),
+                        if (task.pelangganAlamat.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.location_on_rounded,
+                                size: 14,
+                                color: AppTheme.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  task.pelangganAlamat,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                  onChanged: (val) {
-                    if (val != null) setSheetState(() => selectedTechId = val);
-                  },
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.send_rounded, size: 18),
-                  label: const Text('Tugaskan ke Teknisi Sekarang'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceCard,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppTheme.border.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Text(
+                            task.catatan.isNotEmpty
+                                ? task.catatan
+                                : 'Tidak ada catatan tambahan',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    Navigator.pop(ctx);
-                    final techId = selectedTechId ?? 4;
-                    final success = await ApiService.instance
-                        .assignTaskTechnician(task.id, techId);
-                    if (success) {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Tugas #${task.id} berhasil ditugaskan ke teknisi!',
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Pilih Teknisi untuk Ditugaskan:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int>(
+                    value: selectedTechId,
+                    isExpanded: true,
+                    dropdownColor: AppTheme.surfaceCard,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppTheme.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.engineering,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                    items: _technicians.isNotEmpty
+                        ? _technicians
+                              .map(
+                                (t) => DropdownMenuItem(
+                                  value: t.id,
+                                  child: Text(
+                                    '${t.nama} (${t.noHp.isNotEmpty ? t.noHp : "ID: ${t.id}"})',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              )
+                              .toList()
+                        : [
+                            const DropdownMenuItem(
+                              value: 4,
+                              child: Text(
+                                'Rahmat Hidayat (Teknisi - 081987654321)',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                    onChanged: (val) {
+                      if (val != null) setSheetState(() => selectedTechId = val);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: const Text('Tugaskan ke Teknisi Sekarang'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      Navigator.pop(ctx);
+                      final techId = selectedTechId ?? 4;
+                      final success = await ApiService.instance
+                          .assignTaskTechnician(task.id, techId);
+                      if (success) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Tugas #${task.id} berhasil ditugaskan ke teknisi!',
+                            ),
+                            backgroundColor: AppTheme.success,
                           ),
-                          backgroundColor: AppTheme.success,
-                        ),
-                      );
-                      if (mounted) _loadAllAdminData();
-                    } else {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Gagal menugaskan teknisi. Silakan coba lagi.',
+                        );
+                        if (mounted) _loadAllAdminData();
+                      } else {
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Gagal menugaskan teknisi. Silakan coba lagi.',
+                            ),
+                            backgroundColor: AppTheme.error,
                           ),
-                          backgroundColor: AppTheme.error,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -2400,6 +2611,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                     children: [
                       // Header Kartu
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
@@ -2416,12 +2628,16 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      t.displayJenis,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: accentColor,
+                                    Flexible(
+                                      child: Text(
+                                        t.displayJenis,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: accentColor,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
                                       ),
                                     ),
                                     const SizedBox(width: 6),
@@ -2442,10 +2658,13 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                                     fontWeight: FontWeight.w600,
                                     color: AppTheme.textPrimary,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ],
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -2471,42 +2690,53 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                       if (t.pelangganAlamat.isNotEmpty ||
                           t.pelangganNoHp.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        Row(
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            if (t.pelangganNoHp.isNotEmpty) ...[
-                              const Icon(
-                                Icons.phone_rounded,
-                                size: 13,
-                                color: AppTheme.textMuted,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                t.pelangganNoHp,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                            ],
-                            if (t.pelangganAlamat.isNotEmpty) ...[
-                              const Icon(
-                                Icons.location_on_rounded,
-                                size: 13,
-                                color: AppTheme.textMuted,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  t.pelangganAlamat,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppTheme.textSecondary,
+                            if (t.pelangganNoHp.isNotEmpty)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.phone_rounded,
+                                    size: 13,
+                                    color: AppTheme.textMuted,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    t.pelangganNoHp,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            if (t.pelangganAlamat.isNotEmpty)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_rounded,
+                                    size: 13,
+                                    color: AppTheme.textMuted,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 220),
+                                    child: Text(
+                                      t.pelangganAlamat,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ],
@@ -2603,12 +2833,16 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                         children: [
                           Row(
                             children: [
-                              Text(
-                                t.displayJenis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: AppTheme.textPrimary,
+                              Flexible(
+                                child: Text(
+                                  t.displayJenis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                               const SizedBox(width: 4),
@@ -2628,6 +2862,8 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                               fontSize: 11,
                               color: AppTheme.textSecondary,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ],
                       ),

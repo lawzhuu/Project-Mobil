@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_card.dart';
@@ -65,6 +64,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleBiometricLogin() async {
+    final isEnabled = await AuthService.instance.isBiometricEnabled();
+    if (!isEnabled) {
+      _showToast(
+        'Fitur login biometrik belum diaktifkan. Silakan masuk dengan email & password, lalu aktifkan di Pengaturan Profil.',
+        isError: true,
+      );
+      return;
+    }
+
     final success = await AuthService.instance.authenticateWithBiometrics();
     if (!mounted) return;
 
@@ -74,17 +82,10 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (_) => const MainShellScreen()),
       );
     } else {
-      _showToast('Autentikasi biometrik gagal atau belum ada sesi tersimpan.', isError: true);
+      _showToast('Autentikasi biometrik dibatalkan atau tidak cocok.', isError: true);
     }
   }
 
-  void _quickFill(String email, String roleName) {
-    setState(() {
-      _usernameController.text = email;
-      _passwordController.text = '123';
-    });
-    _showToast('Kredensial $roleName terisi.');
-  }
 
   void _showToast(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -222,6 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         GlowingButton(
                           text: 'MASUK SEKARANG',
                           icon: Icons.login,
+                          textColor: Colors.white,
                           isLoading: _isLoading,
                           width: double.infinity,
                           onPressed: _handleLogin,
@@ -239,64 +241,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Masuk dengan Biometrik / Sidik Jari',
                             style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Demo Quick Autofill Chips
-                  CustomCard(
-                    backgroundColor: AppTheme.surfaceElevated.withOpacity(0.3),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: const [
-                            Icon(Icons.bolt, color: AppTheme.warning, size: 16),
-                            SizedBox(width: 6),
-                            Text(
-                              'Pintasan Uji Role Demo:',
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            ActionChip(
-                              backgroundColor: AppTheme.surfaceCard,
-                              avatar: const Icon(Icons.admin_panel_settings, size: 14, color: AppTheme.primary),
-                              label: const Text('Admin', style: TextStyle(fontSize: 11)),
-                              onPressed: () => _quickFill('admin@sima.net', 'Admin'),
-                            ),
-                            ActionChip(
-                              backgroundColor: AppTheme.surfaceCard,
-                              avatar: const Icon(Icons.person, size: 14, color: AppTheme.success),
-                              label: const Text('Pelanggan IDR', style: TextStyle(fontSize: 11)),
-                              onPressed: () => _quickFill('budi@gmail.com', 'Pelanggan IDR'),
-                            ),
-                            ActionChip(
-                              backgroundColor: AppTheme.surfaceCard,
-                              avatar: const Icon(Icons.public, size: 14, color: AppTheme.accent),
-                              label: const Text('Diaspora USD', style: TextStyle(fontSize: 11)),
-                              onPressed: () => _quickFill('sarah@gmail.com', 'Diaspora USD'),
-                            ),
-                            ActionChip(
-                              backgroundColor: AppTheme.surfaceCard,
-                              avatar: const Icon(Icons.handyman, size: 14, color: AppTheme.warning),
-                              label: const Text('Teknisi', style: TextStyle(fontSize: 11)),
-                              onPressed: () => _quickFill('teknisi@sima.net', 'Teknisi'),
-                            ),
-                          ],
                         ),
                       ],
                     ),

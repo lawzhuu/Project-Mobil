@@ -404,13 +404,21 @@ class AdminInvoicesTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Text(
-                'Verifikasi Pembayaran (A3)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  'Verifikasi Pembayaran (A3)',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Text(
-                'Hubungkan ke Blockchain Ledger',
-                style: TextStyle(fontSize: 11, color: AppTheme.primary),
+              SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Hubungkan ke Blockchain Ledger',
+                  style: TextStyle(fontSize: 11, color: AppTheme.primary),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
               ),
             ],
           ),
@@ -440,24 +448,30 @@ class AdminInvoicesTab extends StatelessWidget {
                     children: [
                       // Header card
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Tagihan #${inv.id} - ${inv.periode}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                          Expanded(
+                            child: Text(
+                              'Tagihan #${inv.id} - ${inv.periode}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
-                          StatusBadge(
-                            status: isPaid
-                                ? 'lunas'
-                                : (isRejected ? 'ditolak' : (isPending ? 'menunggu' : inv.status)),
-                            customLabel: isPaid
-                                ? 'LUNAS'
-                                : (isRejected
-                                    ? 'BUKTI DITOLAK'
-                                    : (isPending ? 'MENUNGGU VERIFIKASI' : 'BELUM DIBAYAR')),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: StatusBadge(
+                              status: isPaid
+                                  ? 'lunas'
+                                  : (isRejected ? 'ditolak' : (isPending ? 'menunggu' : inv.status)),
+                              customLabel: isPaid
+                                  ? 'LUNAS'
+                                  : (isRejected
+                                      ? 'BUKTI DITOLAK'
+                                      : (isPending ? 'MENUNGGU VERIFIKASI' : 'BELUM DIBAYAR')),
+                            ),
                           ),
                         ],
                       ),
@@ -473,14 +487,18 @@ class AdminInvoicesTab extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            inv.formattedAmount,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primary,
+                          Flexible(
+                            child: Text(
+                              inv.formattedAmount,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             'Dasar: ${inv.formattedAmountIdr}',
                             style: const TextStyle(

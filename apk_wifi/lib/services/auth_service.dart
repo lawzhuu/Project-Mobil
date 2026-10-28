@@ -24,6 +24,8 @@ class AuthService {
   static const String _keyToken = 'simanet_jwt_token';
   static const String _keyUser = 'simanet_user_data';
   static const String _keyBiometricEnabled = 'simanet_biometric_enabled';
+  static const String _keyBiometricToken = 'simanet_biometric_token';
+  static const String _keyBiometricUser = 'simanet_biometric_user';
 
   Future<void> initSession() async {
     try {
@@ -56,7 +58,15 @@ class AuthService {
         key: _keyUser,
         value: jsonEncode(_currentUser!.toJson()),
       );
-      await _storage.write(key: _keyBiometricEnabled, value: 'true');
+
+      // Sinkronkan token biometrik jika pengguna sebelumnya sudah mengaktifkan biometrik
+      if (await isBiometricEnabled()) {
+        await _storage.write(key: _keyBiometricToken, value: _token);
+        await _storage.write(
+          key: _keyBiometricUser,
+          value: jsonEncode(_currentUser!.toJson()),
+        );
+      }
       return true;
     }
     return false;
@@ -99,8 +109,69 @@ class AuthService {
     return false;
   }
 
+  Future<bool> isBiometricEnabled() async {
+    try {
+      final val = await _storage.read(key: _keyBiometricEnabled);
+      return val == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> setBiometricEnabled(bool enabled) async {
+    try {
+      await _storage.write(
+        key: _keyBiometricEnabled,
+        value: enabled ? 'true' : 'false',
+      );
+      if (enabled && _token != null && _currentUser != null) {
+        await _storage.write(key: _keyBiometricToken, value: _token);
+        await _storage.write(
+          key: _keyBiometricUser,
+          value: jsonEncode(_currentUser!.toJson()),
+        );
+      } else if (!enabled) {
+        await _storage.delete(key: _keyBiometricToken);
+        await _storage.delete(key: _keyBiometricUser);
+      }
+    } catch (e) {
+      debugPrint('[AuthService] setBiometricEnabled error: $e');
+    }
+  }
+
+  Future<bool> canUseBiometrics() async {
+    try {
+      final isBiometricAvailable = await _localAuth.canCheckBiometrics;
+      final isDeviceSupported = await _localAuth.isDeviceSupported();
+      return isBiometricAvailable || isDeviceSupported;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> authenticateForToggle() async {
+    try {
+      return await _localAuth.authenticate(
+        localizedReason:
+            'Pindai sidik jari Anda untuk mengaktifkan login biometrik Sima.net',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: true,
+        ),
+      );
+    } catch (e) {
+      debugPrint('[AuthService] authenticateForToggle error: $e');
+      return false;
+    }
+  }
+
   Future<bool> authenticateWithBiometrics() async {
     try {
+      if (!await isBiometricEnabled()) {
+        debugPrint('[AuthService] Biometric login is disabled by user');
+        return false;
+      }
+
       final isBiometricAvailable = await _localAuth.canCheckBiometrics;
       final isDeviceSupported = await _localAuth.isDeviceSupported();
 
@@ -119,9 +190,21 @@ class AuthService {
       );
 
       if (authenticated) {
-        // Restore session if exists
+        // Coba pulihkan sesi aktif
         await initSession();
-        return isLoggedIn;
+        if (isLoggedIn) return true;
+
+        // Jika sesi aktif terhapus (misal setelah logout), pulihkan dari kredensial biometrik tersimpan
+        final bioToken = await _storage.read(key: _keyBiometricToken);
+        final bioUser = await _storage.read(key: _keyBiometricUser);
+        if (bioToken != null && bioUser != null) {
+          _token = bioToken;
+          _currentUser = UserModel.fromJson(jsonDecode(bioUser));
+          ApiService.instance.setAuthToken(_token);
+          await _storage.write(key: _keyToken, value: _token);
+          await _storage.write(key: _keyUser, value: bioUser);
+          return true;
+        }
       }
     } catch (e) {
       debugPrint('[AuthService] Biometric error: $e');

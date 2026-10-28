@@ -11,7 +11,6 @@ import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/status_badge.dart';
-import 'technician_compass_screen.dart';
 
 class TechnicianMapScreen extends StatefulWidget {
   final TaskModel? selectedTask;
@@ -259,33 +258,21 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
             top: 16,
             right: 16,
             child: Tooltip(
-              message: 'Buka Kompas Digital (${_headingDegrees.toInt()}°)',
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
+              message: 'Kompas Lapangan (${_headingDegrees.toInt()}°)',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TechnicianCompassScreen(targetTask: _activeTask),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.18),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                      border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
+                  ],
+                  border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+                ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -357,8 +344,6 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
                   ),
                 ),
               ),
-            ),
-          ),
 
           // Selected Customer Floating Bottom Detail Card
           if (_activeTask != null)
@@ -373,45 +358,53 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: _activeTask!.jenis == 'perbaikan'
-                                    ? AppTheme.error.withOpacity(0.18)
-                                    : AppTheme.warning.withOpacity(0.18),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _activeTask!.jenis == 'perbaikan' ? Icons.build : Icons.cable,
-                                color: _activeTask!.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _activeTask!.pelangganNama,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textPrimary),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: _activeTask!.jenis == 'perbaikan'
+                                      ? AppTheme.error.withOpacity(0.18)
+                                      : AppTheme.warning.withOpacity(0.18),
+                                  shape: BoxShape.circle,
                                 ),
-                                Text(
-                                  _activeTask!.jenis == 'perbaikan' ? 'Tugas Perbaikan' : 'Tugas Pasang Baru',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: _activeTask!.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                child: Icon(
+                                  _activeTask!.jenis == 'perbaikan' ? Icons.build : Icons.cable,
+                                  color: _activeTask!.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning,
+                                  size: 18,
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _activeTask!.pelangganNama,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textPrimary),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    Text(
+                                      _activeTask!.jenis == 'perbaikan' ? 'Tugas Perbaikan' : 'Tugas Pasang Baru',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: _activeTask!.jenis == 'perbaikan' ? AppTheme.error : AppTheme.warning,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        StatusBadge(status: _activeTask!.status),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: StatusBadge(status: _activeTask!.status),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -428,96 +421,74 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
                     ],
                     const SizedBox(height: 14),
 
-                    // Actions Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.secondary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.explore, size: 16),
-                            label: const Text('Buka Kompas', style: TextStyle(fontSize: 12)),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => TechnicianCompassScreen(targetTask: _activeTask),
-                                ),
-                              );
-                            },
-                          ),
+                    // Actions Row - Full-width status action button
+                    if (_activeTask!.isDone)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.success.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.success.withValues(alpha: 0.4)),
                         ),
-                        const SizedBox(width: 10),
-                        if (_activeTask!.isDone)
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.success.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppTheme.success.withValues(alpha: 0.4)),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.lock, size: 14, color: AppTheme.success),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Selesai (Terkunci)',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.success,
-                                    ),
-                                  ),
-                                ],
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.lock, size: 14, color: AppTheme.success),
+                            SizedBox(width: 4),
+                            Text(
+                              'Selesai (Terkunci)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.success,
                               ),
                             ),
-                          )
-                        else if (_activeTask!.isNew)
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFF59E0B),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              icon: const Icon(Icons.engineering, size: 16),
-                              label: const Text('Dikerjakan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                              onPressed: () async {
-                                final messenger = ScaffoldMessenger.of(context);
-                                final user = AuthService.instance.currentUser;
-                                await ApiService.instance.updateTaskStatus(
-                                  _activeTask!.id,
-                                  'dikerjakan',
-                                  teknisiId: _activeTask!.teknisiId ?? user?.id,
-                                );
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('Status tugas #${_activeTask!.id} berhasil diubah menjadi "Dikerjakan"!'),
-                                    backgroundColor: AppTheme.success,
-                                  ),
-                                );
-                                _loadTasksAndGPS();
-                              },
-                            ),
-                          )
-                        else
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
+                          ],
+                        ),
+                      )
+                    else if (_activeTask!.isNew)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF59E0B),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.engineering, size: 16),
+                          label: const Text('Dikerjakan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final user = AuthService.instance.currentUser;
+                            await ApiService.instance.updateTaskStatus(
+                              _activeTask!.id,
+                              'dikerjakan',
+                              teknisiId: _activeTask!.teknisiId ?? user?.id,
+                            );
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Status tugas #${_activeTask!.id} berhasil diubah menjadi "Dikerjakan"!'),
                                 backgroundColor: AppTheme.success,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
-                              icon: const Icon(Icons.check_circle, size: 16),
-                              label: const Text('Selesai', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            );
+                            _loadTasksAndGPS();
+                          },
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.success,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.check_circle, size: 16),
+                          label: const Text('Selesai', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               onPressed: () async {
                                 final messenger = ScaffoldMessenger.of(context);
                                 final confirm = await showDialog<bool>(
@@ -553,12 +524,10 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
                               },
                             ),
                           ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
         ],
       ),
     );

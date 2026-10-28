@@ -64,7 +64,7 @@ class GlowingButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 18),
+                    Icon(icon, size: 18, color: textColor ?? Colors.white),
                     const SizedBox(width: 8),
                   ],
                   Flexible(
@@ -76,7 +76,7 @@ class GlowingButton extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: textColor ?? const Color(0xFF04121F),
+                        color: textColor ?? Colors.white,
                       ),
                     ),
                   ),
