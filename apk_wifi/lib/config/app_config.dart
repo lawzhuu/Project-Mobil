@@ -1,29 +1,27 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
   static const String appName = 'Sima.net';
   static const String appTagline = 'ISP Reseller & Smart Fiber Operations';
   static const String appVersion = '1.0.0';
 
-  // Default server URL based on platform
-  // Android emulator uses 10.0.2.2, desktop/web uses localhost:3000
+  // Base server URL configured via .env (BACKEND_BASE_URL) or --dart-define
   static String get defaultBaseUrl {
-    if (kIsWeb) return 'http://localhost:3000';
-    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
-    return 'http://localhost:3000';
-  }
-
-  static String baseUrl = defaultBaseUrl;
-
-  static void setBaseUrl(String url) {
-    if (url.endsWith('/')) {
-      baseUrl = url.substring(0, url.length - 1);
-    } else {
-      baseUrl = url;
+    final envUrl = dotenv.env['BACKEND_BASE_URL'];
+    if (envUrl != null && envUrl.trim().isNotEmpty) {
+      final trimmed = envUrl.trim();
+      return trimmed.endsWith('/') ? trimmed.substring(0, trimmed.length - 1) : trimmed;
     }
+    const defineUrl = String.fromEnvironment(
+      'BACKEND_BASE_URL',
+      defaultValue: 'https://backend-sima.vercel.app',
+    );
+    return defineUrl.endsWith('/') ? defineUrl.substring(0, defineUrl.length - 1) : defineUrl;
   }
+
+  static String get baseUrl => defaultBaseUrl;
 
   // Resolve image URL (routes external Supabase images through backend proxy to prevent Android emulator DNS errors)
   static String resolveImageUrl(String pathOrUrl) {

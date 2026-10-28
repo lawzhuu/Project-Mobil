@@ -187,61 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showServerDialog() {
-    final controller = TextEditingController(text: AppConfig.baseUrl);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surfaceCard,
-        title: const Text(
-          'Atur Alamat Backend',
-          style: TextStyle(color: AppTheme.textPrimary),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Ganti URL koneksi API Express backend:',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: controller,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration: const InputDecoration(
-                hintText: 'http://localhost:3000',
-                prefixIcon: Icon(Icons.dns, color: AppTheme.primary),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Batal',
-              style: TextStyle(color: AppTheme.textMuted),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              AppConfig.setBaseUrl(controller.text.trim());
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Base URL diubah ke: ${AppConfig.baseUrl}'),
-                  backgroundColor: AppTheme.success,
-                ),
-              );
-              setState(() {});
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   // Preset mapping alamat Indonesia populer untuk autofill cepat koordinat & zona waktu
   final Map<String, Map<String, dynamic>> _indonesiaCityPresets = {
@@ -1490,31 +1436,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         size: 20,
                       ),
                     ),
-                    const Divider(color: AppTheme.border),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.dns, color: AppTheme.accent),
-                      title: const Text(
-                        'Server Backend URL',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      subtitle: Text(
-                        AppConfig.baseUrl,
-                        style: const TextStyle(
-                          color: AppTheme.textMuted,
-                          fontSize: 12,
-                        ),
-                      ),
-                      trailing: const Icon(
-                        Icons.edit,
-                        color: AppTheme.textSecondary,
-                        size: 18,
-                      ),
-                      onTap: _showServerDialog,
-                    ),
+
                   ],
                 ),
               ),

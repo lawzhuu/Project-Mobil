@@ -86,64 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _showToast('Kredensial $roleName terisi.');
   }
 
-  void _showServerConfigDialog() {
-    final controller = TextEditingController(text: AppConfig.baseUrl);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surfaceCard,
-        title: const Text('Konfigurasi Backend Server', style: TextStyle(color: AppTheme.textPrimary)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Masukkan alamat URL backend Express:',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration: const InputDecoration(
-                hintText: 'http://localhost:3000',
-                prefixIcon: Icon(Icons.link, color: AppTheme.primary),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              children: [
-                ActionChip(
-                  label: const Text('localhost:3000'),
-                  onPressed: () => controller.text = 'http://localhost:3000',
-                ),
-                ActionChip(
-                  label: const Text('10.0.2.2:3000 (Android)'),
-                  onPressed: () => controller.text = 'http://10.0.2.2:3000',
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textMuted)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              AppConfig.setBaseUrl(controller.text.trim());
-              Navigator.pop(ctx);
-              _showToast('Base URL diperbarui ke ${AppConfig.baseUrl}');
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showToast(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -167,15 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Server config icon top right
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                      icon: const Icon(Icons.settings_ethernet, color: AppTheme.textSecondary),
-                      tooltip: 'Atur URL Backend',
-                      onPressed: _showServerConfigDialog,
-                    ),
-                  ),
+                  const SizedBox(height: 12),
 
                   // Brand Hero Header
                   Center(
