@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../../config/app_config.dart';
 import '../../models/user_model.dart';
 import '../local_db_service.dart';
@@ -134,7 +135,34 @@ class AnalyticsApi {
         return map;
       }
     } catch (e) {
-      debugPrint('[AnalyticsApi] getExchangeRates error: $e. Using offline rates.');
+      debugPrint('[AnalyticsApi] getExchangeRates backend error: $e. Trying direct CDN fallback.');
+    }
+
+    // Direct CDN fallback to fawazahmed0/exchange-api if backend unreachable
+    try {
+      final cdnUrl = Uri.parse(
+        'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.min.json',
+      );
+      final cdnRes = await http.get(cdnUrl).timeout(const Duration(seconds: 4));
+      if (cdnRes.statusCode == 200) {
+        final data = jsonDecode(cdnRes.body);
+        final usdMap = data['usd'] as Map<String, dynamic>?;
+        if (usdMap != null && usdMap['idr'] != null) {
+          final usdToIdr = double.tryParse(usdMap['idr'].toString()) ?? 15500.0;
+          final usdToEur = double.tryParse(usdMap['eur'].toString()) ?? 0.90;
+          final eurToIdr = usdToEur > 0 ? (usdToIdr / usdToEur) : 16800.0;
+
+          final liveMap = {
+            'IDR': 1.0,
+            'USD': double.parse(usdToIdr.toStringAsFixed(2)),
+            'EUR': double.parse(eurToIdr.toStringAsFixed(2)),
+          };
+          await LocalDbService.instance.saveCache(cacheKey, liveMap);
+          return liveMap;
+        }
+      }
+    } catch (e) {
+      debugPrint('[AnalyticsApi] Direct CDN fallback error: $e. Checking local storage cache.');
     }
 
     final cached = await LocalDbService.instance.getCache(cacheKey);

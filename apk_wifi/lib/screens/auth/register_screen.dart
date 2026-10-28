@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
@@ -31,6 +33,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final MapController _mapController = MapController();
 
   bool _isLoading = false;
+  bool _isFetchingGps = false;
+
+  final Map<String, Map<String, dynamic>> _indonesiaCityPresets = {
+    'Jakarta': {'lat': -6.2088, 'lng': 106.8456, 'tz': 'WIB'},
+    'Bandung': {'lat': -6.9175, 'lng': 107.6191, 'tz': 'WIB'},
+    'Semarang': {'lat': -6.9667, 'lng': 110.4167, 'tz': 'WIB'},
+    'Yogyakarta': {'lat': -7.7956, 'lng': 110.3695, 'tz': 'WIB'},
+    'Surabaya': {'lat': -7.2575, 'lng': 112.7521, 'tz': 'WIB'},
+    'Medan': {'lat': 3.5952, 'lng': 98.6722, 'tz': 'WIB'},
+    'Denpasar (Bali)': {'lat': -8.6705, 'lng': 115.2126, 'tz': 'WITA'},
+    'Makassar': {'lat': -5.1477, 'lng': 119.4327, 'tz': 'WITA'},
+    'Balikpapan': {'lat': -1.2379, 'lng': 116.8289, 'tz': 'WITA'},
+    'Jayapura': {'lat': -2.5916, 'lng': 140.6690, 'tz': 'WIT'},
+    'Ambon': {'lat': -3.6547, 'lng': 128.1906, 'tz': 'WIT'},
+  };
 
   @override
   void dispose() {
@@ -42,7 +59,114 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  void _detectAddressChanges(String text) {
+    final lower = text.toLowerCase();
+    for (final entry in _indonesiaCityPresets.entries) {
+      if (lower.contains(entry.key.toLowerCase())) {
+        final newLoc = LatLng(
+          entry.value['lat'] as double,
+          entry.value['lng'] as double,
+        );
+        setState(() {
+          _selectedLocation = newLoc;
+        });
+        try {
+          _mapController.move(newLoc, 13.0);
+        } catch (_) {}
+        break;
+      }
+    }
+  }
+
+  Future<void> _reverseGeocode(LatLng point) async {
+    String fetchedAddress = '';
+    String detectedCountry = _selectedCountry;
+
+    // Reverse Geocoding via OpenStreetMap Nominatim API
+    try {
+      final geoUrl = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${point.latitude}&lon=${point.longitude}&zoom=18&addressdetails=1',
+      );
+      final geoRes = await http
+          .get(
+            geoUrl,
+            headers: {
+              'User-Agent': 'SimaNet-App/1.0 (Mobile Fiber Operation)',
+            },
+          )
+          .timeout(const Duration(seconds: 4));
+
+      if (geoRes.statusCode == 200) {
+        final geoData = jsonDecode(geoRes.body);
+        final addr = geoData['address'] as Map<String, dynamic>?;
+        if (addr != null) {
+          final road =
+              addr['road'] ??
+              addr['suburb'] ??
+              addr['neighbourhood'] ??
+              '';
+          final city =
+              addr['city'] ??
+              addr['town'] ??
+              addr['county'] ??
+              addr['regency'] ??
+              '';
+          final state = addr['state'] ?? '';
+          final country = addr['country'] ?? '';
+
+          final parts = [
+            road,
+            city,
+            state,
+          ].where((p) => p.toString().isNotEmpty).toList();
+          if (parts.isNotEmpty) {
+            fetchedAddress = parts.join(', ');
+          } else if (geoData['display_name'] != null) {
+            fetchedAddress = geoData['display_name'].toString();
+          }
+
+          if (country.toString().isNotEmpty) {
+            for (final c in AppConfig.supportedCountries) {
+              if (country.toString().toLowerCase().contains(
+                c['name']!.toLowerCase(),
+              )) {
+                detectedCountry = c['name']!;
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Fallback jika offline atau timeout: cari preset kota Indonesia terdekat
+      double minDistance = double.infinity;
+      String closestCity = '';
+      for (final entry in _indonesiaCityPresets.entries) {
+        final dLat = point.latitude - (entry.value['lat'] as double);
+        final dLng = point.longitude - (entry.value['lng'] as double);
+        final dist = (dLat * dLat) + (dLng * dLng);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestCity = entry.key;
+        }
+      }
+      if (closestCity.isNotEmpty && minDistance < 1.0) {
+        fetchedAddress = 'Jl. Sekitar Pusat Kota, $closestCity';
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        if (fetchedAddress.isNotEmpty) {
+          _alamatController.text = fetchedAddress;
+        }
+        _selectedCountry = detectedCountry;
+      });
+    }
+  }
+
   Future<void> _getCurrentLocation() async {
+    setState(() => _isFetchingGps = true);
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -62,9 +186,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _selectedLocation = newLoc;
       });
       _mapController.move(newLoc, 15);
-      _showToast('Titik koordinat berhasil disesuaikan dengan GPS');
+
+      await _reverseGeocode(newLoc);
+
+      _showToast('Alamat & koordinat berhasil di-autofill dari GPS!');
     } catch (e) {
       _showToast('Gagal membaca GPS: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingGps = false);
+      }
     }
   }
 
@@ -272,9 +403,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
                         ),
                         TextButton.icon(
-                          onPressed: _getCurrentLocation,
-                          icon: const Icon(Icons.my_location, size: 16, color: AppTheme.primary),
-                          label: const Text('GPS Saya', style: TextStyle(color: AppTheme.primary, fontSize: 12)),
+                          onPressed: _isFetchingGps ? null : _getCurrentLocation,
+                          icon: _isFetchingGps
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.my_location,
+                                  size: 16,
+                                  color: AppTheme.primary,
+                                ),
+                          label: Text(
+                            _isFetchingGps ? 'Mencari...' : 'GPS Saya',
+                            style: const TextStyle(
+                              color: AppTheme.primary,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -283,11 +432,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _alamatController,
                       maxLines: 2,
                       style: const TextStyle(color: AppTheme.textPrimary),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Alamat Lengkap Rumah / Kantor',
                         hintText: 'Jl. Contoh No. 123, RT/RW, Kecamatan, Kota',
-                        prefixIcon: Icon(Icons.home, color: AppTheme.primary),
+                        prefixIcon: const Icon(Icons.home, color: AppTheme.primary),
+                        suffixIcon: IconButton(
+                          tooltip: 'Gunakan GPS saat ini',
+                          icon: _isFetchingGps
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.my_location,
+                                  color: AppTheme.primary,
+                                  size: 20,
+                                ),
+                          onPressed: _isFetchingGps ? null : _getCurrentLocation,
+                        ),
                       ),
+                      onChanged: _detectAddressChanges,
                       validator: (v) => (v == null || v.isEmpty) ? 'Alamat wajib diisi' : null,
                     ),
                     const SizedBox(height: 14),
@@ -311,6 +478,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               setState(() {
                                 _selectedLocation = point;
                               });
+                              _reverseGeocode(point);
                             },
                           ),
                           children: [
