@@ -942,32 +942,37 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                               ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isTermination
-                                  ? const Color(0xFFDC2626)
-                                        .withValues(alpha: 0.2)
-                                  : (isUpgrade
-                                        ? const Color(0xFF059669)
-                                              .withValues(alpha: 0.2)
-                                        : const Color(0xFF2563EB)
-                                              .withValues(alpha: 0.2)),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              req.tipe,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
                                 color: isTermination
-                                    ? const Color(0xFFEF4444)
+                                    ? const Color(0xFFDC2626)
+                                          .withValues(alpha: 0.2)
                                     : (isUpgrade
-                                          ? const Color(0xFF10B981)
-                                          : const Color(0xFF38BDF8)),
+                                          ? const Color(0xFF059669)
+                                                .withValues(alpha: 0.2)
+                                          : const Color(0xFF2563EB)
+                                                .withValues(alpha: 0.2)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                req.tipe,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isTermination
+                                      ? const Color(0xFFEF4444)
+                                      : (isUpgrade
+                                            ? const Color(0xFF10B981)
+                                            : const Color(0xFF38BDF8)),
+                                ),
                               ),
                             ),
                           ),
@@ -1067,7 +1072,14 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                                   ),
                                 ],
                               ),
-                              const Divider(color: AppTheme.border, height: 12),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 4),
+                                child: Divider(
+                                  color: Color(0xFFF1F5F9),
+                                  height: 1,
+                                  thickness: 1,
+                                ),
+                              ),
                               const Row(
                                 children: [
                                   Icon(
@@ -1144,7 +1156,14 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                                   ),
                                 ],
                               ),
-                              const Divider(color: AppTheme.border, height: 12),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 4),
+                                child: Divider(
+                                  color: Color(0xFFF1F5F9),
+                                  height: 1,
+                                  thickness: 1,
+                                ),
+                              ),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
