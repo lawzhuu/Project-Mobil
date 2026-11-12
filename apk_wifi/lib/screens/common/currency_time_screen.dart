@@ -249,7 +249,7 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Kurs Live: 1 USD ≈ Rp ${CurrencyTimeService.instance.rates['USD']?.round() ?? 18138} | 1 EUR ≈ Rp ${CurrencyTimeService.instance.rates['EUR']?.round() ?? 20263}',
+                          'Kurs Live: 1 USD ≈ Rp ${CurrencyTimeService.instance.rates['USD']?.round() ?? 18149} | 1 EUR ≈ Rp ${CurrencyTimeService.instance.rates['EUR']?.round() ?? 20263}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
                         ),

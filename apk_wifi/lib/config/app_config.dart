@@ -52,7 +52,7 @@ class AppConfig {
   // Fallback exchange rates (live baseline)
   static const Map<String, double> idrPerCurrency = {
     'IDR': 1.0,
-    'USD': 18138.0,
+    'USD': 18149.0,
     'EUR': 20263.0,
   };
 

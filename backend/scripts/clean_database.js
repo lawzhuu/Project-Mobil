@@ -42,11 +42,9 @@ async function cleanDatabase() {
   }
 
   // 2. Bersihkan Invoices
-  // Standarisasi kurs terkunci USD menggunakan Live CDN Forex Rate yang aktif
-  const { getLockedRate, fetchLiveRates } = require('../routes/common.routes');
-  await fetchLiveRates();
-  const liveUsdRate = await getLockedRate('USD');
-  console.log(`[CleanDB] Live USD exchange rate from CDN: Rp ${liveUsdRate}`);
+  // Standarisasi kurs terkunci USD selaras dengan ECB Forex Sync di mobile (18.149 IDR / USD)
+  const targetUsdRate = 18149.0;
+  console.log(`[CleanDB] Synchronizing locked USD exchange rate to: Rp ${targetUsdRate}`);
 
   db.invoices = [
     {
@@ -55,7 +53,7 @@ async function cleanDatabase() {
       periode: 'November 2026',
       nominal_idr: 450000,
       mata_uang: 'USD',
-      kurs_terkunci: liveUsdRate,
+      kurs_terkunci: targetUsdRate,
       jatuh_tempo: '2026-11-25T23:59:59+00:00',
       status: 'belum',
       diskon_idr: 0,
@@ -81,7 +79,7 @@ async function cleanDatabase() {
       periode: 'Oktober 2026',
       nominal_idr: 450000,
       mata_uang: 'USD',
-      kurs_terkunci: liveUsdRate,
+      kurs_terkunci: targetUsdRate,
       jatuh_tempo: '2026-10-25T23:59:59+00:00',
       status: 'lunas',
       diskon_idr: 0,

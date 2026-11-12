@@ -378,7 +378,7 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                           Expanded(
                             child: Text(
                               _selectedCurrency == 'USD'
-                                  ? 'Kurs Live: 1 USD ≈ Rp ${_formatRupiah((CurrencyTimeService.instance.rates['USD'] ?? 18138).round())} (ECB Forex Sync)'
+                                  ? 'Kurs Live: 1 USD ≈ Rp ${_formatRupiah((CurrencyTimeService.instance.rates['USD'] ?? 18149).round())} (ECB Forex Sync)'
                                   : (_selectedCurrency == 'EUR'
                                         ? 'Kurs Live: 1 EUR ≈ Rp ${_formatRupiah((CurrencyTimeService.instance.rates['EUR'] ?? 20263).round())} (ECB Forex Sync)'
                                         : 'Mata uang utama: IDR (Rupiah Indonesia) • Sinkronisasi Kurs Live'),
