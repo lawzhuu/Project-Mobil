@@ -55,7 +55,7 @@ class SimaNetApp extends StatelessWidget {
     final bool hasSession = AuthService.instance.isLoggedIn;
 
     return MaterialApp(
-      title: 'Sima.net - ISP Reseller Operations',
+      title: 'Sima Net',
       debugShowCheckedModeBanner: false, // Menghilangkan banner "DEBUG" di pojok kanan atas
       theme: AppTheme.lightTheme,
       // PANDUAN PEMULA (Routing Kondisional):
