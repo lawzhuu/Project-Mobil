@@ -193,38 +193,48 @@ function getInitialData() {
       {
         id: 1,
         user_id: 2,
-        periode: 'Oktober 2026',
+        periode: 'November 2026',
         nominal_idr: 275000,
         mata_uang: 'IDR',
         kurs_terkunci: 1.0,
-        jatuh_tempo: '2026-10-25T23:59:59.000Z',
+        jatuh_tempo: '2026-11-25T23:59:59.000Z',
         status: 'belum'
       },
       {
         id: 2,
         user_id: 3,
+        periode: 'November 2026',
+        nominal_idr: 450000,
+        mata_uang: 'USD',
+        kurs_terkunci: 16300.0,
+        jatuh_tempo: '2026-11-25T23:59:59.000Z',
+        status: 'belum'
+      },
+      {
+        id: 3,
+        user_id: 3,
         periode: 'Oktober 2026',
         nominal_idr: 450000,
         mata_uang: 'USD',
-        kurs_terkunci: 15500.0,
+        kurs_terkunci: 16300.0,
         jatuh_tempo: '2026-10-25T23:59:59.000Z',
         status: 'lunas'
       },
       {
-        id: 3,
+        id: 4,
         user_id: 2,
-        periode: 'September 2026',
+        periode: 'Oktober 2026',
         nominal_idr: 275000,
         mata_uang: 'IDR',
         kurs_terkunci: 1.0,
-        jatuh_tempo: '2026-09-25T23:59:59.000Z',
+        jatuh_tempo: '2026-10-25T23:59:59.000Z',
         status: 'lunas'
       }
     ],
     payments: [
       {
         id: 1,
-        invoice_id: 2,
+        invoice_id: 3,
         user_id: 3,
         bukti_path: '',
         nominal_idr: 450000,
@@ -233,12 +243,12 @@ function getInitialData() {
       },
       {
         id: 2,
-        invoice_id: 3,
+        invoice_id: 4,
         user_id: 2,
         bukti_path: '',
         nominal_idr: 275000,
         status: 'diverifikasi',
-        verified_at: '2026-09-20T10:15:00.000Z'
+        verified_at: '2026-10-20T10:15:00.000Z'
       }
     ],
     ledger_blocks: initialLedger,

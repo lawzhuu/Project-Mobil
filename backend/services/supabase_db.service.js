@@ -119,11 +119,22 @@ class SupabaseDbService {
       else if (verbose) console.log(`✓ Migrated ${safeUsers.length} users`);
     }
 
-    // 3. Invoices
+    // 3. Invoices (Filter out local-only fields like diskon_idr/voucher_code not in Supabase schema)
     if (dbData.invoices && dbData.invoices.length > 0) {
-      const { error } = await supabase.from('invoices').upsert(dbData.invoices, { onConflict: 'id' });
+      const safeInvoices = dbData.invoices.map(inv => ({
+        id: inv.id,
+        user_id: inv.user_id,
+        periode: inv.periode,
+        nominal_idr: inv.nominal_idr,
+        mata_uang: inv.mata_uang || 'IDR',
+        kurs_terkunci: inv.kurs_terkunci || 1.0,
+        jatuh_tempo: inv.jatuh_tempo,
+        status: inv.status || 'belum',
+        created_at: inv.created_at || new Date().toISOString()
+      }));
+      const { error } = await supabase.from('invoices').upsert(safeInvoices, { onConflict: 'id' });
       if (error) console.error('Error migrating invoices:', error.message);
-      else if (verbose) console.log(`✓ Migrated ${dbData.invoices.length} invoices`);
+      else if (verbose) console.log(`✓ Migrated ${safeInvoices.length} invoices`);
     }
 
     // 4. Payments

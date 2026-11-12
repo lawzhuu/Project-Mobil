@@ -54,8 +54,8 @@ router.get('/rates', async (req, res) => {
       fetchCdn('currencies/eur.min.json')
     ]);
 
-    const usdToIdr = parseFloat(usdData?.usd?.idr) || 15500.0;
-    const eurToIdr = parseFloat(eurData?.eur?.idr) || 16800.0;
+    const usdToIdr = parseFloat(usdData?.usd?.idr) || 16300.0;
+    const eurToIdr = parseFloat(eurData?.eur?.idr) || 17600.0;
     const dateStr = usdData?.date || new Date().toISOString().split('T')[0];
 
     cachedRates = {
@@ -172,4 +172,17 @@ router.get('/', (req, res) => {
   });
 });
 
+// Helper untuk mengambil kurs terkunci terkini (prioritas: cache live CDN -> fallback: STATIC_RATES)
+function getLockedRate(currency) {
+  const curr = (currency || 'IDR').toUpperCase();
+  if (curr === 'IDR') return 1.0;
+  if (cachedRates && cachedRates.idrPerCurrency && cachedRates.idrPerCurrency[curr]) {
+    return cachedRates.idrPerCurrency[curr];
+  }
+  return STATIC_RATES.idrPerCurrency[curr] || 1.0;
+}
+
+router.getLockedRate = getLockedRate;
+
 module.exports = router;
+module.exports.getLockedRate = getLockedRate;

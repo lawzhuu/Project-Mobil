@@ -14,6 +14,7 @@
 const express = require('express');
 const { loadDB, saveDB } = require('../db');
 const { STATIC_RATES } = require('../config');
+const { getLockedRate } = require('./common.routes');
 const { calculateBlockHash } = require('../utils/hash');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
 const { getSupabaseClient, isSupabaseConfigured } = require('../config/supabase');
@@ -121,8 +122,8 @@ router.post('/invoices', authMiddleware, roleMiddleware(['admin']), (req, res) =
   const user = db.users.find(u => u.id === parseInt(user_id));
   if (!user) return res.status(404).json({ success: false, message: 'Pelanggan tidak ditemukan' });
 
-  // Lock exchange rate at time of invoice creation per PRD
-  const lockedRate = STATIC_RATES.idrPerCurrency[user.mata_uang] || 1.0;
+  // Lock exchange rate at time of invoice creation per PRD (Dynamic FX Rate)
+  const lockedRate = getLockedRate(user.mata_uang);
 
   const newInvoice = {
     id: db.invoices.length ? Math.max(...db.invoices.map(i => i.id)) + 1 : 1,
