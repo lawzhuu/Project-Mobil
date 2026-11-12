@@ -1011,6 +1011,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                                           null)
                                   ? 'Beli & Pasang Paket Ini'
                                   : 'Ajukan Perubahan Paket')),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -1064,6 +1066,8 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                   isTerm
                       ? 'Pengajuan Pemutusan Layanan Sedang Ditinjau'
                       : 'Pengajuan Paket Sedang Ditinjau Admin',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,

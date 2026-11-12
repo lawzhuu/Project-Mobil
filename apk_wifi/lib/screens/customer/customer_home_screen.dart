@@ -371,10 +371,13 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
                   // Action Icons (Lapor Gangguan, Search, Chatbot Headset, Notification Bell)
                   IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     icon: const Icon(
                       Icons.report_problem_outlined,
                       color: Colors.white,
-                      size: 22,
+                      size: 21,
                     ),
                     tooltip: 'Lapor Gangguan Jaringan',
                     onPressed: () {
@@ -386,11 +389,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       );
                     },
                   ),
+                  const SizedBox(width: 8),
                   IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     icon: const Icon(
                       Icons.search,
                       color: Colors.white,
-                      size: 22,
+                      size: 21,
                     ),
                     tooltip: 'Cari Paket',
                     onPressed: () {
@@ -404,11 +411,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       );
                     },
                   ),
+                  const SizedBox(width: 8),
                   IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     icon: const Icon(
                       Icons.headset_mic_outlined,
                       color: Colors.white,
-                      size: 22,
+                      size: 21,
                     ),
                     tooltip: 'Chatbot AI CS',
                     onPressed: () {
@@ -420,13 +431,17 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       );
                     },
                   ),
+                  const SizedBox(width: 8),
                   Stack(
                     children: [
                       IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                         icon: const Icon(
                           Icons.notifications_none,
                           color: Colors.white,
-                          size: 22,
+                          size: 21,
                         ),
                         tooltip: 'Notifikasi',
                         onPressed: () {
@@ -609,20 +624,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Text(
-                                activePackage.id > 0
-                                    ? '${activePackage.kecepatanMbps} Mbps Simetris (1:1)'
-                                    : (user.status == 'inactive'
-                                          ? 'Langganan Nonaktif'
-                                          : 'Belum Berlangganan'),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: activePackage.id > 0
-                                      ? const Color(0xFF059669)
+                              Expanded(
+                                child: Text(
+                                  activePackage.id > 0
+                                      ? '${activePackage.kecepatanMbps} Mbps Simetris (1:1)'
                                       : (user.status == 'inactive'
-                                            ? const Color(0xFFDC2626)
-                                            : const Color(0xFFD97706)),
-                                  fontWeight: FontWeight.w700,
+                                            ? 'Langganan Nonaktif'
+                                            : 'Belum Berlangganan'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: activePackage.id > 0
+                                        ? const Color(0xFF059669)
+                                        : (user.status == 'inactive'
+                                              ? const Color(0xFFDC2626)
+                                              : const Color(0xFFD97706)),
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ],
@@ -639,51 +658,58 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
                 // 4 Circle Metrics (Internet, Status Akun, Valuta, Zona)
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildCircularMetric(
-                      title: 'Kecepatan',
-                      value: '${activePackage.kecepatanMbps}',
-                      unit: 'Mbps',
-                      icon: Icons.speed,
-                      iconColor: AppTheme.primary,
+                    Expanded(
+                      child: _buildCircularMetric(
+                        title: 'Kecepatan',
+                        value: '${activePackage.kecepatanMbps}',
+                        unit: 'Mbps',
+                        icon: Icons.speed,
+                        iconColor: AppTheme.primary,
+                      ),
                     ),
-                    _buildCircularMetric(
-                      title: 'Status Layanan',
-                      value: user.paketId == null || user.paketId! <= 0
-                          ? 'Belum Pasang'
-                          : (user.status == 'active'
-                                ? 'Aktif'
-                                : (user.status == 'inactive'
-                                      ? 'Nonaktif'
-                                      : 'Pending')),
-                      unit: user.paketId == null || user.paketId! <= 0
-                          ? 'Layanan'
-                          : 'Internet',
-                      icon: user.paketId == null || user.paketId! <= 0
-                          ? Icons.cable_rounded
-                          : Icons.verified_user_outlined,
-                      iconColor: user.paketId == null || user.paketId! <= 0
-                          ? const Color(0xFF64748B)
-                          : (user.status == 'active'
-                                ? const Color(0xFF059669)
-                                : (user.status == 'inactive'
-                                      ? const Color(0xFFDC2626)
-                                      : const Color(0xFFD97706))),
+                    Expanded(
+                      child: _buildCircularMetric(
+                        title: 'Status Layanan',
+                        value: user.paketId == null || user.paketId! <= 0
+                            ? 'Belum Pasang'
+                            : (user.status == 'active'
+                                  ? 'Aktif'
+                                  : (user.status == 'inactive'
+                                        ? 'Nonaktif'
+                                        : 'Pending')),
+                        unit: user.paketId == null || user.paketId! <= 0
+                            ? 'Layanan'
+                            : 'Internet',
+                        icon: user.paketId == null || user.paketId! <= 0
+                            ? Icons.cable_rounded
+                            : Icons.verified_user_outlined,
+                        iconColor: user.paketId == null || user.paketId! <= 0
+                            ? const Color(0xFF64748B)
+                            : (user.status == 'active'
+                                  ? const Color(0xFF059669)
+                                  : (user.status == 'inactive'
+                                        ? const Color(0xFFDC2626)
+                                        : const Color(0xFFD97706))),
+                      ),
                     ),
-                    _buildCircularMetric(
-                      title: 'Mata Uang',
-                      value: user.mataUang,
-                      unit: 'Valuta',
-                      icon: Icons.currency_exchange,
-                      iconColor: const Color(0xFFD97706),
+                    Expanded(
+                      child: _buildCircularMetric(
+                        title: 'Mata Uang',
+                        value: user.mataUang,
+                        unit: 'Valuta',
+                        icon: Icons.currency_exchange,
+                        iconColor: const Color(0xFFD97706),
+                      ),
                     ),
-                    _buildCircularMetric(
-                      title: 'Zona Jam',
-                      value: user.zonaWaktu,
-                      unit: 'Waktu',
-                      icon: Icons.schedule,
-                      iconColor: const Color(0xFF6366F1),
+                    Expanded(
+                      child: _buildCircularMetric(
+                        title: 'Zona Jam',
+                        value: user.zonaWaktu,
+                        unit: 'Waktu',
+                        icon: Icons.schedule,
+                        iconColor: const Color(0xFF6366F1),
+                      ),
                     ),
                   ],
                 ),
@@ -773,28 +799,35 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     required Color iconColor,
   }) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 50,
-          height: 50,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: iconColor.withOpacity(0.08),
-            border: Border.all(color: iconColor.withOpacity(0.2), width: 1.5),
+            color: iconColor.withValues(alpha: 0.08),
+            border: Border.all(color: iconColor.withValues(alpha: 0.2), width: 1.5),
           ),
-          child: Center(child: Icon(icon, color: iconColor, size: 22)),
+          child: Center(child: Icon(icon, color: iconColor, size: 20)),
         ),
         const SizedBox(height: 6),
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
             color: Color(0xFF0F172A),
           ),
         ),
         Text(
           unit,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
         ),
       ],
@@ -1482,16 +1515,20 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Pengajuan Sedang Ditinjau Admin',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF92400E),
+                    const Expanded(
+                      child: Text(
+                        'Pengajuan Sedang Ditinjau Admin',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF92400E),
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -1516,6 +1553,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '${req.tipe}: Beralih ke "${req.paketBaruNama}" (${req.paketBaruKecepatan} Mbps)',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,

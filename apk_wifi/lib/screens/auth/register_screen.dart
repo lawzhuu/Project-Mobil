@@ -233,37 +233,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           backgroundColor: AppTheme.surfaceCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(
             children: const [
-              Icon(Icons.check_circle, color: AppTheme.success),
+              Icon(Icons.check_circle, color: AppTheme.success, size: 24),
               SizedBox(width: 8),
-              Text('Pendaftaran Berhasil!', style: TextStyle(color: AppTheme.textPrimary)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Akun Anda telah berhasil dibuat.',
-                style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Selamat datang di Sima.net! Anda dapat langsung menjelajahi aplikasi, membandingkan paket internet, dan memilih paket yang paling cocok untuk Anda kapan saja.',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+              Expanded(
+                child: Text(
+                  'Pendaftaran Berhasil!',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Akun Anda telah berhasil dibuat.',
+                  style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Selamat datang di Sima Net! Anda dapat langsung menjelajahi aplikasi, membandingkan paket internet, dan memilih paket yang paling cocok untuk Anda kapan saja.',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const MainShellScreen()),
-                );
-              },
-              child: const Text('Mulai Jelajahi Aplikasi'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MainShellScreen()),
+                  );
+                },
+                child: const Text(
+                  'Mulai Jelajahi Aplikasi',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ],
         ),
