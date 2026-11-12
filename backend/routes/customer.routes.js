@@ -1,3 +1,16 @@
+// ==============================================================================
+// PANDUAN PEMULA: MODUL MANAJEMEN PELANGGAN & STAF (CUSTOMER & STAFF MANAGEMENT)
+// ==============================================================================
+// Modul ini mengelola data seluruh akun pelanggan dan staf teknisi:
+// 1. GET  /customers            : Mengambil seluruh daftar akun pelanggan (khusus Admin).
+// 2. PATCH /customers/:id/activate:
+//    - Mengaktifkan akun pelanggan dari status 'pending' menjadi 'active'.
+//    - Menerbitkan otomatis tagihan pertama pelanggan jika belum ada invoice aktif.
+//    - Menyinkronkan pembaruan status ke cloud database Supabase PostgreSQL.
+// 3. POST /staff                : Menambahkan staf baru (Teknisi / Admin) dengan hash bcrypt.
+// 4. POST /customers/request-package: Pelanggan mengajukan permintaan ganti/pasang paket Wi-Fi.
+// ==============================================================================
+
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { loadDB, saveDB } = require('../db');
@@ -7,7 +20,7 @@ const { getSupabaseClient, isSupabaseConfigured } = require('../config/supabase'
 
 const router = express.Router();
 
-// Admin get all customer accounts
+// 1. ENDPOINT MENGAMBIL SELURUH PELANGGAN (GET /customers - Khusus Admin)
 router.get('/customers', authMiddleware, roleMiddleware(['admin']), (req, res) => {
   const db = loadDB();
   const customers = db.users
@@ -16,7 +29,7 @@ router.get('/customers', authMiddleware, roleMiddleware(['admin']), (req, res) =
   return res.json({ success: true, customers });
 });
 
-// Admin activate customer account and generate first invoice
+// 2. ENDPOINT AKTIVASI AKUN PELANGGAN & GENERATE TAGIHAN PERTAMA (PATCH /customers/:id/activate)
 router.patch('/customers/:id/activate', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
   const id = parseInt(req.params.id);
@@ -106,6 +119,29 @@ router.post('/staff', authMiddleware, roleMiddleware(['admin']), async (req, res
 // PACKAGE CHANGE REQUESTS (APPROVAL WORKFLOW - ONLINE SUPABASE)
 // ==========================================
 
+// Helper: Menentukan ID berikutnya yang terjamin unik untuk package_requests
+async function getNextPackageRequestId(db, sb) {
+  const maxLocalId = (db.package_requests || []).length > 0 
+    ? Math.max(...db.package_requests.map(r => r.id || 0)) 
+    : 0;
+  let targetId = maxLocalId + 1;
+
+  if (sb) {
+    try {
+      const { data: latestRows } = await sb
+        .from('package_requests')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1);
+
+      if (latestRows && latestRows.length > 0 && latestRows[0].id >= targetId) {
+        targetId = latestRows[0].id + 1;
+      }
+    } catch (_) {}
+  }
+  return targetId;
+}
+
 // 1. Pelanggan mengajukan perubahan paket
 const handlePackageChangeRequest = async (req, res) => {
   const db = loadDB();
@@ -168,30 +204,13 @@ const handlePackageChangeRequest = async (req, res) => {
   const detectedReason = alasan || (isFirstSubscription ? 'Pemasangan baru & berlangganan paket pertama' : (detectedType === 'Upgrade Kecepatan' ? 'Ingin koneksi lebih cepat dan stabil' : 'Penyesuaian kebutuhan keluarga'));
 
   let newRequest = null;
-
-  // Dapatkan ID berikutnya yang terjamin unik (menghindari PostgreSQL sequence out-of-sync di Supabase)
-  const maxLocalId = (db.package_requests || []).length > 0 
-    ? Math.max(...db.package_requests.map(r => r.id || 0)) 
-    : 0;
-  let targetId = maxLocalId + 1;
+  const sb = isSupabaseConfigured() ? getSupabaseClient() : null;
+  const targetId = await getNextPackageRequestId(db, sb);
 
   // Insert langsung ke Supabase jika terhubung online
-  if (isSupabaseConfigured()) {
-    const sb = getSupabaseClient();
-    if (sb) {
-      try {
-        // Cek ID tertinggi di Supabase remote
-        const { data: latestRows } = await sb
-          .from('package_requests')
-          .select('id')
-          .order('id', { ascending: false })
-          .limit(1);
-
-        if (latestRows && latestRows.length > 0 && latestRows[0].id >= targetId) {
-          targetId = latestRows[0].id + 1;
-        }
-
-        const requestPayload = {
+  if (sb) {
+    try {
+      const requestPayload = {
           id: targetId,
           user_id: user.id,
           user_nama: user.nama,
@@ -229,7 +248,6 @@ const handlePackageChangeRequest = async (req, res) => {
         console.error('[Supabase DB Exception]:', err.message);
       }
     }
-  }
 
   // Fallback offline bila Supabase tidak merespons
   if (!newRequest) {
@@ -330,27 +348,13 @@ const handleTerminationRequest = async (req, res) => {
   const oldPrice = oldPkg ? oldPkg.harga_idr : 0;
   const oldSpeed = oldPkg ? oldPkg.kecepatan_mbps : 0;
 
-  const maxLocalId = (db.package_requests || []).length > 0 
-    ? Math.max(...db.package_requests.map(r => r.id || 0)) 
-    : 0;
-  let targetId = maxLocalId + 1;
-
   let newRequest = null;
-  if (isSupabaseConfigured()) {
-    const sb = getSupabaseClient();
-    if (sb) {
-      try {
-        const { data: latestRows } = await sb
-          .from('package_requests')
-          .select('id')
-          .order('id', { ascending: false })
-          .limit(1);
+  const sb = isSupabaseConfigured() ? getSupabaseClient() : null;
+  const targetId = await getNextPackageRequestId(db, sb);
 
-        if (latestRows && latestRows.length > 0 && latestRows[0].id >= targetId) {
-          targetId = latestRows[0].id + 1;
-        }
-
-        const requestPayload = {
+  if (sb) {
+    try {
+      const requestPayload = {
           id: targetId,
           user_id: user.id,
           user_nama: user.nama,
@@ -388,7 +392,6 @@ const handleTerminationRequest = async (req, res) => {
         console.error('[Supabase DB Exception]:', err.message);
       }
     }
-  }
 
   if (!newRequest) {
     newRequest = {

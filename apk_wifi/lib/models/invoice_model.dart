@@ -1,21 +1,32 @@
 import 'package:intl/intl.dart';
 import 'payment_model.dart';
 
+// ==============================================================================
+// PANDUAN PEMULA - MODEL DATA & DESERIALISASI JSON (InvoiceModel)
+// ==============================================================================
+// File ini adalah cetak biru (blueprint) data tagihan internet pelanggan.
+// Di Flutter, data dari API dikirim dalam format JSON (Map teks/angka).
+// Model ini mengubah Map mentah tersebut menjadi objek Dart bertipe kuat (Strongly Typed).
+
+/// Model representasi data invoice / tagihan bulanan pelanggan
 class InvoiceModel {
+  // PANDUAN PEMULA (Immutability):
+  // Semua atribut diberi keyword `final` agar nilainya tidak bisa diubah sembarangan
+  // setelah objek dibuat, sehingga data tagihan aman dan konsisten di seluruh widget.
   final int id;
   final int userId;
   final String periode;
   final int nominalIdr;
   final int diskonIdr;
-  final String? voucherCode;
+  final String? voucherCode; // Menggunakan '?' karena voucher bisa bernilai null (opsional)
   final String mataUang;
   final double kursTerkunci;
-  final String jatuhTempo; // ISO String
-  final String status; // 'belum', 'lunas'
+  final String jatuhTempo; // Format ISO String: 2026-11-15T00:00:00Z
+  final String status; // 'belum' (unpaid) atau 'lunas' (paid)
   final String? pelangganNama;
   final String? pelangganEmail;
   final String? paketNama;
-  final PaymentModel? payment;
+  final PaymentModel? payment; // Relasi bersarang ke bukti pembayaran digital
 
   InvoiceModel({
     required this.id,
@@ -34,6 +45,10 @@ class InvoiceModel {
     this.payment,
   });
 
+  // PANDUAN PEMULA (Factory Constructor fromJson):
+  // Mengonversi data JSON Map<String, dynamic> dari API menjadi objek InvoiceModel.
+  // Dilengkapi pertahanan tipe data: jika backend mengirim angka sebagai string (misal "150000"),
+  // fungsi 'tryParse' akan mengonversinya ke int dengan aman tanpa membuat aplikasi force close (crash).
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
     return InvoiceModel(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,

@@ -1,3 +1,15 @@
+// ==============================================================================
+// PANDUAN PEMULA: MODUL UMUM, KURS MATA UANG, & FEEDBACK (COMMON ROUTES)
+// ==============================================================================
+// Modul ini melayani utilitas pendukung:
+// 1. GET  /rates    : Mengambil nilai tukar valuta asing (IDR, USD, EUR) secara live:
+//    - Mengambil data dari CDN terbuka (jsDelivr / Cloudflare Pages).
+//    - Dilengkapi In-Memory Cache 1 Jam (TTL) agar tidak membebani kuota API jaringan.
+//    - Jika internet offline, otomatis fallback ke nilai kurs statis `STATIC_RATES`.
+// 2. GET  /feedback : Melihat daftar kritik, saran, dan kesan dari para pengguna.
+// 3. POST /feedback : Mengirimkan saran & kesan baru (tersimpan ke database).
+// ==============================================================================
+
 const express = require('express');
 const { loadDB, saveDB } = require('../db');
 const { STATIC_RATES } = require('../config');
@@ -5,11 +17,12 @@ const { authMiddleware } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-// In-memory cache for live exchange rates (1 hour TTL)
+// Penyimpanan cache nilai kurs di memori RAM (Masa berlaku 1 jam / 3600 detik)
 let cachedRates = null;
 let cacheExpiresAt = 0;
 const CACHE_DURATION_MS = 60 * 60 * 1000;
 
+// Fungsi helper penjemput data kurs dari CDN dengan batas waktu (Timeout 4 detik)
 async function fetchCdn(path) {
   const primaryUrl = `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/${path}`;
   const fallbackUrl = `https://latest.currency-api.pages.dev/v1/${path}`;
@@ -24,7 +37,7 @@ async function fetchCdn(path) {
   throw new Error('Failed to fetch from both jsDelivr and Cloudflare Pages CDN');
 }
 
-// Get live currency exchange rates (fawazahmed0/exchange-api)
+// 1. ENDPOINT KURS MATA UANG LIVE (GET /rates)
 router.get('/rates', async (req, res) => {
   const now = Date.now();
   if (cachedRates && now < cacheExpiresAt) {

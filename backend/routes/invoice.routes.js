@@ -1,3 +1,16 @@
+// ==============================================================================
+// PANDUAN PEMULA: MODUL INVOICE & PEMBAYARAN (SMART BILLING & BLOCKCHAIN)
+// ==============================================================================
+// Modul ini mengatur siklus penagihan pelanggan Wi-Fi:
+// 1. GET  /invoices          : Pelanggan melihat tagihan miliknya; Admin melihat seluruh tagihan.
+// 2. POST /invoices          : Admin menerbitkan tagihan baru dengan kurs terkunci (Locked FX Rate).
+// 3. POST /payments          : Pelanggan mengunggah foto struk bukti bayar (Kamera/Galeri).
+// 4. PATCH /payments/:id/verify:
+//    - Admin memverifikasi pembayaran.
+//    - Jika 'diverifikasi', otomatis mencetak blok baru ke Blockchain Ledger (SHA-256).
+//    - Mengaktifkan status akun pelanggan secara otomatis (`activateCustomerOnPaymentVerified`).
+// ==============================================================================
+
 const express = require('express');
 const { loadDB, saveDB } = require('../db');
 const { STATIC_RATES } = require('../config');
@@ -10,6 +23,7 @@ const { uploadFile } = require('../services/storage.service');
 
 const router = express.Router();
 
+// Fungsi helper otomatisasi aktivasi layanan internet saat pembayaran terverifikasi
 async function activateCustomerOnPaymentVerified(db, invoice) {
   if (!invoice) return;
   const user = db.users.find(u => u.id === invoice.user_id);
@@ -51,7 +65,28 @@ async function activateCustomerOnPaymentVerified(db, invoice) {
   }
 }
 
-// Get invoices (Customer views own; Admin views all)
+// Fungsi helper pencatatan blok transaksi baru ke Blockchain Ledger
+function appendLedgerBlock(db, payment) {
+  const lastBlock = db.ledger_blocks[db.ledger_blocks.length - 1];
+  const newIdx = lastBlock ? lastBlock.idx + 1 : 1;
+  const prevHash = lastBlock ? lastBlock.hash : '0000000000000000000000000000000000000000000000000000000000000000';
+  const nowIso = new Date().toISOString();
+  const newHash = calculateBlockHash(newIdx, nowIso, payment.id, payment.nominal_idr, prevHash);
+
+  const newBlock = {
+    idx: newIdx,
+    waktu: nowIso,
+    payment_id: payment.id,
+    nominal_idr: payment.nominal_idr,
+    prev_hash: prevHash,
+    hash: newHash
+  };
+
+  db.ledger_blocks.push(newBlock);
+  return newBlock;
+}
+
+// 1. ENDPOINT MENGAMBIL DAFTAR INVOICE (GET /invoices)
 router.get('/invoices', authMiddleware, (req, res) => {
   const db = loadDB();
   let invoices = db.invoices;
@@ -149,7 +184,16 @@ router.post('/payments', authMiddleware, upload.single('bukti'), async (req, res
   });
 });
 
-// Admin verify payment -> automatically creates block in blockchain ledger & sends notification
+// ==============================================================================
+// 4. VERIFIKASI PEMBAYARAN OLEH ADMIN & PENCETAKAN BLOK BLOCKCHAIN
+// ==============================================================================
+// - Jika disetujui ('diverifikasi'), status invoice diubah menjadi 'lunas'.
+// - Pelanggan otomatis diaktifkan layanannya (`activateCustomerOnPaymentVerified`).
+// - Terjadi pencatatan ke rantai blok (Blockchain Ledger):
+//   1. Mengambil blok terakhir untuk mendapatkan `prevHash`.
+//   2. Menghitung `newHash` menggunakan fungsi SHA-256 (`calculateBlockHash`).
+//   3. Menyimpan objek blok baru yang tidak dapat dimanipulasi (Immutable).
+// ==============================================================================
 router.patch('/payments/:id/verify', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
   const id = parseInt(req.params.id);
@@ -168,23 +212,8 @@ router.patch('/payments/:id/verify', authMiddleware, roleMiddleware(['admin']), 
       await activateCustomerOnPaymentVerified(db, invoice);
     }
 
-    // Append block to blockchain ledger
-    const lastBlock = db.ledger_blocks[db.ledger_blocks.length - 1];
-    const newIdx = lastBlock ? lastBlock.idx + 1 : 1;
-    const prevHash = lastBlock ? lastBlock.hash : '0000000000000000000000000000000000000000000000000000000000000000';
-    const nowIso = new Date().toISOString();
-    const newHash = calculateBlockHash(newIdx, nowIso, payment.id, payment.nominal_idr, prevHash);
-
-    const newBlock = {
-      idx: newIdx,
-      waktu: nowIso,
-      payment_id: payment.id,
-      nominal_idr: payment.nominal_idr,
-      prev_hash: prevHash,
-      hash: newHash
-    };
-
-    db.ledger_blocks.push(newBlock);
+    // Append block to blockchain ledger (Menambahkan ke Rantai Blok Ledger via helper)
+    appendLedgerBlock(db, payment);
   } else {
     if (invoice) invoice.status = 'belum';
   }
@@ -227,23 +256,8 @@ router.post('/invoices/:id/verify-manual', authMiddleware, roleMiddleware(['admi
     invoice.status = 'lunas';
     await activateCustomerOnPaymentVerified(db, invoice);
 
-    // Append block to blockchain ledger
-    const lastBlock = db.ledger_blocks[db.ledger_blocks.length - 1];
-    const newIdx = lastBlock ? lastBlock.idx + 1 : 1;
-    const prevHash = lastBlock ? lastBlock.hash : '0000000000000000000000000000000000000000000000000000000000000000';
-    const nowIso = new Date().toISOString();
-    const newHash = calculateBlockHash(newIdx, nowIso, payment.id, payment.nominal_idr, prevHash);
-
-    const newBlock = {
-      idx: newIdx,
-      waktu: nowIso,
-      payment_id: payment.id,
-      nominal_idr: payment.nominal_idr,
-      prev_hash: prevHash,
-      hash: newHash
-    };
-
-    db.ledger_blocks.push(newBlock);
+    // Append block to blockchain ledger (Menambahkan ke Rantai Blok Ledger via helper)
+    appendLedgerBlock(db, payment);
   } else {
     invoice.status = 'belum';
   }

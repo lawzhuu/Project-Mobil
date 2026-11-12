@@ -165,6 +165,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // ==============================================================================
+  // FITUR SCAN 3 (PENDAFTARAN): GPS LOCATION SCAN & AUTO-FILL ALAMAT
+  // ==============================================================================
+  // 1. Geolocator.checkPermission() & requestPermission(): Meminta hak akses lokasi ke user.
+  // 2. Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high):
+  //    Membaca titik koordinat satelit GPS akurasi tinggi (Latitude & Longitude).
+  // 3. _mapController.move(newLoc, 15): Memusatkan peta OpenStreetMap ke posisi calon pelanggan.
+  // 4. _reverseGeocode(newLoc): Mengubah koordinat angka menjadi nama jalan/desa via API Nominatim.
+  // ==============================================================================
   Future<void> _getCurrentLocation() async {
     setState(() => _isFetchingGps = true);
     try {

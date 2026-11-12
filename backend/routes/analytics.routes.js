@@ -1,3 +1,20 @@
+// ==============================================================================
+// PANDUAN PEMULA: MODUL ANALITIK BISNIS & PREDIKSI PENDAPATAN (AI & MACHINE LEARNING)
+// ==============================================================================
+// Modul ini memadukan 2 pilar teknologi kecerdasan buatan:
+// 1. MACHINE LEARNING REGRESI LINIER (Ordinary Least Squares):
+//    - Mengolah data historis omset 6 bulan terakhir.
+//    - Menghitung Slope (kemiringan tren kenaikan) dan Intercept (titik awal).
+//    - Menghitung koefisien determinasi R² (Tingkat akurasi/keyakinan model matematis).
+//    - Memproyeksikan estimasi omset dan laba bersih untuk 3 bulan ke depan.
+//    - Menyimpan artefak model ke file fisik: `backend/models/revenue_forecast_model.json`.
+//
+// 2. GENERATIVE AI & LLM (Groq SDK - Llama / GPT-OSS):
+//    - Mengambil data numerik hasil regresi matematis.
+//    - Mentranslasikan angka-angka statistik menjadi narasi analisis finansial eksekutif.
+//    - Memberikan rekomendasi strategis (alokasi bandwidth upstream, retensi pelanggan).
+// ==============================================================================
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -18,7 +35,9 @@ try {
   // Read-only filesystem in serverless environments
 }
 
-// Helper: Komputasi Model Regresi Machine Learning untuk Tren Pemasukan
+// ==============================================================================
+// HELPER 1: KOMPUTASI MODEL REGRESI MACHINE LEARNING UNTUK TREN PEMASUKAN
+// ==============================================================================
 function computeRevenueForecastModel() {
   const db = loadDB();
 

@@ -1,3 +1,16 @@
+// ==============================================================================
+// PANDUAN PEMULA: MODUL AI SMART BANDWIDTH ADVISOR (MACHINE LEARNING & LLM)
+// ==============================================================================
+// Modul ini menggabungkan 2 teknologi Artificial Intelligence:
+// 1. STATISTICAL REGRESSION (Regresi Linier & Rumus Concurrency Jaringan):
+//    - Menghitung beban bit per perangkat: Smartphone (5 Mbps), Laptop (12 Mbps), Smart TV 4K (22 Mbps), IoT (4 Mbps).
+//    - Menghitung faktor probabilitas penggunaan bersamaan (Concurrency Factor C(N)).
+//    - Menambahkan batas toleransi lonjakan latency (QoS Headroom 20%).
+//    - Menghitung prediksi kuantitatif menggunakan Simple Linear Regression (Ordinary Least Squares).
+// 2. LARGE LANGUAGE MODEL (LLM via Groq SDK):
+//    - Memberikan narasi penjelasan ramah dan tips teknis peletakan router Wi-Fi kepada pelanggan.
+// ==============================================================================
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');

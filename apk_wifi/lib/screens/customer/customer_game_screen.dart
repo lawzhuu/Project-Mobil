@@ -62,6 +62,18 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
     super.dispose();
   }
 
+  // ==============================================================================
+  // FITUR SCAN 5: SENSOR ACCELEROMETER (SCAN KEMIRINGAN / TILT & GRAVITASI SMARTPHONE)
+  // ==============================================================================
+  // 1. Mengakses sensor percepatan dan gravitasi hardware via package `sensors_plus`.
+  // 2. accelerometerEventStream() memancarkan data perubahan sumbu (X, Y, Z) secara realtime:
+  //    - event.x: Kemiringan ponsel ke samping kiri (-) atau kanan (+)
+  //    - event.y: Kemiringan ponsel ke depan (-) atau belakang (+)
+  //    - event.z: Gaya gravitasi vertikal tegak lurus layar (~9.8 m/s² saat diam di meja)
+  // 3. Rumus Fisika Simulasi Bola:
+  //    - _velX += (-event.x) * 0.0015 (Dibalik tandanya agar bola meluncur alami ke arah miring)
+  //    - _velY += (event.y) * 0.0015
+  // ==============================================================================
   void _startListeningSensors() {
     try {
       _accelerometerSub = accelerometerEventStream().listen((AccelerometerEvent event) {

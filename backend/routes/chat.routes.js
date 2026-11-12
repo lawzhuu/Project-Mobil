@@ -1,3 +1,17 @@
+// ==============================================================================
+// PANDUAN PEMULA: MODUL CHATBOT CUSTOMER SUPPORT AI (LLM DENGAN GUARDRAILS)
+// ==============================================================================
+// Modul ini melayani tanya-jawab otomatis antara pelanggan dan AI Customer Support:
+// 1. KEAMANAN API KEY: Kunci GROQ_API_KEY disimpan di sisi server (backend), bukan di aplikasi HP!
+// 2. STRICT GUARDRAILS (PAGAR BATAS TOPIK):
+//    - AI hanya boleh menjawab topik Wi-Fi Sima.net (paket, tagihan, gangguan kabel, router).
+//    - Topik di luar lingkup (memasak, politik, tugas kuliah lain) WAJIB ditolak secara santun.
+//    - Dilengkapi Anti-Jailbreak Protection agar AI tidak terkelabui manipulasi teks pengguna.
+// 3. DETERMINISTIC OFFLINE FALLBACK:
+//    - Jika kuota API habis atau server offline, chatbot otomatis menggunakan jawaban berbasis
+//      pencocokan kata kunci lokal (keyword matching) agar pengguna tidak mendapati pesan error.
+// ==============================================================================
+
 const express = require('express');
 const Groq = require('groq-sdk');
 const { loadDB } = require('../db');
@@ -6,7 +20,7 @@ const { sanitizeAiText } = require('../utils/ai_sanitizer');
 
 const router = express.Router();
 
-// LLM Chatbot CS proxy endpoint (Keeps API key secure on server per PRD)
+// 1. ENDPOINT KONSULTASI CS CHATBOT (POST /chat)
 router.post('/chat', authMiddleware, async (req, res) => {
   const db = loadDB();
   const { message } = req.body;

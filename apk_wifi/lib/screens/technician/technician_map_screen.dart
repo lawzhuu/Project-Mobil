@@ -47,6 +47,15 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
     super.dispose();
   }
 
+  // ==============================================================================
+  // FITUR SCAN 4: SENSOR MAGNETOMETER (SCAN MEDAN MAGNET UNTUK KOMPAS DIGITAL)
+  // ==============================================================================
+  // 1. Mengakses sensor magnetometer internal smartphone via package `sensors_plus`.
+  // 2. Mendengarkan (listen) perubahan medan magnetik bumi pada sumbu X dan Y secara realtime.
+  // 3. Menghitung sudut arah mata angin dengan trigonometri: atan2(event.y, event.x) * (180 / pi).
+  // 4. Menghasilkan nilai derajat 0° - 360° (0° = Utara, 90° = Timur, 180° = Selatan, 270° = Barat).
+  // 5. Dipakai teknisi saat mencari posisi arah ODP/Antena Wi-Fi di lapangan.
+  // ==============================================================================
   void _startCompass() {
     try {
       _magnetometerSub = magnetometerEventStream().listen(
@@ -69,6 +78,15 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
     }
   }
 
+  // ==============================================================================
+  // FITUR SCAN 3: GPS LOCATION SCAN (LOKASI KOORDINAT LATITUDE & LONGITUDE)
+  // ==============================================================================
+  // 1. Memanggil Geolocator.getCurrentPosition() via package `geolocator`.
+  // 2. Meminta izin akses lokasi (Fine Location / GPS Satelit) di smartphone.
+  // 3. Mengambil titik koordinat presisi teknisi: LatLng(pos.latitude, pos.longitude).
+  // 4. Menggunakan timeout 4 detik agar UI tetap responsif meski teknisi berada di dalam ruangan.
+  // 5. Titik ini dipadukan dengan koordinat pelanggan untuk menghitung jarak tempuh & rute.
+  // ==============================================================================
   Future<void> _loadTasksAndGPS() async {
     final tasks = await ApiService.instance.getTasks();
     try {
@@ -534,6 +552,14 @@ class _TechnicianMapScreenState extends State<TechnicianMapScreen> {
   }
 }
 
+// ==============================================================================
+// CUSTOM PAINTER: MELUKIS JARUM KOMPAS SECARA MANUAL DI CANVAS
+// ==============================================================================
+// - Jarum Merah (North/Utara): const Color(0xFFEF4444)
+// - Jarum Putih/Abu (South/Selatan): const Color(0xFFE2E8F0)
+// - Titik Poros Tengah: Colors.white
+// - Rotasi mengikuti rumus derajat heading: (360 - heading) * pi / 180
+// ==============================================================================
 class CompassNeedlePainter extends CustomPainter {
   final double heading;
 

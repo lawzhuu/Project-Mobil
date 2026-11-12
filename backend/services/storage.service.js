@@ -1,22 +1,32 @@
+// ==============================================================================
+// PANDUAN PEMULA: LAYANAN PENYIMPANAN CLOUD & LOKAL (OBJECT STORAGE SERVICE)
+// ==============================================================================
+// Layanan ini bertugas mengunggah file gambar (foto profil & struk bukti transfer):
+// 1. SUPABASE CLOUD STORAGE (Mode Utama):
+//    - File diunggah langsung dari RAM Buffer ke bucket public Supabase ('profile-photos').
+//    - Mengembalikan tautan URL publik permanen (HTTPS CDN) yang bisa diakses dari mana saja.
+// 2. DISK LOKAL (Mode Fallback Offline):
+//    - Jika Supabase belum dikonfigurasi, file disimpan ke folder `uploads/` di server lokal.
+//    - File dilayani secara statis melalui endpoint `http://localhost:3000/uploads/...`.
+// ==============================================================================
+
 const fs = require('fs');
 const path = require('path');
 const { UPLOAD_DIR } = require('../config');
 const { getSupabaseClient, isSupabaseConfigured, BUCKET_NAME } = require('../config/supabase');
 
-// Ensure local upload dir exists for fallback (safe for read-only serverless environment)
+// Memastikan folder upload lokal tersedia jika berjalan di mode offline
 try {
   if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   }
 } catch (err) {
-  // Read-only filesystem in serverless environments (Vercel)
+  // Aman di lingkungan serverless read-only seperti Vercel
 }
 
 let bucketChecked = false;
 
-/**
- * Ensures the public storage bucket exists in Supabase.
- */
+// 1. FUNGSI PEMERIKSA & PEMBUAT BUCKET DI SUPABASE JIKA BELUM ADA
 async function ensureBucketExists() {
   if (!isSupabaseConfigured() || bucketChecked) return;
   const supabase = getSupabaseClient();

@@ -1,3 +1,24 @@
+// ==============================================================================
+// PANDUAN PEMULA: MASTER ROUTER INDEX (PENGGABUNG SELURUH MODUL API)
+// ==============================================================================
+// File ini mengumpulkan seluruh berkas rute modular menjadi satu router utama.
+// Dengan pendekatan modular ini, kode backend menjadi rapi, terisolasi per fitur,
+// dan mudah dipelihara atau diuji.
+//
+// DAFTAR MODUL API YANG DIGABUNGKAN:
+// 1. authRoutes      : /auth/register, /auth/login, /me (Profil & Foto)
+// 2. packageRoutes   : /packages (Daftar paket internet Wi-Fi)
+// 3. customerRoutes  : /customers (Kelola data & kuota pelanggan)
+// 4. invoiceRoutes   : /invoices, /payments (Tagihan & Bukti Pembayaran)
+// 5. ledgerRoutes    : /ledger (Blockchain SHA-256 verifikasi transparansi)
+// 6. taskRoutes      : /tasks (Tugas instalasi & perbaikan teknisi lapangan)
+// 7. reportRoutes    : /reports (Laporan manajerial ringkasan)
+// 8. analyticsRoutes : /analytics (Prediksi pendapatan & analisis risiko telat bayar)
+// 9. chatRoutes      : /chat (Layanan obrolan CS / Bot bantuan)
+// 10. aiAdvisorRoutes: /ai-advisor (AI rekomendasi bandwidth rumah tangga)
+// 11. commonRoutes   : /health, /rates (Pengecekan server aktif & kurs mata uang)
+// ==============================================================================
+
 const express = require('express');
 const router = express.Router();
 

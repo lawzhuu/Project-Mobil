@@ -231,7 +231,19 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Image upload area (Compatible with Flutter Web & Mobile)
+                  // ==============================================================================
+                  // FITUR SCAN 2: SCAN/AMBIL FOTO STRUK PEMBAYARAN (IMAGE PICKER CAMERA & GALLERY)
+                  // ==============================================================================
+                  // Cara kerja:
+                  // 1. _picker.pickImage() memicu dialog sistem Android/iOS untuk memilih foto struk.
+                  //    - Bisa dari Galeri: ImageSource.gallery
+                  //    - Bisa dari Kamera langsung: ImageSource.camera
+                  // 2. imageQuality: 80 melakukan kompresi otomatis agar hemat kuota dan cepat diunggah.
+                  // 3. picked.readAsBytes() membaca file menjadi Uint8List (Byte Array).
+                  //    Kelebihan Byte: Berjalan di Android, iOS, maupun Flutter Web tanpa error path IO!
+                  // 4. Image.memory(selectedImageBytes!) menampilkan preview foto struk secara realtime.
+                  // 5. Border menggunakan AppTheme.primary dengan opasitas 50% untuk aksen modern.
+                  // ==============================================================================
                   GestureDetector(
                     onTap: () async {
                       final picked = await _picker.pickImage(

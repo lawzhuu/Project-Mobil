@@ -7,10 +7,24 @@ import 'package:local_auth/local_auth.dart';
 import '../models/user_model.dart';
 import 'api_service.dart';
 
+// ==============================================================================
+// PANDUAN PEMULA - SERVICE AUTENTIKASI & KEAMANAN SESI (AuthService)
+// ==============================================================================
+// Kelas ini bertanggung jawab atas:
+// 1. Menyimpan token JWT (JSON Web Token) yang didapat dari server backend.
+// 2. Mengelola auto-login sehingga user tidak perlu mengetik password setiap kali buka aplikasi.
+// 3. Mengintegrasikan autentikasi biometrik sidik jari (fingerprint) lokal pada perangkat HP.
+
 class AuthService {
+  // PANDUAN PEMULA (Singleton Pattern):
+  // Menjamin hanya ada 1 instance AuthService yang mengontrol sesi login di seluruh aplikasi.
   static final AuthService instance = AuthService._internal();
   AuthService._internal();
 
+  // PANDUAN PEMULA:
+  // `FlutterSecureStorage` menyimpan data penting (token & data user) menggunakan
+  // enkripsi hardware-backed (Android Keystore / iOS Keychain). Ini jauh lebih aman
+  // dibandingkan SharedPreferences biasa yang menyimpan data dalam teks polos.
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final LocalAuthentication _localAuth = LocalAuthentication();
 
@@ -19,6 +33,7 @@ class AuthService {
 
   UserModel? get currentUser => _currentUser;
   String? get token => _token;
+  // Status login: dianggap aktif HANYA JIKA token dan data profil user keduanya ada
   bool get isLoggedIn => _token != null && _currentUser != null;
 
   static const String _keyToken = 'simanet_jwt_token';
@@ -27,12 +42,15 @@ class AuthService {
   static const String _keyBiometricToken = 'simanet_biometric_token';
   static const String _keyBiometricUser = 'simanet_biometric_user';
 
+  // PANDUAN PEMULA:
+  // Dipanggil saat startup di 'main.dart' untuk memeriksa apakah ada sesi login tersimpan.
   Future<void> initSession() async {
     try {
       _token = await _storage.read(key: _keyToken);
       final userJson = await _storage.read(key: _keyUser);
       if (_token != null && userJson != null) {
         _currentUser = UserModel.fromJson(jsonDecode(userJson));
+        // Pasang token ke HTTP Client agar semua panggilan API berikutnya otomatis terotentikasi
         ApiService.instance.setAuthToken(_token);
       }
     } catch (e) {
@@ -40,6 +58,8 @@ class AuthService {
     }
   }
 
+  // PANDUAN PEMULA:
+  // Proses login: kirim kredensial ke API backend -> terima token JWT -> simpan ke SecureStorage.
   Future<bool> login({
     required String username,
     required String password,

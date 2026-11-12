@@ -63,6 +63,15 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // ==============================================================================
+  // FITUR SCAN 1: SCAN BIOMETRIK / SIDIK JARI (FINGERPRINT AUTHENTICATION)
+  // ==============================================================================
+  // 1. Memeriksa apakah user sudah mengaktifkan opsi biometrik di storage lokal.
+  // 2. Memanggil AuthService.instance.authenticateWithBiometrics() yang memicu popup
+  //    bawaan OS Android/iOS (Fingerprint / Face Unlock) menggunakan package `local_auth`.
+  // 3. Jika scan sidik jari cocok, token JWT yang tersimpan di Keystore/Keyring
+  //    dibuka kuncinya dan user langsung diarahkan ke MainShellScreen tanpa ketik password.
+  // ==============================================================================
   Future<void> _handleBiometricLogin() async {
     final isEnabled = await AuthService.instance.isBiometricEnabled();
     if (!isEnabled) {
@@ -86,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-
+  // Notifikasi melayang (SnackBar) dengan warna dinamis (Hijau jika sukses, Merah jika error)
   void _showToast(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -113,10 +122,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 12),
 
                   // Brand Hero Header
+                  // ==========================================================================
+                  // PANDUAN WARNA LOGO & HERO HEADER (UJIAN GANTI WARNA)
+                  // - Lingkaran luar (glow): AppTheme.primaryGlow
+                  // - Lingkaran dalam (gradient): LinearGradient(AppTheme.primary, AppTheme.secondary)
+                  // ==========================================================================
                   Center(
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
+                        // Lingkaran luar berpendar (Glow Effect)
                         Container(
                           width: 86,
                           height: 86,
@@ -132,6 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                         ),
+                        // Lingkaran gradient tempat logo diletakkan
                         Container(
                           width: 68,
                           height: 68,

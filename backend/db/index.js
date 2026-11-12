@@ -1,8 +1,26 @@
+// ==============================================================================
+// PANDUAN PEMULA: ADAPTER DATABASE HIBRIDA (SUPABASE CLOUD + LOCAL JSON FALLBACK)
+// ==============================================================================
+// Sistem database Sima.net didesain dengan ketahanan tinggi (Fault-Tolerant):
+// 1. DUAL-MODE PERSISTENCE:
+//    - Cloud Mode : Jika `SUPABASE_URL` terisi, data disinkronkan ke PostgreSQL Supabase.
+//    - Local Mode : Jika offline atau server lokal tanpa internet, data disimpan ke `database.json`.
+// 2. IN-MEMORY CACHE (`inMemoryData`):
+//    - Seluruh operasi baca (read) dilayani dari RAM memori super cepat tanpa bottleneck I/O.
+// 3. SEEDING OTOMATIS (`getInitialData`):
+//    - Jika database baru pertama kali dijalankan, sistem otomatis membuat akun default:
+//      - Admin   : admin@sima.net / password '123'
+//      - Pelanggan: budi@gmail.com / password '123'
+//      - Teknisi : teknisi@sima.net / password '123'
+//      - Blok Genesis #0 pada Blockchain Ledger.
+// ==============================================================================
+
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { DB_FILE } = require('../config');
 const { calculateBlockHash } = require('../utils/hash');
 
+// Fungsi penyedia data awal (Seeder) saat aplikasi pertama kali di-deploy
 function getInitialData() {
   const salt = bcrypt.genSaltSync(10);
   const defaultHash = bcrypt.hashSync('123', salt);
@@ -338,6 +356,8 @@ function loadDB() {
   }
 }
 
+let _supabaseSyncTimer = null;
+
 function saveDB(data) {
   inMemoryData = data;
   try {
@@ -346,18 +366,19 @@ function saveDB(data) {
     console.error('[Database] Failed to write local DB_FILE:', err.message);
   }
 
-  // If Supabase is configured, trigger asynchronous background sync
+  // If Supabase is configured, trigger asynchronous debounced background sync (1.5 detik)
+  // Menghindari spam query ganda berlebih saat banyak request simpan data secara beruntun
   const { isSupabaseConfigured } = require('../config/supabase');
   if (isSupabaseConfigured()) {
-    const supabaseDb = require('../services/supabase_db.service');
-    // Non-blocking sync to keep responses fast
-    setImmediate(async () => {
+    if (_supabaseSyncTimer) clearTimeout(_supabaseSyncTimer);
+    _supabaseSyncTimer = setTimeout(async () => {
       try {
-        await supabaseDb.pushAll(data);
+        const supabaseDb = require('../services/supabase_db.service');
+        await supabaseDb.pushAll(data, { verbose: false });
       } catch (err) {
         console.warn('[Database] Supabase background sync note:', err.message);
       }
-    });
+    }, 1500);
   }
 }
 

@@ -19,7 +19,19 @@ class BlockchainService {
   static final BlockchainService instance = BlockchainService._internal();
   BlockchainService._internal();
 
-  // Validate chain integrity locally in Flutter
+  // ==============================================================================
+  // FITUR SCAN 6: AUDIT SCAN INTEGRITAS BLOCKCHAIN LEDGER (SHA-256 CRYPTOGRAPHIC SCAN)
+  // ==============================================================================
+  // Cara kerja Audit Integritas:
+  // 1. LINKAGE SCAN (Pemeriksaan Rantai Penghubung):
+  //    - Memastikan nilai 'prevHash' pada blok ke-N sama persis dengan 'hash' pada blok ke-(N-1).
+  //    - Jika ada baris pembayaran yang diselundupkan atau dihapus, rantai otomatis terputus!
+  // 2. CRYPTOGRAPHIC DIGEST SCAN (Pemeriksaan Sidik Jari Kriptografi SHA-256):
+  //    - Menghitung ulang (recalculate) nilai SHA-256 dari seluruh payload data blok.
+  //    - Berkat Avalanche Effect pada algoritma SHA-256: Jika ada 1 huruf saja di database
+  //      yang diubah oleh hacker, nilai hash baru akan berbeda 100%, sehingga audit scan
+  //      langsung mendeteksi manipulasi (Tamper Detection).
+  // ==============================================================================
   VerificationResult verifyLocalChain(List<LedgerBlockModel> chain) {
     if (chain.isEmpty) {
       return VerificationResult(

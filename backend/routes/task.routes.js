@@ -1,14 +1,26 @@
+// ==============================================================================
+// PANDUAN PEMULA: MODUL MANAJEMEN TUGAS TEKNISI (TASK DISPATCHING & WORKFLOW)
+// ==============================================================================
+// Modul ini mengelola alur kerja operasional lapangan:
+// 1. GET  /tasks         : Melihat daftar tugas (Teknisi melihat tugas miliknya/umum; Admin melihat semua).
+// 2. POST /tasks         : Admin menugaskan pekerjaan instalasi baru / perbaikan kabel fiber.
+// 3. POST /tasks/:id/claim : Teknisi mengambil tugas. Terdapat Concurrency Lock agar 1 tugas tidak
+//                          bisa direbut oleh teknisi lain secara ganda.
+// 4. PUT  /tasks/:id/status: Memperbarui progres status ('dikerjakan' -> 'selesai').
+// ==============================================================================
+
 const express = require('express');
 const { loadDB, saveDB } = require('../db');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-// Get tasks (Technician sees all or my_tasks; Admin sees all)
+// 1. ENDPOINT MENGAMBIL DAFTAR TUGAS (GET /tasks)
 router.get('/tasks', authMiddleware, (req, res) => {
   const db = loadDB();
   let tasks = db.tasks || [];
 
+  // Filter tugas berdasarkan peran pengguna:
   if (req.user.role === 'teknisi') {
     if (req.query.my_tasks === 'true') {
       tasks = tasks.filter(t => t.teknisi_id === req.user.id);
@@ -17,6 +29,7 @@ router.get('/tasks', authMiddleware, (req, res) => {
     tasks = tasks.filter(t => t.pelanggan_id === req.user.id);
   }
 
+  // Penggabungan data (Enrichment) dengan nama & koordinat GPS pelanggan untuk peta
   const enriched = tasks.map(t => {
     const customer = db.users.find(u => u.id === t.pelanggan_id) || {};
     const tech = db.users.find(u => u.id === t.teknisi_id) || {};

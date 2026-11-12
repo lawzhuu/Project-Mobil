@@ -17,6 +17,19 @@ import 'customer_game_screen.dart';
 import 'customer_invoices_screen.dart';
 import 'customer_packages_screen.dart';
 
+// ==============================================================================
+// PANDUAN PEMULA - LAYAR UTAMA PELANGGAN (CustomerHomeScreen)
+// ==============================================================================
+// Layar ini adalah beranda untuk pelanggan internet ISP Sima.net.
+// Menampilkan:
+// - Status koneksi internet aktif (SSID, IP Publik, Kuota)
+// - Kartu tagihan belum bayar (beserta tombol bayar cepat)
+// - Status pengajuan upgrade/downgrade/pemutusan paket
+// - Katalog paket promo & fitur interaktif (Game serat optik, AI Bandwidth Advisor)
+
+/// PANDUAN PEMULA:
+/// Menggunakan `StatefulWidget` karena data di layar ini bersifat dinamis (bisa berubah-ubah),
+/// seperti paket internet baru, status pembayaran lunas, atau perubahan profil.
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
 
@@ -25,13 +38,15 @@ class CustomerHomeScreen extends StatefulWidget {
 }
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+  // PANDUAN PEMULA (State Variables):
+  // Variabel-variabel di bawah ini menyimpan data lokal layar selama layar aktif di memori.
   List<PackageModel> _packages = [];
   List<InvoiceModel> _invoices = [];
   PackageRequestModel? _pendingRequest;
   UserModel? _currentUser;
-  bool _isLoading = true;
+  bool _isLoading = true; // Indikator loading saat data sedang diambil dari backend
   String _selectedCategory = 'Semua';
-  Timer? _refreshTimer;
+  Timer? _refreshTimer; // Timer untuk auto-sinkronisasi latar belakang
 
   List<String> get _categories {
     final set = <String>{'Semua'};
@@ -56,6 +71,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     return 'Rp 0';
   }
 
+  // PANDUAN PEMULA (Lifecycle: initState):
+  // Dijalankan tepat SATU KALI saat layar pertama kali dirender ke layar HP.
+  // Tempat ideal untuk memuat data dari database/API backend dan memulai listener/timer.
   @override
   void initState() {
     super.initState();
@@ -66,12 +84,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     });
   }
 
+  // PANDUAN PEMULA (Lifecycle: dispose):
+  // Dijalankan saat layar dihancurkan/ditutup.
+  // SANGAT PENTING: Wajib membatalkan timer (`_refreshTimer?.cancel()`) atau controller
+  // agar tidak terus berjalan di memori HP dan menyebabkan kebocoran memori (memory leak).
   @override
   void dispose() {
     _refreshTimer?.cancel();
     super.dispose();
   }
 
+  // PANDUAN PEMULA (Parallel Async Fetching):
+  // Menggunakan `Future.wait([...])` untuk memanggil 4 API sekaligus secara paralel!
+  // Ini jauh lebih cepat daripada memanggil `await` satu per satu secara berurutan.
   Future<void> _loadData() async {
     try {
       final profileFuture = ApiService.instance.getMe();
@@ -86,6 +111,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         profileFuture,
       ]);
 
+      // PANDUAN PEMULA:
+      // 'if (mounted)' memastikan widget masih ada di layar sebelum memanggil setState().
+      // Ini mencegah crash 'setState() called after dispose()'.
       if (mounted) {
         final profile = results[3] as UserModel?;
         if (profile != null) {
