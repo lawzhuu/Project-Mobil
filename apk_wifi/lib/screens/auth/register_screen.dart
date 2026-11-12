@@ -305,12 +305,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       children: const [
                         Icon(Icons.public, color: AppTheme.primary, size: 20),
                         SizedBox(width: 8),
-                        Text(
-                          'Negara & Konversi Otomatis',
-                          style: TextStyle(
-                            color: AppTheme.textPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                        Expanded(
+                          child: Text(
+                            'Negara & Konversi Otomatis',
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -323,12 +326,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: _selectedCountry,
+                      isExpanded: true,
                       dropdownColor: AppTheme.surfaceCard,
-                      decoration: const InputDecoration(labelText: 'Pilih Negara'),
+                      decoration: const InputDecoration(
+                        labelText: 'Pilih Negara',
+                        prefixIcon: Icon(Icons.flag_outlined, color: AppTheme.primary),
+                      ),
                       items: AppConfig.supportedCountries.map((c) {
                         return DropdownMenuItem<String>(
                           value: c['name'],
-                          child: Text('${c['flag']}  ${c['name']} (${c['currency']} • ${c['timezone']})'),
+                          child: Text(
+                            '${c['flag']}  ${c['name']} (${c['currency']} • ${c['timezone']})',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13),
+                          ),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -407,11 +418,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Lokasi Pemasangan (LBS)',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                        const Expanded(
+                          child: Text(
+                            'Lokasi Pemasangan (LBS)',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           onPressed: _isFetchingGps ? null : _getCurrentLocation,
                           icon: _isFetchingGps
                               ? const SizedBox(
