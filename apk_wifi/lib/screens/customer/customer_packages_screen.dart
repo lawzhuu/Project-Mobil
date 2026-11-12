@@ -286,83 +286,111 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                 // Global Currency Switcher Strip (Diaspora & Multi-Currency)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+                    horizontal: 12,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.currency_exchange,
-                        size: 14,
-                        color: AppTheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'Valuta:',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF475569),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      for (final curr in ['IDR', 'USD', 'EUR']) ...[
-                        InkWell(
-                          onTap: () async {
-                            setState(() => _selectedCurrency = curr);
-                            await CurrencyTimeService.instance.fetchLatestRates();
-                            if (mounted) setState(() {});
-                          },
-                          borderRadius: BorderRadius.circular(6),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 6),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
+                      // Baris 1: Pilihan Valuta dan Bendera Negara
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.currency_exchange,
+                            size: 15,
+                            color: AppTheme.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Valuta:',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF475569),
                             ),
-                            decoration: BoxDecoration(
-                              color: _selectedCurrency == curr
-                                  ? AppTheme.primary
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: _selectedCurrency == curr
-                                  ? AppTheme.primary
-                                  : const Color(0xFFCBD5E1),
-                              ),
-                            ),
-                            child: Text(
-                              curr == 'IDR'
-                                  ? '🇮🇩 IDR'
-                                  : (curr == 'USD' ? '🇺🇸 USD' : '🇪🇺 EUR'),
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                color: _selectedCurrency == curr
-                                    ? Colors.white
-                                    : const Color(0xFF334155),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  for (final curr in ['IDR', 'USD', 'EUR'])
+                                    InkWell(
+                                      onTap: () async {
+                                        setState(() => _selectedCurrency = curr);
+                                        await CurrencyTimeService.instance.fetchLatestRates();
+                                        if (mounted) setState(() {});
+                                      },
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Container(
+                                        margin: const EdgeInsets.only(right: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3.5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _selectedCurrency == curr
+                                              ? AppTheme.primary
+                                              : Colors.white,
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: _selectedCurrency == curr
+                                                ? AppTheme.primary
+                                                : const Color(0xFFCBD5E1),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          curr == 'IDR'
+                                              ? '🇮🇩 IDR'
+                                              : (curr == 'USD' ? '🇺🇸 USD' : '🇪🇺 EUR'),
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: _selectedCurrency == curr
+                                                ? Colors.white
+                                                : const Color(0xFF334155),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                      const Spacer(),
-                      Text(
-                        _selectedCurrency == 'USD'
-                            ? '1 USD = Rp ${_formatRupiah((CurrencyTimeService.instance.rates['USD'] ?? 18138).round())}'
-                            : (_selectedCurrency == 'EUR'
-                                  ? '1 EUR = Rp ${_formatRupiah((CurrencyTimeService.instance.rates['EUR'] ?? 20263).round())}'
-                                  : 'Kurs Live ECB'),
-                        style: const TextStyle(
-                          fontSize: 9.5,
-                          color: Color(0xFF64748B),
-                          fontStyle: FontStyle.italic,
-                        ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // Baris 2: Nilai Kurs Uang di Bawah (Mencegah Overflow Menyamping)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            size: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _selectedCurrency == 'USD'
+                                  ? 'Kurs Live: 1 USD ≈ Rp ${_formatRupiah((CurrencyTimeService.instance.rates['USD'] ?? 18138).round())} (ECB Forex Sync)'
+                                  : (_selectedCurrency == 'EUR'
+                                        ? 'Kurs Live: 1 EUR ≈ Rp ${_formatRupiah((CurrencyTimeService.instance.rates['EUR'] ?? 20263).round())} (ECB Forex Sync)'
+                                        : 'Mata uang utama: IDR (Rupiah Indonesia) • Sinkronisasi Kurs Live'),
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                color: Color(0xFF64748B),
+                                fontStyle: FontStyle.italic,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

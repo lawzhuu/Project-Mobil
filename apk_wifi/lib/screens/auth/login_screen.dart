@@ -22,9 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Default to admin credentials for swift testing
-    _usernameController.text = 'admin@sima.net';
-    _passwordController.text = '123';
+    // Dibiarkan kosong agar form login bersih saat pertama kali aplikasi dibuka
   }
 
   @override
@@ -212,8 +210,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _usernameController,
                           style: const TextStyle(color: AppTheme.textPrimary),
                           decoration: const InputDecoration(
-                            labelText: 'Username / Email / IP',
-                            hintText: 'admin@sima.net atau 192.168.1.1',
+                            labelText: 'Username / Email',
+                            hintText: 'Masukkan username atau email Anda',
                             prefixIcon: Icon(Icons.person_outline, color: AppTheme.primary),
                           ),
                         ),
