@@ -74,6 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (authenticated) {
         await AuthService.instance.setBiometricEnabled(true);
+        if (!mounted) return;
         setState(() => _isBiometricEnabled = true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -91,15 +92,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } else {
       await AuthService.instance.setBiometricEnabled(false);
-      if (mounted) {
-        setState(() => _isBiometricEnabled = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login Sidik Jari (Biometrik) dinonaktifkan.'),
-            backgroundColor: AppTheme.textSecondary,
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _isBiometricEnabled = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login Sidik Jari (Biometrik) dinonaktifkan.'),
+          backgroundColor: AppTheme.textSecondary,
+        ),
+      );
     }
   }
 
@@ -488,6 +488,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mapController.move(LatLng(pos.latitude, pos.longitude), 15.0);
                 } catch (_) {}
 
+                // PANDUAN PEMULA: Periksa 'mounted' sebelum memanggil ScaffoldMessenger atau Navigator
+                // setelah 'await' agar tidak terjadi crash 'use_build_context_synchronously'.
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
@@ -497,6 +500,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 );
               } catch (e) {
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Gagal membaca GPS: $e'),
@@ -529,6 +533,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               setModalState(() => isSaving = false);
 
+              // PANDUAN PEMULA: Pastikan State dan ModalContext masih terpasang (mounted)
+              // sebelum melakukan pembaruan UI atau menampilkan SnackBar.
+              if (modalCtx.mounted) {
+                Navigator.pop(modalCtx);
+              }
+
+              if (!mounted) return;
+
               if (res['success'] == true) {
                 final updatedUser = currentUser.copyWith(
                   nama: nama,
@@ -541,10 +553,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   lng: currentLng,
                 );
                 AuthService.instance.updateUserProfile(updatedUser);
-                if (mounted) {
-                  setState(() {});
-                }
-                Navigator.pop(modalCtx);
+                setState(() {});
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Profil berhasil diperbarui & disimpan!'),

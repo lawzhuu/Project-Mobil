@@ -50,6 +50,8 @@ class AuthApi {
         'alamat': alamat,
         'lat': lat,
         'lng': lng,
+        // PANDUAN PEMULA: Collection-if menyisipkan key-value ke dalam Map hanya jika variabel bernilai tidak null.
+        // ignore: use_null_aware_elements
         if (paketId != null) 'paket_id': paketId,
       });
       return jsonDecode(res.body);

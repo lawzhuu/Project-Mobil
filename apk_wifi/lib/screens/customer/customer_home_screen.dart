@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../config/app_config.dart';
@@ -76,8 +77,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       final profileFuture = ApiService.instance.getMe();
       final pkgsFuture = ApiService.instance.getPackages();
       final invsFuture = ApiService.instance.getInvoices();
-      final pendingFuture = ApiService.instance.getCustomerPendingPackageRequest();
-      final results = await Future.wait([pkgsFuture, invsFuture, pendingFuture, profileFuture]);
+      final pendingFuture = ApiService.instance
+          .getCustomerPendingPackageRequest();
+      final results = await Future.wait([
+        pkgsFuture,
+        invsFuture,
+        pendingFuture,
+        profileFuture,
+      ]);
 
       if (mounted) {
         final profile = results[3] as UserModel?;
@@ -119,7 +126,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       );
     }
 
-    final safeUser = user ??
+    final safeUser =
+        user ??
         UserModel(
           id: 0,
           nama: 'Pelanggan Sima.net',
@@ -138,7 +146,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         );
 
     final bool isTerminatedOrNoPackage =
-        safeUser.status == 'inactive' || safeUser.paketId == null || safeUser.paketId! <= 0;
+        safeUser.status == 'inactive' ||
+        safeUser.paketId == null ||
+        safeUser.paketId! <= 0;
 
     final activePackage = isTerminatedOrNoPackage
         ? PackageModel(
@@ -159,7 +169,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               nama: 'Belum Ada Paket Aktif',
               kecepatanMbps: 0,
               hargaIdr: 0,
-              deskripsi: 'Pilih paket internet terbaik untuk mulai berlangganan.',
+              deskripsi:
+                  'Pilih paket internet terbaik untuk mulai berlangganan.',
             ),
           );
 
@@ -452,7 +463,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.power_settings_new_rounded, color: Color(0xFFDC2626), size: 18),
+                        Icon(
+                          Icons.power_settings_new_rounded,
+                          color: Color(0xFFDC2626),
+                          size: 18,
+                        ),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -570,15 +585,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                 activePackage.id > 0
                                     ? '${activePackage.kecepatanMbps} Mbps Simetris (1:1)'
                                     : (user.status == 'inactive'
-                                        ? 'Langganan Nonaktif'
-                                        : 'Belum Berlangganan'),
+                                          ? 'Langganan Nonaktif'
+                                          : 'Belum Berlangganan'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: activePackage.id > 0
                                       ? const Color(0xFF059669)
                                       : (user.status == 'inactive'
-                                          ? const Color(0xFFDC2626)
-                                          : const Color(0xFFD97706)),
+                                            ? const Color(0xFFDC2626)
+                                            : const Color(0xFFD97706)),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -610,19 +625,23 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       value: user.paketId == null || user.paketId! <= 0
                           ? 'Belum Pasang'
                           : (user.status == 'active'
-                              ? 'Aktif'
-                              : (user.status == 'inactive' ? 'Nonaktif' : 'Pending')),
-                      unit: user.paketId == null || user.paketId! <= 0 ? 'Layanan' : 'Internet',
+                                ? 'Aktif'
+                                : (user.status == 'inactive'
+                                      ? 'Nonaktif'
+                                      : 'Pending')),
+                      unit: user.paketId == null || user.paketId! <= 0
+                          ? 'Layanan'
+                          : 'Internet',
                       icon: user.paketId == null || user.paketId! <= 0
                           ? Icons.cable_rounded
                           : Icons.verified_user_outlined,
                       iconColor: user.paketId == null || user.paketId! <= 0
                           ? const Color(0xFF64748B)
                           : (user.status == 'active'
-                              ? const Color(0xFF059669)
-                              : (user.status == 'inactive'
-                                  ? const Color(0xFFDC2626)
-                                  : const Color(0xFFD97706))),
+                                ? const Color(0xFF059669)
+                                : (user.status == 'inactive'
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFFD97706))),
                     ),
                     _buildCircularMetric(
                       title: 'Mata Uang',
@@ -839,7 +858,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        // PANDUAN PEMULA: Di Dart/Flutter, parameter yang tidak digunakan cukup ditulis '_' tunggal.
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final cat = _categories[index];
           final isSelected = _selectedCategory == cat;
@@ -898,18 +918,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       filtered = _packages.where((p) {
         final cat = p.kategori.toLowerCase();
         final name = p.nama.toLowerCase();
-        if (sel == 'internet fiber')
+        // PANDUAN PEMULA: Selalu gunakan kurung kurawal '{}' pada statement if
+        // untuk mencegah logical bug tersembunyi dan mematuhi best practice Dart Style Guide.
+        if (sel == 'internet fiber') {
           return cat.contains('fiber') || name.contains('fiber');
-        if (sel == 'turbo home')
+        }
+        if (sel == 'turbo home') {
           return cat.contains('turbo') || name.contains('turbo');
-        if (sel == 'gamer sakti')
+        }
+        if (sel == 'gamer sakti') {
           return cat.contains('gamer') || name.contains('gamer');
-        if (sel == 'promo hemat')
+        }
+        if (sel == 'promo hemat') {
           return cat.contains('promo') ||
               cat.contains('hemat') ||
               name.contains('promo') ||
               name.contains('hemat') ||
               name.contains('pelajar');
+        }
         return cat == sel;
       }).toList();
     }
@@ -967,7 +993,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: promoPackages.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final pkg = promoPackages[index];
               final isCurrent = pkg.id == activePackage.id;
@@ -1009,10 +1035,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                             color: isCurrent
                                 ? AppTheme.primary
                                 : (pkg.kategori == 'Gamer Sakti'
-                                    ? const Color(0xFF7C3AED)
-                                    : (pkg.kategori == 'Promo Hemat'
-                                        ? const Color(0xFFEA580C)
-                                        : const Color(0xFF0284C7))),
+                                      ? const Color(0xFF7C3AED)
+                                      : (pkg.kategori == 'Promo Hemat'
+                                            ? const Color(0xFFEA580C)
+                                            : const Color(0xFF0284C7))),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -1416,7 +1442,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               color: const Color(0xFFF59E0B),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.pending_actions, color: Colors.white, size: 22),
+            child: const Icon(
+              Icons.pending_actions,
+              color: Colors.white,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1435,7 +1465,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(6),

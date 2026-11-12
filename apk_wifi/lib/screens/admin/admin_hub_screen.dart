@@ -361,6 +361,9 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                 status: 'lunas',
               );
               if (ok) {
+                // PANDUAN PEMULA: Selalu periksa 'mounted' setelah operasi async (await) sebelum
+                // mengakses BuildContext untuk mencegah crash jika widget sudah ditutup/dihancurkan.
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Tagihan ISP utama berhasil dicatat!'),
@@ -800,7 +803,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                   ),
                 ),
               );
-            }).toList(),
+            }),
 
           const SizedBox(height: 24),
           const Text(
@@ -843,7 +846,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -1269,7 +1272,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                   ),
                 ),
               );
-            }).toList(),
+            }),
 
           if (processed.isNotEmpty) ...[
             const SizedBox(height: 20),
@@ -1341,7 +1344,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
         ],
       ),
@@ -1915,7 +1918,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -1991,7 +1994,7 @@ class _AdminHubScreenState extends State<AdminHubScreen>
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

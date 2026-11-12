@@ -654,7 +654,9 @@ class _CustomerGameScreenState extends State<CustomerGameScreen> {
                                 child: const Icon(Icons.flash_off, color: AppTheme.error, size: 18),
                               ),
                             );
-                          }).toList(),
+                            // PANDUAN PEMULA: Hapus '.toList()' saat menggunakan spread operator '...'.
+                            // Iterable dari .map() langsung diterima oleh spread tanpa perlu alokasi List baru di memori.
+                          }),
 
                           // Light Pulse (The Fiber Ball)
                           Positioned(

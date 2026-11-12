@@ -1,11 +1,24 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// ==============================================================================
+/// PANDUAN PEMULA - KONFIGURASI GLOBAL APLIKASI (AppConfig)
+/// ==============================================================================
+/// Kelas ini bertindak sebagai satu-satunya pusat sumber kebenaran (Single Source of Truth)
+/// untuk konstanta aplikasi, konfigurasi URL backend, konversi mata uang, dan zona waktu.
+/// 
+/// KEUNTUNGAN CLEAN CODE:
+/// Jika alamat URL backend berubah, pemula TIDAK PERLU mengganti URL di puluhan file screen.
+/// Cukup ubah di file `.env` atau nilai fallback di file ini!
 class AppConfig {
   static const String appName = 'Sima.net';
   static const String appTagline = 'ISP Reseller & Smart Fiber Operations';
   static const String appVersion = '1.0.0';
 
-  // Base server URL configured via .env (BACKEND_BASE_URL) or --dart-define
+  // PANDUAN PEMULA:
+  // Hirarki prioritas URL server:
+  // 1. Variabel .env ('BACKEND_BASE_URL')
+  // 2. Argumen build Flutter compile-time ('--dart-define=BACKEND_BASE_URL=...')
+  // 3. Fallback default cloud backend jika kedua opsi di atas kosong.
   static String get defaultBaseUrl {
     final envUrl = dotenv.env['BACKEND_BASE_URL'];
     if (envUrl != null && envUrl.trim().isNotEmpty) {
@@ -21,7 +34,9 @@ class AppConfig {
 
   static String get baseUrl => defaultBaseUrl;
 
-  // Resolve image URL (routes external Supabase images through backend proxy to prevent Android emulator DNS errors)
+  // PANDUAN PEMULA:
+  // Mengatasi kendala DNS resolver pada Emulator Android saat memuat gambar dari CDN/Supabase.
+  // URL gambar eksternal di-routing secara otomatis melalui endpoint proxy backend.
   static String resolveImageUrl(String pathOrUrl) {
     if (pathOrUrl.trim().isEmpty) return '';
     final cleaned = pathOrUrl.trim();

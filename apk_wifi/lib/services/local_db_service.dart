@@ -1,11 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
+// PANDUAN PEMULA:
+// Cukup import 'package:sqflite_common_ffi/sqflite_ffi.dart' karena sudah mengekspor
+// semua tipe inti dari sqflite (Database, openDatabase, ConflictAlgorithm, dll).
+// Mengimport 'package:sqflite/sqflite.dart' secara bersamaan adalah redundan.
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+/// PANDUAN PEMULA:
+/// Kelas ini mengimplementasikan pola "Singleton" (`LocalDbService.instance`).
+/// Pola ini memastikan hanya ada SATU koneksi database yang aktif di seluruh aplikasi,
+/// sehingga mencegah pemborosan memori (memory leak) dan konflik penulisan data (race condition).
 class LocalDbService {
   static final LocalDbService instance = LocalDbService._internal();
   LocalDbService._internal();
@@ -20,7 +28,8 @@ class LocalDbService {
 
   Future<Database> _initDatabase() async {
     // If running on desktop (Windows, Linux, macOS), initialize FFI
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    if (!kIsWeb &&
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
@@ -53,15 +62,11 @@ class LocalDbService {
     try {
       final db = await database;
       final jsonStr = jsonEncode(data);
-      await db.insert(
-        'cache_entries',
-        {
-          'key': key,
-          'json_content': jsonStr,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('cache_entries', {
+        'key': key,
+        'json_content': jsonStr,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       debugPrint('[LocalDb] Error saving cache for $key: $e');
     }

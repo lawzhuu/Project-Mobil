@@ -150,7 +150,9 @@ class InvoiceModel {
       if (targetTimezone == 'London') offset = const Duration(hours: 1); // BST/GMT (UTC+1)
 
       DateTime converted = dt.add(offset);
-      return DateFormat('dd MMM yyyy, HH:mm').format(converted) + ' ' + targetTimezone;
+      // PANDUAN PEMULA: Gunakan string interpolation '${...} $variable' daripada konkatenasi '+'
+      // agar lebih mudah dibaca dan compiler Dart dapat mengoptimalkan alokasi memori string.
+      return '${DateFormat('dd MMM yyyy, HH:mm').format(converted)} $targetTimezone';
     } catch (_) {
       return jatuhTempo;
     }

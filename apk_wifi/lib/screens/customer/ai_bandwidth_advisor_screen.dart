@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../config/app_theme.dart';
 import '../../models/package_model.dart';
 import '../../services/api_service.dart';
@@ -12,7 +13,8 @@ class AiBandwidthAdvisorScreen extends StatefulWidget {
   const AiBandwidthAdvisorScreen({super.key});
 
   @override
-  State<AiBandwidthAdvisorScreen> createState() => _AiBandwidthAdvisorScreenState();
+  State<AiBandwidthAdvisorScreen> createState() =>
+      _AiBandwidthAdvisorScreenState();
 }
 
 class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
@@ -25,10 +27,7 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
   int get _totalDevices => _smartphones + _laptops + _smartTvs + _iotCctvs;
 
   // Selected activities
-  final Set<String> _selectedActivities = {
-    'streaming_4k',
-    'wfh_conference',
-  };
+  final Set<String> _selectedActivities = {'streaming_4k', 'wfh_conference'};
 
   final List<Map<String, dynamic>> _activityOptions = [
     {
@@ -86,10 +85,14 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
           setState(() {
             _analysisResult = res;
             if (res['recommended_package'] != null) {
-              _recommendedPackage = PackageModel.fromJson(res['recommended_package']);
+              _recommendedPackage = PackageModel.fromJson(
+                res['recommended_package'],
+              );
             }
             if (res['alternative_package'] != null) {
-              _alternativePackage = PackageModel.fromJson(res['alternative_package']);
+              _alternativePackage = PackageModel.fromJson(
+                res['alternative_package'],
+              );
             }
             _isAnalyzing = false;
           });
@@ -120,9 +123,7 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
     // Navigate to packages screen to submit official package change request
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const CustomerPackagesScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const CustomerPackagesScreen()),
     );
   }
 
@@ -142,9 +143,7 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: const Text('AI Bandwidth Advisor'),
-      ),
+      appBar: AppBar(title: const Text('AI Bandwidth Advisor')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -155,7 +154,11 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF4C1D95), Color(0xFF6D28D9), Color(0xFF7C3AED)],
+                  colors: [
+                    Color(0xFF4C1D95),
+                    Color(0xFF6D28D9),
+                    Color(0xFF7C3AED),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -179,7 +182,11 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                           color: Colors.white.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+                        child: const Icon(
+                          Icons.auto_awesome,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       const Expanded(
@@ -229,7 +236,11 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                 children: [
                   Row(
                     children: const [
-                      Icon(Icons.devices_rounded, size: 20, color: AppTheme.primary),
+                      Icon(
+                        Icons.devices_rounded,
+                        size: 20,
+                        color: AppTheme.primary,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         '1. Jumlah Perangkat Terhubung',
@@ -267,7 +278,8 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                   _buildCounterTile(
                     icon: Icons.tv_rounded,
                     title: 'Smart TV (4K / FHD)',
-                    subtitle: 'Streaming layar besar YouTube/Netflix (~22 Mbps)',
+                    subtitle:
+                        'Streaming layar besar YouTube/Netflix (~22 Mbps)',
                     value: _smartTvs,
                     onChanged: (val) => setState(() => _smartTvs = val),
                   ),
@@ -293,7 +305,11 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                 children: [
                   Row(
                     children: const [
-                      Icon(Icons.bolt_rounded, size: 20, color: Color(0xFFEA580C)),
+                      Icon(
+                        Icons.bolt_rounded,
+                        size: 20,
+                        color: Color(0xFFEA580C),
+                      ),
                       SizedBox(width: 8),
                       Text(
                         '2. Aktivitas Paling Sering',
@@ -316,27 +332,37 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: _activityOptions.map((opt) {
-                      final isSelected = _selectedActivities.contains(opt['id']);
+                      final isSelected = _selectedActivities.contains(
+                        opt['id'],
+                      );
                       return FilterChip(
                         selected: isSelected,
                         showCheckmark: true,
                         avatar: Icon(
                           opt['icon'] as IconData,
                           size: 16,
-                          color: isSelected ? Colors.white : const Color(0xFF64748B),
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF64748B),
                         ),
                         label: Text(opt['label'] as String),
                         labelStyle: TextStyle(
                           fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                          color: isSelected ? Colors.white : const Color(0xFF334155),
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF334155),
                         ),
                         selectedColor: const Color(0xFF7C3AED),
                         backgroundColor: const Color(0xFFF1F5F9),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                           side: BorderSide(
-                            color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFFE2E8F0),
+                            color: isSelected
+                                ? const Color(0xFF7C3AED)
+                                : const Color(0xFFE2E8F0),
                           ),
                         ),
                         onSelected: (selected) {
@@ -361,7 +387,9 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
 
             // 4. ACTION CTA BUTTON
             GlowingButton(
-              text: _isAnalyzing ? 'MENGANALISIS DENGAN AI...' : 'HITUNG KEBUTUHAN BANDWIDTH',
+              text: _isAnalyzing
+                  ? 'MENGANALISIS DENGAN AI...'
+                  : 'HITUNG KEBUTUHAN BANDWIDTH',
               icon: Icons.psychology_rounded,
               color: const Color(0xFF7C3AED),
               onPressed: _isAnalyzing ? () {} : _runAiAnalysis,
@@ -412,7 +440,10 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
               ),
               Text(
                 subtitle,
-                style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: Color(0xFF94A3B8),
+                ),
               ),
             ],
           ),
@@ -427,14 +458,18 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: value > 0 ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC),
+                  color: value > 0
+                      ? const Color(0xFFF1F5F9)
+                      : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Icon(
                   Icons.remove,
                   size: 16,
-                  color: value > 0 ? const Color(0xFF0F172A) : const Color(0xFFCBD5E1),
+                  color: value > 0
+                      ? const Color(0xFF0F172A)
+                      : const Color(0xFFCBD5E1),
                 ),
               ),
             ),
@@ -529,13 +564,19 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                       ),
                       Text(
                         'Total $_totalDevices Perangkat Terkoneksi',
-                        style: const TextStyle(fontSize: 10.5, color: Colors.white70),
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
@@ -569,7 +610,11 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF7C3AED), size: 20),
+                      const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: Color(0xFF7C3AED),
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -648,11 +693,16 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFEFF6FF),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFBFDBFE)),
+                                border: Border.all(
+                                  color: const Color(0xFFBFDBFE),
+                                ),
                               ),
                               child: Text(
                                 '${_recommendedPackage!.kecepatanMbps} Mbps',
@@ -668,44 +718,88 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                         const SizedBox(height: 6),
                         Text(
                           _recommendedPackage!.deskripsi,
-                          style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        const SizedBox(height: 14),
+
+                        // PANDUAN PEMULA (Mencegah Horizontal RenderFlex Overflow):
+                        // Jangan menggabungkan teks harga lebar dan tombol aksi panjang ke dalam satu Row
+                        // tanpa pembagian constraint yang fleksibel. Pisahkan ke baris vertikal (Column)
+                        // agar harga dan tombol memiliki ruang yang cukup dan tidak berdempetan di layar HP kecil.
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            const Text(
+                              'Harga Berlangganan',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
                               children: [
-                                const Text(
-                                  'Harga Berlangganan',
-                                  style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-                                ),
                                 Text(
-                                  '${_formatPrice(_recommendedPackage!.hargaIdr)} / bln',
+                                  _formatPrice(_recommendedPackage!.hargaIdr),
                                   style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.w900,
                                     color: Color(0xFF0F172A),
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                const Text(
+                                  '/ bulan',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF64748B),
                                   ),
                                 ),
                               ],
                             ),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.arrow_forward, size: 16),
-                              label: const Text('Pilih Paket Ini'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF7C3AED),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: () => _proceedToOrderPackage(_recommendedPackage!),
-                            ),
                           ],
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // Tombol Aksi Utama (Penuh, Nyaman Diklik, & Anti-Overflow)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Pilih Paket Ini',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7C3AED),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () =>
+                                _proceedToOrderPackage(_recommendedPackage!),
+                          ),
                         ),
                       ],
                     ),
@@ -715,14 +809,17 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                 if (_alternativePackage != null) ...[
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Column(
@@ -736,20 +833,52 @@ class _AiBandwidthAdvisorScreenState extends State<AiBandwidthAdvisorScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
-                                '${_alternativePackage!.nama} (${_alternativePackage!.kecepatanMbps} Mbps) • ${_formatPrice(_alternativePackage!.hargaIdr)}/bln',
+                                '${_alternativePackage!.nama} (${_alternativePackage!.kecepatanMbps} Mbps)',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                              Text(
+                                '${_formatPrice(_alternativePackage!.hargaIdr)} / bulan',
                                 style: const TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF334155),
+                                  color: Color(0xFF64748B),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        TextButton(
-                          onPressed: () => _proceedToOrderPackage(_alternativePackage!),
-                          child: const Text('Pilih Ini', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () =>
+                              _proceedToOrderPackage(_alternativePackage!),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF7C3AED),
+                            elevation: 0,
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text(
+                            'Pilih Ini',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),

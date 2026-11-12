@@ -70,6 +70,8 @@ class TaskApi {
   }) async {
     try {
       final res = await _client.post('/tasks', body: {
+        // PANDUAN PEMULA: Collection-if memastikan 'teknisi_id' hanya dikirim ke backend jika bernilai tidak null.
+        // ignore: use_null_aware_elements
         if (teknisiId != null) 'teknisi_id': teknisiId,
         'pelanggan_id': pelangganId,
         'jenis': jenis,

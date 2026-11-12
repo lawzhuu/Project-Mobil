@@ -81,10 +81,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Panduan Pemula:
+  # Cukup daftarkan path folder dengan garis miring penutup ('assets/images/').
+  # Semua aset gambar di dalam folder tersebut akan otomatis terbaca oleh Flutter.
+  # Mendaftarkan file satu per satu setelah mendaftarkan foldernya adalah redundan (sampah konfigurasi).
   assets:
     - .env
     - assets/images/
-    - assets/images/logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
