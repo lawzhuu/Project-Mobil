@@ -292,16 +292,21 @@ function getInitialData() {
 }
 
 let inMemoryData = null;
+let _lastSupabasePull = 0;
 
-async function initDB() {
+function getLastSupabasePull() {
+  return _lastSupabasePull;
+}
+
+async function refreshDBFromSupabase() {
   const supabaseDb = require('../services/supabase_db.service');
   const { isSupabaseConfigured } = require('../config/supabase');
 
-  if (isSupabaseConfigured()) {
-    console.log('[Database] Supabase is configured. Initializing sync from Supabase...');
+  if (!isSupabaseConfigured()) return inMemoryData || loadDB();
+
+  try {
     const remoteData = await supabaseDb.pullAll();
     if (remoteData && remoteData.users && remoteData.users.length > 0) {
-      // Pertahankan package_requests lokal jika di Supabase belum ada tabelnya
       let currentLocal = {};
       try {
         if (fs.existsSync(DB_FILE)) {
@@ -314,13 +319,27 @@ async function initDB() {
       }
 
       inMemoryData = remoteData;
+      _lastSupabasePull = Date.now();
       try {
         fs.writeFileSync(DB_FILE, JSON.stringify(remoteData, null, 2), 'utf8');
-      } catch (err) {
-        // Read-only filesystem in serverless environments (Vercel)
-      }
-      console.log('[Database] Local cache successfully synced with Supabase PostgreSQL.');
+      } catch (_) {}
       return inMemoryData;
+    }
+  } catch (err) {
+    console.warn('[Database] Refresh from Supabase warning:', err.message);
+  }
+  return inMemoryData || loadDB();
+}
+
+async function initDB() {
+  const { isSupabaseConfigured } = require('../config/supabase');
+
+  if (isSupabaseConfigured()) {
+    console.log('[Database] Supabase is configured. Initializing sync from Supabase...');
+    const refreshed = await refreshDBFromSupabase();
+    if (refreshed && refreshed.users && refreshed.users.length > 0) {
+      console.log('[Database] Local cache successfully synced with Supabase PostgreSQL.');
+      return refreshed;
     } else {
       console.log('[Database] Remote tables empty or initial startup. Keeping current data.');
     }
@@ -356,36 +375,33 @@ function loadDB() {
   }
 }
 
-let _supabaseSyncTimer = null;
-
 function saveDB(data) {
   inMemoryData = data;
+  _lastSupabasePull = Date.now();
+
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
   } catch (err) {
     console.error('[Database] Failed to write local DB_FILE:', err.message);
   }
 
-  // If Supabase is configured, trigger asynchronous debounced background sync (1.5 detik)
-  // Menghindari spam query ganda berlebih saat banyak request simpan data secara beruntun
+  // Push realtime langsung ke Supabase tanpa penundaan setTimeout (menghindari freeze di Vercel Serverless)
   const { isSupabaseConfigured } = require('../config/supabase');
   if (isSupabaseConfigured()) {
-    if (_supabaseSyncTimer) clearTimeout(_supabaseSyncTimer);
-    _supabaseSyncTimer = setTimeout(async () => {
-      try {
-        const supabaseDb = require('../services/supabase_db.service');
-        await supabaseDb.pushAll(data, { verbose: false });
-      } catch (err) {
-        console.warn('[Database] Supabase background sync note:', err.message);
-      }
-    }, 1500);
+    const supabaseDb = require('../services/supabase_db.service');
+    return supabaseDb.pushAll(data, { verbose: false }).catch(err => {
+      console.warn('[Database] Supabase realtime sync note:', err.message);
+    });
   }
+  return Promise.resolve();
 }
 
 module.exports = {
   loadDB,
   saveDB,
   initDB,
-  getInitialData
+  getInitialData,
+  refreshDBFromSupabase,
+  getLastSupabasePull
 };
 

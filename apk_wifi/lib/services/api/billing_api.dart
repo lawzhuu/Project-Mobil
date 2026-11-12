@@ -24,12 +24,21 @@ class BillingApi {
           final list = (data['invoices'] as List)
               .map((i) => InvoiceModel.fromJson(i))
               .toList();
+          // Simpan ke database SQLite lokal secara terstruktur (Offline-First)
+          await LocalDbService.instance.syncInvoices(list);
           await LocalDbService.instance.saveCache(cacheKey, data['invoices']);
           return list;
         }
       }
     } catch (e) {
-      debugPrint('[BillingApi] getInvoices error: $e. Loading from cache...');
+      debugPrint('[BillingApi] getInvoices error: $e. Loading from local SQLite database...');
+    }
+
+    // Fallback Offline: Membaca langsung dari tabel SQLite lokal jika tidak ada koneksi
+    final localInvoices = await LocalDbService.instance.getLocalInvoices();
+    if (localInvoices.isNotEmpty) {
+      debugPrint('[BillingApi] Serving ${localInvoices.length} invoices from local SQLite.');
+      return localInvoices;
     }
 
     final cached = await LocalDbService.instance.getCache(cacheKey);
@@ -102,7 +111,12 @@ class BillingApi {
         '/payments/$paymentId/verify',
         body: {'status': approve ? 'diverifikasi' : 'ditolak'},
       );
-      return res.statusCode == 200;
+      if (res.statusCode == 200) {
+        // Hapus cache agar sinkronisasi refresh membaca data baru
+        await LocalDbService.instance.clearCache();
+        return true;
+      }
+      return false;
     } catch (e) {
       debugPrint('[BillingApi] verifyPayment error: $e');
       return false;
@@ -115,7 +129,12 @@ class BillingApi {
         '/invoices/$invoiceId/verify-manual',
         body: {'status': approve ? 'diverifikasi' : 'ditolak'},
       );
-      return res.statusCode == 200;
+      if (res.statusCode == 200) {
+        // Write-through update ke SQLite lokal seketika
+        await LocalDbService.instance.updateLocalInvoiceStatus(invoiceId, approve ? 'lunas' : 'belum');
+        return true;
+      }
+      return false;
     } catch (e) {
       debugPrint('[BillingApi] verifyInvoiceManual error: $e');
       return false;
@@ -133,12 +152,21 @@ class BillingApi {
           final list = (data['packages'] as List)
               .map((p) => PackageModel.fromJson(p))
               .toList();
+          // Simpan ke SQLite lokal
+          await LocalDbService.instance.syncPackages(list);
           await LocalDbService.instance.saveCache(cacheKey, data['packages']);
           return list;
         }
       }
     } catch (e) {
-      debugPrint('[BillingApi] getPackages error: $e. Loading from cache...');
+      debugPrint('[BillingApi] getPackages error: $e. Loading from local SQLite...');
+    }
+
+    // Fallback Offline: Membaca dari tabel SQLite lokal
+    final localPkgs = await LocalDbService.instance.getLocalPackages();
+    if (localPkgs.isNotEmpty) {
+      debugPrint('[BillingApi] Serving ${localPkgs.length} packages from local SQLite.');
+      return localPkgs;
     }
 
     final cached = await LocalDbService.instance.getCache(cacheKey);

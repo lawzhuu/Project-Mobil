@@ -20,12 +20,21 @@ class TaskApi {
           final list = (data['tasks'] as List)
               .map((t) => TaskModel.fromJson(t))
               .toList();
+          // Simpan ke SQLite lokal (Offline-First)
+          await LocalDbService.instance.syncTasks(list, isMyTasks: myTasks);
           await LocalDbService.instance.saveCache(cacheKey, data['tasks']);
           return list;
         }
       }
     } catch (e) {
-      debugPrint('[TaskApi] getTasks error: $e. Loading from cache...');
+      debugPrint('[TaskApi] getTasks error: $e. Loading from local SQLite database...');
+    }
+
+    // Fallback Offline: Membaca langsung dari tabel SQLite lokal
+    final localTasks = await LocalDbService.instance.getLocalTasks(myTasksOnly: myTasks);
+    if (localTasks.isNotEmpty) {
+      debugPrint('[TaskApi] Serving ${localTasks.length} tasks from local SQLite.');
+      return localTasks;
     }
 
     final cached = await LocalDbService.instance.getCache(cacheKey);
@@ -55,7 +64,12 @@ class TaskApi {
   Future<bool> claimTask(int taskId) async {
     try {
       final res = await _client.post('/tasks/$taskId/claim', timeout: const Duration(seconds: 6));
-      return res.statusCode == 200;
+      if (res.statusCode == 200) {
+        // Write-through update ke SQLite lokal seketika
+        await LocalDbService.instance.updateLocalTaskStatus(taskId, 'dikerjakan');
+        return true;
+      }
+      return false;
     } catch (e) {
       debugPrint('[TaskApi] claimTask error: $e');
       return false;
@@ -95,7 +109,12 @@ class TaskApi {
         body['teknisi_id'] = teknisiId;
       }
       final res = await _client.patch('/tasks/$taskId', body: body);
-      return res.statusCode == 200;
+      if (res.statusCode == 200) {
+        // Write-through update ke SQLite lokal seketika
+        await LocalDbService.instance.updateLocalTaskStatus(taskId, status, teknisiId: teknisiId);
+        return true;
+      }
+      return false;
     } catch (e) {
       debugPrint('[TaskApi] updateTaskStatus error: $e');
       return false;

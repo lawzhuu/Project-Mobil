@@ -15,7 +15,7 @@ const cors = require('cors');
 const { PORT, UPLOAD_DIR } = require('./config');
 
 const routes = require('./routes');
-const { initDB } = require('./db');
+const { initDB, refreshDBFromSupabase, getLastSupabasePull } = require('./db');
 const { ensureBucketExists } = require('./services/storage.service');
 
 // Membuat instance aplikasi Express
@@ -54,10 +54,13 @@ async function ensureAppInitialized() {
   return initPromise;
 }
 
-// Middleware penjamin inisialisasi sebelum request ditangani controller
+// Middleware penjamin inisialisasi & kesegaran database sebelum request ditangani controller
 app.use(async (req, res, next) => {
   if (!isInitialized) {
     await ensureAppInitialized();
+  } else if (req.method === 'GET' && (Date.now() - getLastSupabasePull() > 4000)) {
+    // Segarkan cache RAM dari Supabase jika ada request GET dan data di RAM sudah lebih dari 4 detik
+    await refreshDBFromSupabase().catch(() => {});
   }
   next();
 });
