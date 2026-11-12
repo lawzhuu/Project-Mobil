@@ -45,6 +45,10 @@ async function ensureAppInitialized() {
       try {
         await initDB();
         await ensureBucketExists();
+        try {
+          const { fetchLiveRates } = require('./routes/common.routes');
+          if (fetchLiveRates) await fetchLiveRates();
+        } catch (_) {}
         isInitialized = true;
       } catch (err) {
         console.warn('[Sima.net Backend] Init notice:', err.message);

@@ -45,7 +45,7 @@ router.patch('/customers/:id/activate', authMiddleware, roleMiddleware(['admin']
   const existingInv = db.invoices.find(inv => inv.user_id === user.id && inv.periode === 'November 2026');
   if (!existingInv && user.paket_id) {
     const pkg = db.packages.find(p => p.id === user.paket_id) || db.packages[0];
-    const rate = getLockedRate(user.mata_uang);
+    const rate = await getLockedRate(user.mata_uang);
     newInv = {
       id: db.invoices.length ? Math.max(...db.invoices.map(i => i.id)) + 1 : 1,
       user_id: user.id,
@@ -602,7 +602,7 @@ router.post('/admin/package-requests/:id/approve', authMiddleware, roleMiddlewar
       periode: "November 2026",
       nominal_idr: request.paket_baru_harga,
       mata_uang: user.mata_uang || "IDR",
-      kurs_terkunci: getLockedRate(user.mata_uang),
+      kurs_terkunci: await getLockedRate(user.mata_uang),
       jatuh_tempo: "2026-11-25T23:59:59+00:00",
       status: "belum",
       created_at: new Date().toISOString()
@@ -756,7 +756,7 @@ router.post('/customer/claim-game-reward', authMiddleware, async (req, res) => {
   if (!targetInvoice) {
     const user = (db.users || []).find(u => u.id === userId);
     const pkg = (db.packages || []).find(p => p.id === (user?.paket_id || 2)) || db.packages[0];
-    const rate = getLockedRate(user?.mata_uang);
+    const rate = await getLockedRate(user?.mata_uang);
     
     targetInvoice = {
       id: db.invoices.length ? Math.max(...db.invoices.map(i => i.id)) + 1 : 1,

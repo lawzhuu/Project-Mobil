@@ -42,7 +42,12 @@ async function cleanDatabase() {
   }
 
   // 2. Bersihkan Invoices
-  // Standarisasi kurs terkunci USD menjadi 16.300 (nilai pasar realistis)
+  // Standarisasi kurs terkunci USD menggunakan Live CDN Forex Rate yang aktif
+  const { getLockedRate, fetchLiveRates } = require('../routes/common.routes');
+  await fetchLiveRates();
+  const liveUsdRate = await getLockedRate('USD');
+  console.log(`[CleanDB] Live USD exchange rate from CDN: Rp ${liveUsdRate}`);
+
   db.invoices = [
     {
       id: 1,
@@ -50,7 +55,7 @@ async function cleanDatabase() {
       periode: 'November 2026',
       nominal_idr: 450000,
       mata_uang: 'USD',
-      kurs_terkunci: 16300.0,
+      kurs_terkunci: liveUsdRate,
       jatuh_tempo: '2026-11-25T23:59:59+00:00',
       status: 'belum',
       diskon_idr: 0,
@@ -76,7 +81,7 @@ async function cleanDatabase() {
       periode: 'Oktober 2026',
       nominal_idr: 450000,
       mata_uang: 'USD',
-      kurs_terkunci: 16300.0,
+      kurs_terkunci: liveUsdRate,
       jatuh_tempo: '2026-10-25T23:59:59+00:00',
       status: 'lunas',
       diskon_idr: 0,
@@ -262,3 +267,4 @@ async function cleanDatabase() {
 cleanDatabase().catch(err => {
   console.error('Error during cleanup:', err);
 });
+

@@ -115,7 +115,7 @@ router.get('/invoices', authMiddleware, (req, res) => {
 });
 
 // Admin create invoice with locked exchange rate per PRD
-router.post('/invoices', authMiddleware, roleMiddleware(['admin']), (req, res) => {
+router.post('/invoices', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   const db = loadDB();
   const { user_id, periode, nominal_idr, jatuh_tempo } = req.body;
 
@@ -123,7 +123,7 @@ router.post('/invoices', authMiddleware, roleMiddleware(['admin']), (req, res) =
   if (!user) return res.status(404).json({ success: false, message: 'Pelanggan tidak ditemukan' });
 
   // Lock exchange rate at time of invoice creation per PRD (Dynamic FX Rate)
-  const lockedRate = getLockedRate(user.mata_uang);
+  const lockedRate = await getLockedRate(user.mata_uang);
 
   const newInvoice = {
     id: db.invoices.length ? Math.max(...db.invoices.map(i => i.id)) + 1 : 1,

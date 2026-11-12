@@ -18,19 +18,19 @@ const DB_FILE = path.join(__dirname, '..', 'database.json');
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 
 // Nilai kurs mata uang referensi tetap (Sesuai kebutuhan PRD konversi IDR, USD, EUR)
-// Diperbarui ke nilai pasar valuta aktual (~16.300 IDR / USD & ~17.600 IDR / EUR)
+// Diperbarui sinkron dengan ECB Forex Sync (~18.149 IDR / USD & ~20.263 IDR / EUR)
 const STATIC_RATES = {
   base: 'IDR',
   date: '2026-11-13',
   rates: {
     IDR: 1.0,
-    USD: 0.00006135,  // ~16.300 IDR per 1 USD
-    EUR: 0.00005682   // ~17.600 IDR per 1 EUR
+    USD: 0.00005510,  // ~18.149 IDR per 1 USD
+    EUR: 0.00004935   // ~20.263 IDR per 1 EUR
   },
   idrPerCurrency: {
     IDR: 1.0,
-    USD: 16300.0,
-    EUR: 17600.0
+    USD: 18149.0,
+    EUR: 20263.0
   }
 };
 

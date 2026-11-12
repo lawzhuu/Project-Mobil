@@ -37,15 +37,11 @@ async function fetchCdn(path) {
   throw new Error('Failed to fetch from both jsDelivr and Cloudflare Pages CDN');
 }
 
-// 1. ENDPOINT KURS MATA UANG LIVE (GET /rates)
-router.get('/rates', async (req, res) => {
+// Fungsi pengambil kurs live dari CDN Forex dengan caching di RAM
+async function fetchLiveRates() {
   const now = Date.now();
   if (cachedRates && now < cacheExpiresAt) {
-    return res.json({
-      success: true,
-      data: cachedRates,
-      cached: true
-    });
+    return cachedRates;
   }
 
   try {
@@ -54,8 +50,8 @@ router.get('/rates', async (req, res) => {
       fetchCdn('currencies/eur.min.json')
     ]);
 
-    const usdToIdr = parseFloat(usdData?.usd?.idr) || 16300.0;
-    const eurToIdr = parseFloat(eurData?.eur?.idr) || 17600.0;
+    const usdToIdr = parseFloat(usdData?.usd?.idr) || STATIC_RATES.idrPerCurrency.USD;
+    const eurToIdr = parseFloat(eurData?.eur?.idr) || STATIC_RATES.idrPerCurrency.EUR;
     const dateStr = usdData?.date || new Date().toISOString().split('T')[0];
 
     cachedRates = {
@@ -74,20 +70,24 @@ router.get('/rates', async (req, res) => {
       }
     };
     cacheExpiresAt = now + CACHE_DURATION_MS;
-
-    return res.json({
-      success: true,
-      data: cachedRates,
-      cached: false
-    });
+    console.log(`[Rates] Live exchange rates synchronized: 1 USD ≈ Rp ${cachedRates.idrPerCurrency.USD}, 1 EUR ≈ Rp ${cachedRates.idrPerCurrency.EUR}`);
+    return cachedRates;
   } catch (err) {
     console.warn('[Rates] Live currency fetch error, fallback to STATIC_RATES:', err.message);
-    return res.json({
-      success: true,
-      data: STATIC_RATES,
-      fallback: true
-    });
+    return STATIC_RATES;
   }
+}
+
+// 1. ENDPOINT KURS MATA UANG LIVE (GET /rates)
+router.get('/rates', async (req, res) => {
+  const rates = await fetchLiveRates();
+  const isFallback = !rates || rates === STATIC_RATES;
+  return res.json({
+    success: true,
+    data: rates,
+    cached: !isFallback && Date.now() < cacheExpiresAt,
+    fallback: isFallback
+  });
 });
 
 // Get feedback entries
@@ -172,17 +172,37 @@ router.get('/', (req, res) => {
   });
 });
 
-// Helper untuk mengambil kurs terkunci terkini (prioritas: cache live CDN -> fallback: STATIC_RATES)
-function getLockedRate(currency) {
+// Helper dinamis untuk mengambil kurs terkunci terkini (prioritas: live CDN -> fallback: STATIC_RATES)
+async function getLockedRate(currency) {
+  const curr = (currency || 'IDR').toUpperCase();
+  if (curr === 'IDR') return 1.0;
+  
+  // Jika cache belum terisi atau sudah kadaluarsa, jemput langsung ke CDN
+  if (!cachedRates || Date.now() >= cacheExpiresAt) {
+    await fetchLiveRates();
+  }
+
+  if (cachedRates && cachedRates.idrPerCurrency && cachedRates.idrPerCurrency[curr]) {
+    return cachedRates.idrPerCurrency[curr];
+  }
+  return STATIC_RATES.idrPerCurrency[curr] || 18149.0;
+}
+
+// Versi synchronous jika dipanggil di konteks non-async
+function getLockedRateSync(currency) {
   const curr = (currency || 'IDR').toUpperCase();
   if (curr === 'IDR') return 1.0;
   if (cachedRates && cachedRates.idrPerCurrency && cachedRates.idrPerCurrency[curr]) {
     return cachedRates.idrPerCurrency[curr];
   }
-  return STATIC_RATES.idrPerCurrency[curr] || 1.0;
+  return STATIC_RATES.idrPerCurrency[curr] || 18149.0;
 }
 
 router.getLockedRate = getLockedRate;
+router.getLockedRateSync = getLockedRateSync;
+router.fetchLiveRates = fetchLiveRates;
 
 module.exports = router;
 module.exports.getLockedRate = getLockedRate;
+module.exports.getLockedRateSync = getLockedRateSync;
+module.exports.fetchLiveRates = fetchLiveRates;

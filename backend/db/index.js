@@ -206,7 +206,7 @@ function getInitialData() {
         periode: 'November 2026',
         nominal_idr: 450000,
         mata_uang: 'USD',
-        kurs_terkunci: 16300.0,
+        kurs_terkunci: 18250.0,
         jatuh_tempo: '2026-11-25T23:59:59.000Z',
         status: 'belum'
       },
@@ -216,7 +216,7 @@ function getInitialData() {
         periode: 'Oktober 2026',
         nominal_idr: 450000,
         mata_uang: 'USD',
-        kurs_terkunci: 16300.0,
+        kurs_terkunci: 18250.0,
         jatuh_tempo: '2026-10-25T23:59:59.000Z',
         status: 'lunas'
       },
