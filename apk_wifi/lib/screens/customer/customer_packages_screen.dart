@@ -605,57 +605,30 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(categoryIcon, size: 13, color: badgeColor),
-                          const SizedBox(width: 4),
-                          Text(
-                            pkg.kategori,
-                            style: TextStyle(
-                              color: badgeColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (isCurrent) ...[
-                      const SizedBox(width: 8),
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDCFCE7),
+                          color: badgeColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.check_circle,
-                              size: 12,
-                              color: Color(0xFF16A34A),
-                            ),
-                            SizedBox(width: 4),
+                            Icon(categoryIcon, size: 13, color: badgeColor),
+                            const SizedBox(width: 4),
                             Text(
-                              'Paket Aktif',
+                              pkg.kategori,
                               style: TextStyle(
-                                color: Color(0xFF16A34A),
+                                color: badgeColor,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -663,9 +636,40 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
                           ],
                         ),
                       ),
+                      if (isCurrent)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                size: 12,
+                                color: Color(0xFF16A34A),
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Paket Aktif',
+                                style: TextStyle(
+                                  color: Color(0xFF16A34A),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
-                  ],
+                  ),
                 ),
+                const SizedBox(width: 8),
 
                 // Speed Pill
                 Container(
@@ -717,13 +721,13 @@ class _CustomerPackagesScreenState extends State<CustomerPackagesScreen> {
             const Divider(color: Color(0xFFF1F5F9), height: 1),
             const SizedBox(height: 12),
 
-            // Benefits checklist
-            Row(
+            // Benefits checklist (Wrap to prevent overflow on small screens)
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
               children: [
                 _buildBenefitItem(Icons.all_inclusive, 'Unlimited 24/7'),
-                const SizedBox(width: 14),
                 _buildBenefitItem(Icons.speed, 'Ping Rendah'),
-                const SizedBox(width: 14),
                 _buildBenefitItem(Icons.support_agent, 'Support 24/7'),
               ],
             ),

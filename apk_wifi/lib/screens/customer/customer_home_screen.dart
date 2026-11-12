@@ -1010,14 +1010,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Paket Khusus Untukmu',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
+            const Expanded(
+              child: Text(
+                'Paket Khusus Untukmu',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            const SizedBox(width: 8),
             InkWell(
               onTap: () {
                 Navigator.push(

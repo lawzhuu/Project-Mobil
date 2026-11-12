@@ -292,14 +292,14 @@ class _CurrencyTimeScreenState extends State<CurrencyTimeScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Clock Grid
+            // Clock Grid (Adjusted aspect ratio to prevent vertical overflow on small screens)
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: 1.15,
+              childAspectRatio: 1.05,
               children: [
                 _buildClockCard(
                   flag: '🇮🇩',

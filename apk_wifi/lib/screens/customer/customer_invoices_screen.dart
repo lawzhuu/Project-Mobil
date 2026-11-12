@@ -141,13 +141,26 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                         ),
                         if (invoice.mataUang != 'IDR') ...[
                           const SizedBox(height: 6),
-                          Row(
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 4,
                             children: const [
-                              Text('SWIFT Code: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-                              Text('CENAIDJA', style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, fontSize: 11)),
-                              SizedBox(width: 12),
-                              Text('Wise/PayPal: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-                              Text('pay@sima.net.id', style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, fontSize: 11)),
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(text: 'SWIFT Code: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                                    TextSpan(text: 'CENAIDJA', style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(text: 'Wise/PayPal: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                                    TextSpan(text: 'pay@sima.net.id', style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -158,7 +171,9 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Tarif Normal Paket:', style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                              const Expanded(
+                                child: Text('Tarif Normal Paket:', style: TextStyle(color: AppTheme.textMuted, fontSize: 12), overflow: TextOverflow.ellipsis),
+                              ),
                               Text(
                                 invoice.formattedOriginalAmount,
                                 style: const TextStyle(
@@ -173,16 +188,23 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.card_giftcard, size: 13, color: AppTheme.success),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Voucher ${invoice.voucherCode ?? 'FIBERHEMAT10'}:',
-                                    style: const TextStyle(color: AppTheme.success, fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.card_giftcard, size: 13, color: AppTheme.success),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'Voucher ${invoice.voucherCode ?? 'FIBERHEMAT10'}:',
+                                        style: const TextStyle(color: AppTheme.success, fontSize: 12, fontWeight: FontWeight.bold),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
                                 '-${invoice.formattedDiscountIdr}',
                                 style: const TextStyle(color: AppTheme.success, fontSize: 12, fontWeight: FontWeight.bold),
@@ -194,10 +216,15 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Total Ditransfer (${invoice.mataUang}):',
-                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                            Expanded(
+                              child: Text(
+                                'Total Ditransfer (${invoice.mataUang}):',
+                                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               invoice.formattedAmount,
                               style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 17),
@@ -209,10 +236,15 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Setara Rupiah (Kredit ISP):',
-                                style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                              const Expanded(
+                                child: Text(
+                                  'Setara Rupiah (Kredit ISP):',
+                                  style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
                                 invoice.formattedAmountIdr,
                                 style: const TextStyle(fontSize: 12, color: AppTheme.success, fontWeight: FontWeight.w600),
@@ -223,6 +255,8 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                           Text(
                             'Kurs Terkunci: 1 ${invoice.mataUang} = Rp ${invoice.kursTerkunci.toStringAsFixed(0)}',
                             style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],
@@ -469,7 +503,14 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                         children: const [
                           Icon(Icons.dns_outlined, size: 12, color: AppTheme.textMuted),
                           SizedBox(width: 4),
-                          Text('SERVER ISP (WIB)', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
+                          Expanded(
+                            child: Text(
+                              'SERVER ISP (WIB)',
+                              style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -504,7 +545,14 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                         children: [
                           const Icon(Icons.schedule, size: 12, color: AppTheme.accent),
                           const SizedBox(width: 4),
-                          Text('WAKTU ANDA ($userTimezone)', style: const TextStyle(fontSize: 10, color: AppTheme.accent, fontWeight: FontWeight.w600)),
+                          Expanded(
+                            child: Text(
+                              'WAKTU ANDA ($userTimezone)',
+                              style: const TextStyle(fontSize: 10, color: AppTheme.accent, fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -529,9 +577,13 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
             children: [
               const Icon(Icons.sync_alt, size: 13, color: AppTheme.textSecondary),
               const SizedBox(width: 6),
-              Text(
-                'Selisih: $tzDifference',
-                style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+              Expanded(
+                child: Text(
+                  'Selisih: $tzDifference',
+                  style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -722,6 +774,8 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                       child: Text(
                                         '1 ${inv.mataUang} = Rp ${inv.kursTerkunci.toStringAsFixed(0)} (Terkunci)',
                                         style: const TextStyle(fontSize: 10, color: AppTheme.accent, fontWeight: FontWeight.bold),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                 ],
@@ -758,6 +812,8 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                 Text(
                                   'Setara: ${inv.formattedAmountIdr} (Kredit Tagihan Lokal)',
                                   style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
 
@@ -772,12 +828,18 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                     children: [
                                       const Icon(Icons.schedule, size: 14, color: AppTheme.accent),
                                       const SizedBox(width: 6),
-                                      Text('Jatuh Tempo ($userTimezone): ', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-                                      Expanded(
+                                      Flexible(
                                         child: Text(
-                                          inv.formattedDueDate(userTimezone),
-                                          style: const TextStyle(fontSize: 12, color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+                                          'Jatuh Tempo ($userTimezone): ',
+                                          style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        inv.formattedDueDate(userTimezone),
+                                        style: const TextStyle(fontSize: 12, color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
@@ -787,12 +849,18 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                       children: [
                                         const Icon(Icons.dns_outlined, size: 13, color: AppTheme.textMuted),
                                         const SizedBox(width: 7),
-                                        const Text('Server Pusat (WIB): ', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
-                                        Expanded(
+                                        const Flexible(
                                           child: Text(
-                                            inv.formattedDueDate('WIB'),
-                                            style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                                            'Server Pusat (WIB): ',
+                                            style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          inv.formattedDueDate('WIB'),
+                                          style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                                         ),
                                       ],
                                     ),
@@ -820,14 +888,19 @@ class _CustomerInvoicesScreenState extends State<CustomerInvoicesScreen> {
                                         color: overdue ? AppTheme.error : AppTheme.warning,
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        overdue ? 'Batas Waktu Terlewat: ' : 'Sisa Waktu Bayar: ',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: overdue ? AppTheme.error : AppTheme.warning,
+                                      Expanded(
+                                        child: Text(
+                                          overdue ? 'Batas Waktu Terlewat: ' : 'Sisa Waktu Bayar: ',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: overdue ? AppTheme.error : AppTheme.warning,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                      const SizedBox(width: 4),
                                       Text(
                                         countdown,
                                         style: TextStyle(
